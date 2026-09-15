@@ -13,3 +13,7 @@ select = ["E", "F", "W", "I"]
 # E501 (linea larga) la ignora Ruff a proposito: Black ya formatea el largo
 # de linea, y lo unico que queda son strings/paths que no se pueden partir.
 ignore = ["E501"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py", "*_test.py"]

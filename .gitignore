@@ -4,3 +4,13 @@
 
 # Node modules
 node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+db.sqlite3
+.venv/
+venv/
+staticfiles/
+*.egg-info/

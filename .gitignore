@@ -1,6 +1,7 @@
 # dotenv environment variables file
 .env
 .env.*
+!.env.example
 
 # Node modules
 node_modules/

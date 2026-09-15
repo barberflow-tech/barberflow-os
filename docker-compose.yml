@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # Base de Datos PostgreSQL Local (para desarrollo offline)
+  postgres_db:
+    image: postgres:16-alpine
+    container_name: barberflow_db
+    restart: always
+    environment:
+      POSTGRES_USER: barberadmin
+      POSTGRES_PASSWORD: REDACTED_LOCAL_DEV_PASSWORD
+      POSTGRES_DB: barberflow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Servicio API Backend (Django 5)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: barberflow_backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - postgres_db
+
+volumes:
+  pgdata:

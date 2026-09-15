@@ -14,3 +14,6 @@ db.sqlite3
 venv/
 staticfiles/
 *.egg-info/
+
+# Notas locales de sesion (no se suben a GitHub)
+docs/

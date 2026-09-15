@@ -6,10 +6,8 @@ services:
     image: postgres:16-alpine
     container_name: barberflow_db
     restart: always
-    environment:
-      POSTGRES_USER: barberadmin
-      POSTGRES_PASSWORD: REDACTED_LOCAL_DEV_PASSWORD
-      POSTGRES_DB: barberflow_db
+    env_file:
+      - .env
     ports:
       - "5432:5432"
     volumes:

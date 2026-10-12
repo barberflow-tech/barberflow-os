@@ -225,3 +225,14 @@ Esta característica no es un requerimiento típico de un cliente convencional (
 * **Carpeta 1 - Planificación e Inicio:** Acta de Constitución (Project Charter), Matriz de Riesgos y Matriz de Stakeholders.
 * **Carpeta 2 - Ceremonias Ágiles:** Actas de Sprint Planning, Daily Scrum logs (bloqueos identificados), Sprint Review y minutas de Retrospectivas.
 * **Carpeta 3 - Arquitectura y QA:** Diagramas C4 (Contexto y Contenedores), Modelo Entidad-Relación de la base de datos relacional, Diccionario de datos y Reportes de Coevaluación del equipo para las entregas de la universidad.
+
+---
+
+## SECCIÓN 6: ENTORNO LOCAL (GUÍA RÁPIDA)
+
+1. **Clonar y crear el `.env`:** `cp .env.example .env` (en PowerShell: `Copy-Item .env.example .env`). El `.env` no se sube a git.
+2. **Editar `.env`:** generar la `DJANGO_SECRET_KEY` (`python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"`) y elegir una `POSTGRES_PASSWORD` propia. El backend usa solo `POSTGRES_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB`.
+3. **Levantar los servicios:** `docker compose up -d` (frontend en `http://localhost:5173`, backend en `http://localhost:5000`).
+4. **Migrar y crear el superusuario:** `docker compose exec backend python manage.py migrate` y `docker compose exec backend python manage.py createsuperuser`. El panel de Django queda en `http://localhost:5000/admin/`.
+5. **Ver la base de datos (opcional, pgAdmin/DBeaver):** host `localhost`, puerto **5433**, usuario y contraseña del `.env`, base `barberflow_db`. El puerto es 5433 (y no 5432) para no chocar con un Postgres instalado en Windows.
+6. **Si cambias `POSTGRES_PASSWORD` después de la primera vez:** `docker compose down -v` y volver a levantar (esto borra solo tu base local).

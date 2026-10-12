@@ -20,3 +20,8 @@ staticfiles/
 
 # Notas locales de sesion (no se suben a GitHub)
 docs/
+
+proyecto del curso 2026-2.pdf
+
+# Configuracion personal del editor
+.vscode/

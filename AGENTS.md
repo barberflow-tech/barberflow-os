@@ -32,23 +32,24 @@
 1. **Paso a paso explícito:** EL AGENTE NO DEBE GENERAR NI INTENTAR RESOLVER TODO EL PROYECTO O MÓDULOS COMPLETOS DE UNA SOLA VEZ.
 2. **Foco en Tareas de Jira:** El agente trabajará **únicamente** sobre la tarea o ticket de Jira específico que el desarrollador le indique en la solicitud (ej. `TSK-01`, `HU-06-T01`).
 3. **Identificación del Tipo de Trabajo:** Antes de escribir código o proponer cambios, el agente debe clasificar la tarea y ajustar su respuesta al tipo correspondiente:
-   - `feat:` (Nueva característica o funcionalidad)[cite: 16]
-   - `fix:` (Corrección de un bug o error)[cite: 16]
-   - `docs:` (Documentación, actas o comentarios)[cite: 16]
+   - `feat:` (Nueva característica o funcionalidad)
+   - `fix:` (Corrección de un bug o error)
+   - `docs:` (Documentación, actas o comentarios)
    - `test:` (Creación o ajuste de pruebas unitarias/integración)
 4. **Respuesta Acotada:** Limítate a entregar **solo** el código o la solución del paso solicitado. No avances a la siguiente tarea ni asumas requerimientos no pedidos.
+5. **Procedimiento paso a paso:** Al iniciar o cerrar una tarea de Jira, sigue [`FLUJO-TAREA.md`](./FLUJO-TAREA.md) (identificar al programador y su rol, verificar el DoR, rama, tests primero, verificación local, commit y PR). Antes de empezar, confirma con el usuario quién es y cuál es su rol según la tabla de la sección 2. En Claude Code: `/tarea <ID>` y `/cerrar-tarea`.
 
 ---
 
 ## 4. Stack Tecnológico Estándar
 Cualquier código generado o sugerido DEBE ajustarse estrictamente a estas tecnologías:
 
-- **Frontend:** React 19, Tailwind CSS v4, Shadcn/UI, Zustand (Estado global)[cite: 14, 16].
-- **Backend API:** Python 3.12+ / Django 5 (Django REST Framework / Django Ninja)[cite: 14, 16].
-- **Base de Datos & Auth:** PostgreSQL instanciado en Supabase, JWT (`djangorestframework-simplejwt`) con Control de Acceso Basado en Roles (RBAC: Admin, Barbero, Cliente)[cite: 12, 14, 16].
-- **Módulo de Innovación (SmartGuard):** Python (`scikit-learn`, `pandas`) para el modelo predictivo de ausentismo y cálculo de *RiskScore*[cite: 14, 16].
-- **Testing & Calidad:** Vitest / React Testing Library (Frontend), `pytest-django` (Backend), ESLint, Prettier, Black/Ruff[cite: 14, 16].
-- **DevOps & Entorno:** Docker (`docker-compose.yml`), GitHub Actions (CI/CD), Vercel (Hosting Frontend), Render (Hosting API Backend)[cite: 14, 16, 17].
+- **Frontend:** React 19, Tailwind CSS v4, Shadcn/UI, Zustand (Estado global).
+- **Backend API:** Python 3.12+ / Django 5 (Django REST Framework / Django Ninja).
+- **Base de Datos & Auth:** PostgreSQL instanciado en Supabase, JWT (`djangorestframework-simplejwt`) con Control de Acceso Basado en Roles (RBAC: Admin, Barbero, Cliente).
+- **Módulo de Innovación (SmartGuard):** Python (`scikit-learn`, `pandas`) para el modelo predictivo de ausentismo y cálculo de *RiskScore*.
+- **Testing & Calidad:** Vitest / React Testing Library (Frontend), `pytest-django` (Backend), ESLint, Prettier, Black/Ruff.
+- **DevOps & Entorno:** Docker (`docker-compose.yml`), GitHub Actions (CI/CD), Vercel (Hosting Frontend), Render (Hosting API Backend).
 
 ---
 
@@ -64,7 +65,7 @@ Una tarea/HU se inicia solo si posee:
 ### Definition of Done (DoD)
 Una tarea/HU está terminada únicamente si:
 1. Pasa las pruebas en Vitest / Pytest sin errores.
-2. Pasa revisión de código (Code Review) en GitHub por un par y merge a `develop`[cite: 11, 16].
+2. Pasa revisión de código (Code Review) en GitHub por un par y merge a `develop`.
 3. Está desplegada y funcional en ambiente Staging (Vercel/Render).
 4. Es validada manualmente por el QA Engineer (Esteban Rivera).
 
@@ -102,7 +103,7 @@ Una tarea/HU está terminada únicamente si:
 ## 8. Instrucciones Directas para Agentes de IA
 
 Cuando trabajes en este repositorio, debes seguir los siguientes principios:
-1. **Calidad de Respuesta:** No inventes arquitecturas, librerías ni dependencias distintas a las especificadas en la sección 3.
+1. **Calidad de Respuesta:** No inventes arquitecturas, librerías ni dependencias distintas a las especificadas en la sección 4.
 2. **Estilo de Código Backend:** Prioriza endpoints en Django REST Framework o Django Ninja estructurados con tipado estricto y código limpio.
 3. **Estilo de Código Frontend:** Usa React 19 funcional con Hooks, Tailwind CSS v4 y manejo de estado claro con Zustand.
 4. **Respeto a los Criterios de Aceptación:** Al escribir tests o implementar lógica de negocio, sigue la estructura *Dado/Cuando/Entonces*.

@@ -25,3 +25,6 @@ proyecto del curso 2026-2.pdf
 
 # Configuracion personal del editor
 .vscode/
+
+# Claude Code (config personal)
+.claude/settings.local.json

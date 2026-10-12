@@ -78,7 +78,7 @@ Una tarea/HU está terminada únicamente si:
   - `docs: ...` (documentación)
   - `test: ...` (adición o modificación de pruebas)
 - **Flujo Docker Local:**
-  - El entorno corre vía `docker compose up -d` (Backend en puerto 5000, PostgreSQL en puerto 5432).
+  - El entorno corre vía `docker compose up -d` (Backend en puerto 5000; PostgreSQL expuesto en el puerto 5433 del host, para no chocar con un Postgres local de Windows. Dentro de Docker sigue siendo 5432).
   - Instalación de paquetes backend dentro de contenedor: `docker compose exec backend npm install <pkg>` o mediante reconstrucción.
 
 ---

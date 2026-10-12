@@ -65,7 +65,7 @@ Una tarea/HU se inicia solo si posee:
 ### Definition of Done (DoD)
 Una tarea/HU está terminada únicamente si:
 1. Pasa las pruebas en Vitest / Pytest sin errores.
-2. Pasa revisión de código (Code Review) en GitHub por un par y merge a `develop`.
+2. Pasa revisión de código (Code Review) en GitHub por un par y merge a `develop`. Revisor de respaldo: Brandon (`@brandonjimenez21`), solicitado automáticamente por `.github/CODEOWNERS`.
 3. Está desplegada y funcional en ambiente Staging (Vercel/Render).
 4. Es validada manualmente por el QA Engineer (Esteban Rivera).
 

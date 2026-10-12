@@ -94,7 +94,7 @@ Pregunta si el usuario quiere que hagas el push y abras el PR (por ejemplo con `
 ### Paso 5. Lo que sigue es humano
 Recuérdalo según el flujo de Jira (`To Do → In Progress → In Review → QA → Done`):
 1. Mover el ticket a `In Review` cuando el PR esté abierto.
-2. Code review de al menos un par (`AGENTS.md` §5). Sugiere a quién pedírselo según los roles (ej. Reinel Vargas como Tech Lead), sin asignarlo tú.
+2. Code review de al menos un par (`AGENTS.md` §5). Sugiere a quién pedírselo según los roles (ej. Reinel Vargas como Tech Lead para backend), sin asignarlo tú. Revisor de respaldo: Brandon Jimenez (`@brandonjimenez21`), que GitHub solicita automáticamente vía `.github/CODEOWNERS`, para que el flujo no se trabe. Si el PR es de Brandon, GitHub no le permite aprobarlo: debe revisarlo otro compañero.
 3. Despliegue en Staging y validación manual de QA (Esteban Rivera).
 
 Termina ahí. No empieces otra tarea.

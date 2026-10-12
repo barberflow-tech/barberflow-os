@@ -54,6 +54,8 @@ Si falta algo, **detente**: lista lo que falta, haz preguntas concretas y no esc
 ### Paso 6. Verifica en local (igual que el CI)
 - Backend: `black --check .`, `ruff check .`, `python manage.py check`, `python -m pytest -v` (en el contenedor con `docker compose exec backend ...` o en el entorno local).
 - Frontend: `npm run lint`, `npm run format:check`, `npm run test`, `npm run build` (en el contenedor con `docker compose exec frontend ...` o en local).
+- Si `docker compose ps` muestra los contenedores arriba, usa `docker compose exec -T <servicio> ...`: el Python/Node del host puede no tener las dependencias.
+- Si `black`/`ruff`/`prettier` fallan en tus archivos, aplícalos (`black <archivo>`, `ruff check --fix <archivo>`) y vuelve a verificar.
 - Ejecuta solo lo que corresponda a lo que tocaste. Si algo falla, corrígelo; si no puedes, repórtalo tal cual.
 
 ### Paso 7. Entrega y detente
@@ -64,7 +66,7 @@ Resume: qué cambió, qué tests lo cubren, qué comandos pasaron y cuáles no, 
 ## Fase CERRAR
 
 ### Paso 0. Identifica al programador
-1. Lee `AGENTS.md` §2 y confirma: "Cierro esta tarea como <nombre> (<rol>), ¿correcto?".
+1. Lee `AGENTS.md` §2. Si ya confirmaste la identidad del usuario en esta misma sesión (fase INICIAR), no vuelvas a preguntar; si no, confirma: "Cierro esta tarea como <nombre> (<rol>), ¿correcto?".
 2. Compara con `git config user.name`. Si no coinciden, avísalo y pregunta cuál usar para los datos del PR. No cambies la configuración de git.
 
 ### Paso 1. Revisa el estado

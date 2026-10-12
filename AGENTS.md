@@ -24,6 +24,7 @@
 | **Reinel Fabián Vargas Méndez** | Tech Lead / Full-Stack Developer | Arquitectura API REST Django 5 (DRF), modelado de BD (PostgreSQL/Supabase), revisión de PRs y decisiones técnicas. |
 | **Esteban Rivera González** | QA Engineer & DevOps Specialist | Pipelines CI/CD (GitHub Actions), pruebas automatizadas (Vitest / Pytest), contenedores Docker y despliegue (Render / Vercel). |
 | **Jose Otoniel Henao Montes** | UI/UX Designer & Data Analyst | Prototipado en Figma, maquetación de componentes UI (Tailwind v4 / Shadcn) y desarrollo del modelo predictivo SmartGuard (`scikit-learn` / `pandas`). |
+| **Cristhian Felipe Ramirez Marulanda** | Backend Developer | Implementación de endpoints Django 5 (DRF), lógica de negocio del POS, comisiones y caja (Épica 3) y pruebas con `pytest-django`. |
 
 ## 3. Regla Fundamental de Ejecución: Modo Tarea Finito (No Auto-Completar el Proyecto)
 

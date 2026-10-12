@@ -12,13 +12,14 @@
 * **Planteamiento del Problema:** Las barberías modernas enfrentan una fuga de ingresos crítica debido a los *no-shows* (citas a las que el cliente no asiste), gestión caótica a través de WhatsApp que deriva en cruces de horarios, cálculo manual propenso a errores para las comisiones de los barberos (dependiendo del tipo de servicio), y un nulo seguimiento del ciclo de vida del cliente (fidelización).
 * **Propuesta de Valor:** BarberFlow OS es una plataforma B2B integral que automatiza el ciclo operativo de la barbería. Reduce el ausentismo mediante inteligencia predictiva, garantiza el cálculo milimétrico y transparente de comisiones en tiempo real, y centraliza el agendamiento y el punto de venta (POS) en una única interfaz unificada de alta disponibilidad.
 * **Cliente Objetivo:** Barberías de segmento medio-alto y cadenas emergentes (entre 3 y 15 barberos por sucursal).
-* **Integrantes del Equipo (5 Roles):**
+* **Integrantes del Equipo (6 Roles):**
 
   1. **Scrum Master / Lead Full-Stack Developer (Brandon Stiven Jiménez Romero):** Garante de la metodología ágil, eliminación de bloqueos, gestión de tableros Jira/Notion y desarrollo transversal Full-Stack (React 19 / Django 5).
   2. **Product Owner / Frontend Specialist (Daniel Escobar Bahoz):** Interfaz con el cliente (stakeholders), definición y priorización del Backlog, y desarrollo de interfaces de usuario responsivas en React 19 / Tailwind CSS v4.
   3. **Tech Lead / Full-Stack Developer (Reinel Fabián Vargas Méndez):** Diseño de arquitectura (API REST en Django 5 DRF, bases de datos relacionales PostgreSQL/Supabase), revisión de PRs y desarrollo Full-Stack.
   4. **QA Engineer & DevOps Specialist (Esteban Rivera González):** Diseño de pruebas automatizadas (unitarias e integración con Pytest-Django y Vitest), pipelines de CI/CD en GitHub Actions, Dockerización y despliegue en Render/Vercel.
   5. **UI/UX Designer & Data Analyst (Jose Otoniel Henao Montes):** Prototipado interactivo en Figma, maquetación UI con Tailwind v4 / Shadcn y diseño/entrenamiento del modelo predictivo *SmartGuard* utilizando Python (`scikit-learn` / `pandas`).
+  6. **Backend Developer (Cristhian Felipe Ramirez Marulanda):** Implementación de endpoints en Django 5 (DRF), lógica de negocio del POS, comisiones y caja (Épica 3) y pruebas con Pytest-Django.
 
 ---
 

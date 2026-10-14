@@ -12,13 +12,14 @@
 * **Planteamiento del Problema:** Las barberías modernas enfrentan una fuga de ingresos crítica debido a los *no-shows* (citas a las que el cliente no asiste), gestión caótica a través de WhatsApp que deriva en cruces de horarios, cálculo manual propenso a errores para las comisiones de los barberos (dependiendo del tipo de servicio), y un nulo seguimiento del ciclo de vida del cliente (fidelización).
 * **Propuesta de Valor:** BarberFlow OS es una plataforma B2B integral que automatiza el ciclo operativo de la barbería. Reduce el ausentismo mediante inteligencia predictiva, garantiza el cálculo milimétrico y transparente de comisiones en tiempo real, y centraliza el agendamiento y el punto de venta (POS) en una única interfaz unificada de alta disponibilidad.
 * **Cliente Objetivo:** Barberías de segmento medio-alto y cadenas emergentes (entre 3 y 15 barberos por sucursal).
-* **Integrantes del Equipo (5 Roles):**
+* **Integrantes del Equipo (6 Roles):**
 
   1. **Scrum Master / Lead Full-Stack Developer (Brandon Stiven Jiménez Romero):** Garante de la metodología ágil, eliminación de bloqueos, gestión de tableros Jira/Notion y desarrollo transversal Full-Stack (React 19 / Django 5).
   2. **Product Owner / Frontend Specialist (Daniel Escobar Bahoz):** Interfaz con el cliente (stakeholders), definición y priorización del Backlog, y desarrollo de interfaces de usuario responsivas en React 19 / Tailwind CSS v4.
   3. **Tech Lead / Full-Stack Developer (Reinel Fabián Vargas Méndez):** Diseño de arquitectura (API REST en Django 5 DRF, bases de datos relacionales PostgreSQL/Supabase), revisión de PRs y desarrollo Full-Stack.
   4. **QA Engineer & DevOps Specialist (Esteban Rivera González):** Diseño de pruebas automatizadas (unitarias e integración con Pytest-Django y Vitest), pipelines de CI/CD en GitHub Actions, Dockerización y despliegue en Render/Vercel.
   5. **UI/UX Designer & Data Analyst (Jose Otoniel Henao Montes):** Prototipado interactivo en Figma, maquetación UI con Tailwind v4 / Shadcn y diseño/entrenamiento del modelo predictivo *SmartGuard* utilizando Python (`scikit-learn` / `pandas`).
+  6. **Backend Developer (Cristhian Felipe Ramirez Marulanda):** Implementación de endpoints en Django 5 (DRF), lógica de negocio del POS, comisiones y caja (Épica 3) y pruebas con Pytest-Django.
 
 ---
 
@@ -179,20 +180,20 @@ Esta característica no es un requerimiento típico de un cliente convencional (
 
 ## SECCIÓN 4: HOJA DE RUTA POR SPRINTS (Sprints de 2 semanas)
 
-* **Sprint 0 (Setup y Arquitectura):** Inicialización de repositorios, configuración de CI/CD (GitHub Actions a Vercel/Render), modelado de la base de datos (PostgreSQL/Supabase), setup del framework base (React 19, Python 3.12 / Django 5, Zustand) y Dockerización del entorno.
-* **Sprint 1 - Entrega 5 (Cimientos y Auth):**
+* **Sprint 0 - Entrega 4 (Setup y Arquitectura) · en curso (trabajo inicial 9–23 de septiembre); cierre formal el 3 de noviembre:** Inicialización de repositorios, configuración de CI/CD (GitHub Actions a Vercel/Render), modelado de la base de datos (PostgreSQL/Supabase), setup del framework base (React 19, Python 3.12 / Django 5, Zustand) y Dockerización del entorno.
+* **Sprint 1 - Entrega 5 (Cimientos y Auth) · 21 de octubre – 3 de noviembre:**
 
   * HUs a desarrollar: HU-06, HU-07, HU-10, HU-01, HU-02.
   * *Objetivo:* El cliente puede registrarse, ver servicios, ver disponibilidad del barbero y crear una reserva en la base de datos.
-* **Sprint 2 - Entrega 6 (Gestión Operativa y Core de Innovación):**
+* **Sprint 2 - Entrega 6 (Gestión Operativa y Core de Innovación) · 4–17 de noviembre:**
 
   * HUs a desarrollar: HU-08, HU-09, HU-03, HU-04, HU-19.
   * *Objetivo:* Los administradores pueden gestionar horarios, roles y ausencias, y el backend comienza a registrar y calcular el `RiskScore` de inasistencias.
-* **Sprint 3 - Entrega 7 (Transacciones y Automatización):**
+* **Sprint 3 - Entrega 7 (Transacciones y Automatización) · 18 de noviembre – 1 de diciembre:**
 
   * HUs a desarrollar: HU-05, HU-11, HU-12, HU-14, HU-20.
   * *Objetivo:* Se implementan notificaciones, el módulo de POS (Check-out), el descuento de inventario, el cálculo de la nómina de barberos y el cobro dinámico para clientes riesgosos.
-* **Sprint 4 - Entrega 8 (Estabilización, Analítica y Cierre):**
+* **Sprint 4 - Entrega 8 (Estabilización, Analítica y Cierre) · 2–15 de diciembre:**
 
   * HUs a desarrollar: HU-13, HU-15, HU-16, HU-17, HU-18.
   * *Objetivo:* Implementación del Dashboard analítico, cierre de cajas, feedback del cliente, pruebas de integración (Pytest-Django / Vitest), acta de aceptación y despliegue del release v1.0.
@@ -225,3 +226,14 @@ Esta característica no es un requerimiento típico de un cliente convencional (
 * **Carpeta 1 - Planificación e Inicio:** Acta de Constitución (Project Charter), Matriz de Riesgos y Matriz de Stakeholders.
 * **Carpeta 2 - Ceremonias Ágiles:** Actas de Sprint Planning, Daily Scrum logs (bloqueos identificados), Sprint Review y minutas de Retrospectivas.
 * **Carpeta 3 - Arquitectura y QA:** Diagramas C4 (Contexto y Contenedores), Modelo Entidad-Relación de la base de datos relacional, Diccionario de datos y Reportes de Coevaluación del equipo para las entregas de la universidad.
+
+---
+
+## SECCIÓN 6: ENTORNO LOCAL (GUÍA RÁPIDA)
+
+1. **Clonar y crear el `.env`:** `cp .env.example .env` (en PowerShell: `Copy-Item .env.example .env`). El `.env` no se sube a git.
+2. **Editar `.env`:** generar la `DJANGO_SECRET_KEY` (`python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"`) y elegir una `POSTGRES_PASSWORD` propia. El backend usa solo `POSTGRES_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB`.
+3. **Levantar los servicios:** `docker compose up -d` (frontend en `http://localhost:5173`, backend en `http://localhost:5000`).
+4. **Migrar y crear el superusuario:** `docker compose exec backend python manage.py migrate` y `docker compose exec backend python manage.py createsuperuser`. El panel de Django queda en `http://localhost:5000/admin/`.
+5. **Ver la base de datos (opcional, pgAdmin/DBeaver):** host `localhost`, puerto **5433**, usuario y contraseña del `.env`, base `barberflow_db`. El puerto es 5433 (y no 5432) para no chocar con un Postgres instalado en Windows.
+6. **Si cambias `POSTGRES_PASSWORD` después de la primera vez:** `docker compose down -v` y volver a levantar (esto borra solo tu base local).

@@ -28,3 +28,8 @@ proyecto del curso 2026-2.pdf
 
 # Claude Code (config personal)
 .claude/settings.local.json
+
+# Documentos sueltos de entregas (no se suben a GitHub)
+CONSTANCIA*.docx
+Taller de estimaci*.pdf
+/image.png

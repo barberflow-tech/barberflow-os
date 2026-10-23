@@ -83,6 +83,7 @@ Una tarea/HU está terminada únicamente si:
   - El entorno corre vía `docker compose up -d` (Backend en puerto 5000; PostgreSQL expuesto en el puerto 5433 del host, para no chocar con un Postgres local de Windows. Dentro de Docker sigue siendo 5432).
   - Paquetes del backend (Python): agregar la librería a `backend/requirements.txt` (o a `requirements-dev.txt` si es solo de desarrollo o pruebas) y reconstruir con `docker compose up -d --build`.
   - Paquetes del frontend (Node): `docker compose exec frontend npm install <pkg>`, o editar `package.json` y reconstruir.
+- **Supabase local (planificado):** SCRUM-35 (Supabase Storage) y SCRUM-45 (Supabase Realtime) requieren esos servicios también en desarrollo. Cuando se implementen, el servicio `postgres_db` se reemplazará por el stack local de Supabase (Supabase CLI, `supabase start`), y esta sección se actualizará con los comandos y puertos definitivos. Hasta entonces sigue vigente el Postgres de `docker-compose.yml`. Nunca se desarrolla contra la base de datos de Supabase en la nube; esa solo se usa en Staging.
 
 ---
 

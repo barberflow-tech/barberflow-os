@@ -44,7 +44,7 @@
 ## 4. Stack Tecnológico Estándar
 Cualquier código generado o sugerido DEBE ajustarse estrictamente a estas tecnologías:
 
-- **Frontend:** React 19, Tailwind CSS v4, Shadcn/UI, Zustand (Estado global).
+- **Frontend:** React 19, Tailwind CSS v4, Shadcn/UI, Zustand (Estado global), React Hook Form + Zod (formularios y validación de esquemas en cliente).
 - **Backend API:** Python 3.12+ / Django 5 (Django REST Framework / Django Ninja).
 - **Base de Datos & Auth:** PostgreSQL instanciado en Supabase, JWT (`djangorestframework-simplejwt`) con Control de Acceso Basado en Roles (RBAC: Admin, Barbero, Cliente).
 - **Módulo de Innovación (SmartGuard):** Python (`scikit-learn`, `pandas`) para el modelo predictivo de ausentismo y cálculo de *RiskScore*.

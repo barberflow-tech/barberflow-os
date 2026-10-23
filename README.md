@@ -180,20 +180,20 @@ Esta característica no es un requerimiento típico de un cliente convencional (
 
 ## SECCIÓN 4: HOJA DE RUTA POR SPRINTS (Sprints de 2 semanas)
 
-* **Sprint 0 (Setup y Arquitectura):** Inicialización de repositorios, configuración de CI/CD (GitHub Actions a Vercel/Render), modelado de la base de datos (PostgreSQL/Supabase), setup del framework base (React 19, Python 3.12 / Django 5, Zustand) y Dockerización del entorno.
-* **Sprint 1 - Entrega 5 (Cimientos y Auth):**
+* **Sprint 0 - Entrega 4 (Setup y Arquitectura) · en curso (trabajo inicial 9–23 de septiembre); cierre formal el 3 de noviembre:** Inicialización de repositorios, configuración de CI/CD (GitHub Actions a Vercel/Render), modelado de la base de datos (PostgreSQL/Supabase), setup del framework base (React 19, Python 3.12 / Django 5, Zustand) y Dockerización del entorno.
+* **Sprint 1 - Entrega 5 (Cimientos y Auth) · 21 de octubre – 3 de noviembre:**
 
   * HUs a desarrollar: HU-06, HU-07, HU-10, HU-01, HU-02.
   * *Objetivo:* El cliente puede registrarse, ver servicios, ver disponibilidad del barbero y crear una reserva en la base de datos.
-* **Sprint 2 - Entrega 6 (Gestión Operativa y Core de Innovación):**
+* **Sprint 2 - Entrega 6 (Gestión Operativa y Core de Innovación) · 4–17 de noviembre:**
 
   * HUs a desarrollar: HU-08, HU-09, HU-03, HU-04, HU-19.
   * *Objetivo:* Los administradores pueden gestionar horarios, roles y ausencias, y el backend comienza a registrar y calcular el `RiskScore` de inasistencias.
-* **Sprint 3 - Entrega 7 (Transacciones y Automatización):**
+* **Sprint 3 - Entrega 7 (Transacciones y Automatización) · 18 de noviembre – 1 de diciembre:**
 
   * HUs a desarrollar: HU-05, HU-11, HU-12, HU-14, HU-20.
   * *Objetivo:* Se implementan notificaciones, el módulo de POS (Check-out), el descuento de inventario, el cálculo de la nómina de barberos y el cobro dinámico para clientes riesgosos.
-* **Sprint 4 - Entrega 8 (Estabilización, Analítica y Cierre):**
+* **Sprint 4 - Entrega 8 (Estabilización, Analítica y Cierre) · 2–15 de diciembre:**
 
   * HUs a desarrollar: HU-13, HU-15, HU-16, HU-17, HU-18.
   * *Objetivo:* Implementación del Dashboard analítico, cierre de cajas, feedback del cliente, pruebas de integración (Pytest-Django / Vitest), acta de aceptación y despliegue del release v1.0.

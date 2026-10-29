@@ -80,10 +80,10 @@ Una tarea/HU está terminada únicamente si:
   - `docs: ...` (documentación)
   - `test: ...` (adición o modificación de pruebas)
 - **Flujo Docker Local:**
-  - El entorno corre vía `docker compose up -d` (Backend en puerto 5000; PostgreSQL expuesto en el puerto 5433 del host, para no chocar con un Postgres local de Windows. Dentro de Docker sigue siendo 5432).
+  - Primero la base de datos con `supabase start`, luego `docker compose up -d` (Backend en puerto 5000, Frontend en 5173). El backend llega a la base en `host.docker.internal:54322`.
   - Paquetes del backend (Python): agregar la librería a `backend/requirements.txt` (o a `requirements-dev.txt` si es solo de desarrollo o pruebas) y reconstruir con `docker compose up -d --build`.
   - Paquetes del frontend (Node): `docker compose exec frontend npm install <pkg>`, o editar `package.json` y reconstruir.
-- **Supabase local (planificado):** SCRUM-35 (Supabase Storage) y SCRUM-45 (Supabase Realtime) requieren esos servicios también en desarrollo. Cuando se implementen, el servicio `postgres_db` se reemplazará por el stack local de Supabase (Supabase CLI, `supabase start`), y esta sección se actualizará con los comandos y puertos definitivos. Hasta entonces sigue vigente el Postgres de `docker-compose.yml`. Nunca se desarrolla contra la base de datos de Supabase en la nube; esa solo se usa en Staging.
+- **Supabase local:** la base de datos de desarrollo es el stack local de Supabase (Supabase CLI, `supabase/config.toml`): Postgres 16 en el puerto 54322, API/Realtime en 54321 y Studio en 54323. Reemplazó al servicio `postgres_db` de `docker-compose.yml`. Comandos: `supabase start`, `supabase status` (muestra la anon key para el `.env`) y `supabase stop`. Se requiere para SCRUM-35 (Storage) y SCRUM-45 (Realtime). Nunca se desarrolla contra la base de datos de Supabase en la nube; esa solo se usa en Staging, con sus llaves configuradas en Vercel/Render y no en el `.env`.
 
 ---
 

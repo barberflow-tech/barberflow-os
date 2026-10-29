@@ -231,9 +231,11 @@ Esta característica no es un requerimiento típico de un cliente convencional (
 
 ## SECCIÓN 6: ENTORNO LOCAL (GUÍA RÁPIDA)
 
-1. **Clonar y crear el `.env`:** `cp .env.example .env` (en PowerShell: `Copy-Item .env.example .env`). El `.env` no se sube a git.
-2. **Editar `.env`:** generar la `DJANGO_SECRET_KEY` (`python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"`) y elegir una `POSTGRES_PASSWORD` propia. El backend usa solo `POSTGRES_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB`.
-3. **Levantar los servicios:** `docker compose up -d` (frontend en `http://localhost:5173`, backend en `http://localhost:5000`).
-4. **Migrar y crear el superusuario:** `docker compose exec backend python manage.py migrate` y `docker compose exec backend python manage.py createsuperuser`. El panel de Django queda en `http://localhost:5000/admin/`.
-5. **Ver la base de datos (opcional, pgAdmin/DBeaver):** host `localhost`, puerto **5433**, usuario y contraseña del `.env`, base `barberflow_db`. El puerto es 5433 (y no 5432) para no chocar con un Postgres instalado en Windows.
-6. **Si cambias `POSTGRES_PASSWORD` después de la primera vez:** `docker compose down -v` y volver a levantar (esto borra solo tu base local).
+1. **Requisitos:** Docker Desktop y la [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) (`supabase --version`).
+2. **Clonar y crear el `.env`:** `cp .env.example .env` (en PowerShell: `Copy-Item .env.example .env`). El `.env` no se sube a git. Si ya tenias un `.env`, cambia las variables `POSTGRES_*` y `SUPABASE_*` por las de `.env.example`.
+3. **Levantar la base de datos local (Supabase):** `supabase start` (la primera vez descarga las imagenes, tarda). Luego `supabase status` muestra la **anon key**: pegala en `SUPABASE_ANON_KEY` de tu `.env`. Para apagarla: `supabase stop`.
+4. **Editar `.env`:** generar la `DJANGO_SECRET_KEY` (`python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"`). Las credenciales de la base ya son las del Supabase local (`postgres`/`postgres`, puerto 54322).
+5. **Levantar los servicios:** `docker compose up -d` (frontend en `http://localhost:5173`, backend en `http://localhost:5000`).
+6. **Migrar y crear el superusuario:** `docker compose exec backend python manage.py migrate` y `docker compose exec backend python manage.py createsuperuser`. El panel de Django queda en `http://localhost:5000/admin/`.
+7. **Ver la base de datos:** Supabase Studio en `http://127.0.0.1:54323`, o pgAdmin/DBeaver con host `localhost`, puerto **54322**, usuario `postgres`, contraseña `postgres`, base `postgres`.
+8. **Nunca desarrolles contra la nube:** las llaves de Supabase Cloud (Staging) no van en el `.env`; solo se configuran en Vercel/Render.

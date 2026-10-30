@@ -29,5 +29,9 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    environment:
+      # Realtime contra el Supabase local; los toma del .env de la raiz.
+      VITE_SUPABASE_URL: ${SUPABASE_URL:-http://127.0.0.1:54321}
+      VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
     depends_on:
       - backend

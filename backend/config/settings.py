@@ -41,9 +41,15 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
+    # Apps locales
+    "apps.barberias",
+    "apps.barberos",
+    "apps.catalogo",
+    "apps.citas",
 ]
 
 MIDDLEWARE = [

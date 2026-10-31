@@ -24,6 +24,7 @@
 | **Reinel Fabián Vargas Méndez** | Tech Lead / Full-Stack Developer | Arquitectura API REST Django 5 (DRF), modelado de BD (PostgreSQL/Supabase), revisión de PRs y decisiones técnicas. |
 | **Esteban Rivera González** | QA Engineer & DevOps Specialist | Pipelines CI/CD (GitHub Actions), pruebas automatizadas (Vitest / Pytest), contenedores Docker y despliegue (Render / Vercel). |
 | **Jose Otoniel Henao Montes** | UI/UX Designer & Data Analyst | Prototipado en Figma, maquetación de componentes UI (Tailwind v4 / Shadcn) y desarrollo del modelo predictivo SmartGuard (`scikit-learn` / `pandas`). |
+| **Cristhian Felipe Ramirez Marulanda** | Backend Developer | Implementación de endpoints Django 5 (DRF), lógica de negocio del POS, comisiones y caja (Épica 3) y pruebas con `pytest-django`. |
 
 ## 3. Regla Fundamental de Ejecución: Modo Tarea Finito (No Auto-Completar el Proyecto)
 
@@ -31,23 +32,24 @@
 1. **Paso a paso explícito:** EL AGENTE NO DEBE GENERAR NI INTENTAR RESOLVER TODO EL PROYECTO O MÓDULOS COMPLETOS DE UNA SOLA VEZ.
 2. **Foco en Tareas de Jira:** El agente trabajará **únicamente** sobre la tarea o ticket de Jira específico que el desarrollador le indique en la solicitud (ej. `TSK-01`, `HU-06-T01`).
 3. **Identificación del Tipo de Trabajo:** Antes de escribir código o proponer cambios, el agente debe clasificar la tarea y ajustar su respuesta al tipo correspondiente:
-   - `feat:` (Nueva característica o funcionalidad)[cite: 16]
-   - `fix:` (Corrección de un bug o error)[cite: 16]
-   - `docs:` (Documentación, actas o comentarios)[cite: 16]
+   - `feat:` (Nueva característica o funcionalidad)
+   - `fix:` (Corrección de un bug o error)
+   - `docs:` (Documentación, actas o comentarios)
    - `test:` (Creación o ajuste de pruebas unitarias/integración)
 4. **Respuesta Acotada:** Limítate a entregar **solo** el código o la solución del paso solicitado. No avances a la siguiente tarea ni asumas requerimientos no pedidos.
+5. **Procedimiento paso a paso:** Al iniciar o cerrar una tarea de Jira, sigue [`FLUJO-TAREA.md`](./FLUJO-TAREA.md) (identificar al programador y su rol, verificar el DoR, rama, tests primero, verificación local, commit y PR). Antes de empezar, confirma con el usuario quién es y cuál es su rol según la tabla de la sección 2. En Claude Code: `/tarea <ID>` y `/cerrar-tarea`.
 
 ---
 
 ## 4. Stack Tecnológico Estándar
 Cualquier código generado o sugerido DEBE ajustarse estrictamente a estas tecnologías:
 
-- **Frontend:** React 19, Tailwind CSS v4, Shadcn/UI, Zustand (Estado global)[cite: 14, 16].
-- **Backend API:** Python 3.12+ / Django 5 (Django REST Framework / Django Ninja)[cite: 14, 16].
-- **Base de Datos & Auth:** PostgreSQL instanciado en Supabase, JWT (`djangorestframework-simplejwt`) con Control de Acceso Basado en Roles (RBAC: Admin, Barbero, Cliente)[cite: 12, 14, 16].
-- **Módulo de Innovación (SmartGuard):** Python (`scikit-learn`, `pandas`) para el modelo predictivo de ausentismo y cálculo de *RiskScore*[cite: 14, 16].
-- **Testing & Calidad:** Vitest / React Testing Library (Frontend), `pytest-django` (Backend), ESLint, Prettier, Black/Ruff[cite: 14, 16].
-- **DevOps & Entorno:** Docker (`docker-compose.yml`), GitHub Actions (CI/CD), Vercel (Hosting Frontend), Render (Hosting API Backend)[cite: 14, 16, 17].
+- **Frontend:** React 19, Tailwind CSS v4, Shadcn/UI, Zustand (Estado global), React Hook Form + Zod (formularios y validación de esquemas en cliente).
+- **Backend API:** Python 3.12+ / Django 5 (Django REST Framework / Django Ninja).
+- **Base de Datos & Auth:** PostgreSQL instanciado en Supabase, JWT (`djangorestframework-simplejwt`) con Control de Acceso Basado en Roles (RBAC: Admin, Barbero, Cliente).
+- **Módulo de Innovación (SmartGuard):** Python (`scikit-learn`, `pandas`) para el modelo predictivo de ausentismo y cálculo de *RiskScore*.
+- **Testing & Calidad:** Vitest / React Testing Library (Frontend), `pytest-django` (Backend), ESLint, Prettier, Black/Ruff.
+- **DevOps & Entorno:** Docker (`docker-compose.yml`), GitHub Actions (CI/CD), Vercel (Hosting Frontend), Render (Hosting API Backend).
 
 ---
 
@@ -63,7 +65,7 @@ Una tarea/HU se inicia solo si posee:
 ### Definition of Done (DoD)
 Una tarea/HU está terminada únicamente si:
 1. Pasa las pruebas en Vitest / Pytest sin errores.
-2. Pasa revisión de código (Code Review) en GitHub por un par y merge a `develop`[cite: 11, 16].
+2. Pasa revisión de código (Code Review) en GitHub por un par y merge a `develop`. Revisor de respaldo: Brandon (`@brandonjimenez21`), solicitado automáticamente por `.github/CODEOWNERS`.
 3. Está desplegada y funcional en ambiente Staging (Vercel/Render).
 4. Es validada manualmente por el QA Engineer (Esteban Rivera).
 
@@ -78,8 +80,10 @@ Una tarea/HU está terminada únicamente si:
   - `docs: ...` (documentación)
   - `test: ...` (adición o modificación de pruebas)
 - **Flujo Docker Local:**
-  - El entorno corre vía `docker compose up -d` (Backend en puerto 5000, PostgreSQL en puerto 5432).
-  - Instalación de paquetes backend dentro de contenedor: `docker compose exec backend npm install <pkg>` o mediante reconstrucción.
+  - Primero la base de datos con `supabase start`, luego `docker compose up -d` (Backend en puerto 5000, Frontend en 5173). El backend llega a la base en `host.docker.internal:54322`.
+  - Paquetes del backend (Python): agregar la librería a `backend/requirements.txt` (o a `requirements-dev.txt` si es solo de desarrollo o pruebas) y reconstruir con `docker compose up -d --build`.
+  - Paquetes del frontend (Node): `docker compose exec frontend npm install <pkg>`, o editar `package.json` y reconstruir.
+- **Supabase local:** la base de datos de desarrollo es el stack local de Supabase (Supabase CLI, `supabase/config.toml`): Postgres 16 en el puerto 54322, API/Realtime en 54321 y Studio en 54323. Reemplazó al servicio `postgres_db` de `docker-compose.yml`. Comandos: `supabase start`, `supabase status` (muestra la anon key para el `.env`) y `supabase stop`. Se requiere para SCRUM-35 (Storage) y SCRUM-45 (Realtime). Nunca se desarrolla contra la base de datos de Supabase en la nube; esa solo se usa en Staging, con sus llaves configuradas en Vercel/Render y no en el `.env`.
 
 ---
 
@@ -100,7 +104,7 @@ Una tarea/HU está terminada únicamente si:
 ## 8. Instrucciones Directas para Agentes de IA
 
 Cuando trabajes en este repositorio, debes seguir los siguientes principios:
-1. **Calidad de Respuesta:** No inventes arquitecturas, librerías ni dependencias distintas a las especificadas en la sección 3.
+1. **Calidad de Respuesta:** No inventes arquitecturas, librerías ni dependencias distintas a las especificadas en la sección 4.
 2. **Estilo de Código Backend:** Prioriza endpoints en Django REST Framework o Django Ninja estructurados con tipado estricto y código limpio.
 3. **Estilo de Código Frontend:** Usa React 19 funcional con Hooks, Tailwind CSS v4 y manejo de estado claro con Zustand.
 4. **Respeto a los Criterios de Aceptación:** Al escribir tests o implementar lógica de negocio, sigue la estructura *Dado/Cuando/Entonces*.

@@ -1,3 +1,35 @@
 # dotenv environment variables file
 .env
 .env.*
+.env.example
+
+# Node modules
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+db.sqlite3
+.venv/
+venv/
+staticfiles/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Notas locales de sesion (no se suben a GitHub)
+docs/
+
+proyecto del curso 2026-2.pdf
+
+# Configuracion personal del editor
+.vscode/
+
+# Claude Code (config personal)
+.claude/settings.local.json
+
+# Documentos sueltos de entregas (no se suben a GitHub)
+CONSTANCIA*.docx
+Taller de estimaci*.pdf
+/image.png

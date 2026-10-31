@@ -1,0 +1,33 @@
+services:
+  # La base de datos ya no vive aqui: es el stack local de Supabase
+  # (Postgres + Realtime), que se levanta aparte con `supabase start`.
+  # El backend lo alcanza en host.docker.internal:54322 (ver .env.example).
+
+  # Servicio API Backend (Django 5)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: barberflow_backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Servicio Frontend (React 19 + Vite)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: barberflow_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend

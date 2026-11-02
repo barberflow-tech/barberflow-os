@@ -1,3 +1,4 @@
+import '@fontsource-variable/inter'
 import { Navigate } from 'react-router-dom'
 import { LoginForm } from '@/components/auth/LoginForm'
 import { rutaPorRol } from '@/lib/rutas'
@@ -11,7 +12,11 @@ export function LoginPage() {
     return <Navigate to={rutaPorRol(user.role)} replace />
   }
 
-  return <LoginForm />
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#F1F5F9] p-4 font-[Inter_Variable] sm:p-8">
+      <LoginForm />
+    </main>
+  )
 }
 
 export default LoginPage

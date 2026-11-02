@@ -1,15 +1,7 @@
 services:
-  # Base de Datos PostgreSQL Local (para desarrollo offline)
-  postgres_db:
-    image: postgres:16-alpine
-    container_name: barberflow_db
-    restart: always
-    env_file:
-      - .env
-    ports:
-      - "5433:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+  # La base de datos ya no vive aqui: es el stack local de Supabase
+  # (Postgres + Realtime), que se levanta aparte con `supabase start`.
+  # El backend lo alcanza en host.docker.internal:54322 (ver .env.example).
 
   # Servicio API Backend (Django 5)
   backend:
@@ -23,8 +15,8 @@ services:
       - .env
     volumes:
       - ./backend:/app
-    depends_on:
-      - postgres_db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   # Servicio Frontend (React 19 + Vite)
   frontend:
@@ -37,8 +29,9 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    environment:
+      # Realtime contra el Supabase local; los toma del .env de la raiz.
+      VITE_SUPABASE_URL: ${SUPABASE_URL:-http://127.0.0.1:54321}
+      VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
     depends_on:
       - backend
-
-volumes:
-  pgdata:

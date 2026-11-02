@@ -38,7 +38,7 @@ Si falta algo, **detente**: lista lo que falta, haz preguntas concretas y no esc
 
 ### Paso 3. Rama
 - Comprueba con `git status` que el árbol esté limpio.
-- Parte de `develop` actualizado y crea `feature/<ID>` (ej. `feature/HU-06`). Si la rama ya existe, pregunta si continuar en ella.
+- Parte de `develop` actualizado y crea `feature/<SCRUM-N>-<descripcion-corta>` (ej. `feature/SCRUM-31-auth-store-guard`), con la clave de la tarea de Jira y no el código de la HU ni el `SUB-XX` (`AGENTS.md` §6). Si la rama ya existe, pregunta si continuar en ella.
 - No trabajes sobre `develop` ni `main`.
 
 ### Paso 4. Tests primero
@@ -71,21 +71,21 @@ Resume: qué cambió, qué tests lo cubren, qué comandos pasaron y cuáles no, 
 
 ### Paso 1. Revisa el estado
 - `git status` y `git diff` contra `develop`.
-- Confirma que estás en `feature/<ID>` y no en `develop` ni `main`. Si no, detente y pregunta.
+- Confirma que estás en `feature/SCRUM-N-...` y no en `develop` ni `main`. Si no, detente y pregunta.
 - Si hay cambios que no pertenecen a la tarea, señálalos y pregunta qué hacer con ellos. No los incluyas por tu cuenta.
 
 ### Paso 2. Verifica el DoD comprobable en local (AGENTS.md §5)
 Ejecuta las verificaciones del Paso 6 de INICIAR que correspondan y muestra el resultado real. Luego revisa cada criterio de aceptación Dado/Cuando/Entonces y di si hay un test que lo cubre. Si algo falla o falta cobertura, **detente**, explícalo y no hagas commit.
 
 ### Paso 3. Commit convencional
-- Propón el mensaje: `feat|fix|docs|test: <descripción en español, imperativo>`, con el ID de Jira en el cuerpo.
+- Propón el mensaje: `feat|fix|docs|test(HU-XX): <descripción en español, imperativo> (SCRUM-N)`. La clave de Jira va en el asunto para que Jira vincule el commit; la HU va como alcance.
 - Muéstralo y pide confirmación antes de hacer el commit. Agrega solo los archivos de la tarea (nunca `git add .` a ciegas, nunca `.env`).
 - No hagas push ni abras el PR sin confirmación del usuario.
 
 ### Paso 4. Prepara el PR hacia `develop`
 Redacta la descripción con `.github/PULL_REQUEST_TEMPLATE.md`:
 - Descripción del cambio.
-- ID de Jira y tipo de cambio marcado.
+- Título del PR `SCRUM-N · HU-XX: descripción`, ID de Jira y tipo de cambio marcado.
 - Checklist DoD: marca solo lo que realmente verificaste. Deja sin marcar la revisión de un par.
 - Evidencia, si aplica.
 

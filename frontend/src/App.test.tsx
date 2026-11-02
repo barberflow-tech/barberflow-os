@@ -27,14 +27,12 @@ describe('App · rutas', () => {
 
   it('Dado un visitante, Cuando entra a la portada, Entonces ve los accesos a reservar e ingresar', () => {
     renderEn('/')
-    expect(screen.getByRole('link', { name: /Reservar cita/i })).toHaveAttribute(
-      'href',
-      '/reservar',
-    )
-    expect(screen.getByRole('link', { name: /Ingresar/i })).toHaveAttribute(
-      'href',
-      '/login',
-    )
+    const reservar = screen.getAllByRole('link', { name: /Reservar cita/i })
+    const ingresar = screen.getAllByRole('link', { name: /^Ingresar$/i })
+    expect(reservar.length).toBeGreaterThan(0)
+    expect(ingresar.length).toBeGreaterThan(0)
+    reservar.forEach((enlace) => expect(enlace).toHaveAttribute('href', '/reservar'))
+    ingresar.forEach((enlace) => expect(enlace).toHaveAttribute('href', '/login'))
   })
 
   it('Dado un visitante, Cuando entra a /login, Entonces ve el formulario de ingreso', () => {
@@ -90,7 +88,9 @@ describe('App · rutas', () => {
 
   it('Dado una ruta inexistente, Cuando se visita, Entonces vuelve a la portada', () => {
     renderEn('/no-existe')
-    expect(screen.getByRole('link', { name: /Reservar cita/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { level: 1, name: /Tu barbería, bajo control/i }),
+    ).toBeInTheDocument()
   })
 
   it('Dado el modo desarrollo, Cuando entra a /dev/calendario, Entonces ve el calendario', () => {

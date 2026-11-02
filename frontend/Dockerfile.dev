@@ -9,4 +9,6 @@ COPY . .
 
 EXPOSE 5173
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Al arrancar se sincroniza node_modules con package.json: tras un `git pull`
+# que cambie dependencias basta con `docker compose up`, sin npm install manual.
+CMD ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0"]

@@ -73,7 +73,11 @@ Una tarea/HU está terminada únicamente si:
 
 ## 6. Convenciones de Desarrollo y Git
 
-- **Estrategia de Ramas:** GitFlow (`main`, `develop`, ramas de característica `feature/HU-XX`).
+- **Estrategia de Ramas:** GitFlow (`main`, `develop`, ramas de característica).
+- **Identificador de trabajo:** se usa la **clave de la tarea de Jira** (`SCRUM-N`), no el código de la HU ni el código interno de la subtarea (`SUB-06-C`). Jira solo vincula ramas, commits y PR cuando el nombre contiene la clave `SCRUM-N`. Una tarea = una rama = un PR. La HU va solo como contexto (alcance del commit y título del PR).
+  - Rama: `feature/SCRUM-N-descripcion-corta` (ej. `feature/SCRUM-31-auth-store-guard`).
+  - Commit: `feat(HU-06): descripción en imperativo (SCRUM-31)`; la clave también va en el asunto, no solo en el cuerpo.
+  - PR: `SCRUM-31 · HU-06: descripción`.
 - **Formato de Commits:** *Conventional Commits* obligatorio:
   - `feat: ...` (nuevas características)
   - `fix: ...` (corrección de errores)

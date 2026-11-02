@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useAuthStore } from '../../stores/useAuthStore'
+import { AuthError, iniciarSesion } from '@/lib/authApi'
+import { useAuthStore } from '@/stores/useAuthStore'
 
 // 1. Esquema para Login
 const loginSchema = z.object({
@@ -38,7 +39,9 @@ type RegisterFormData = z.infer<typeof registerSchema>
 type ForgotFormData = z.infer<typeof forgotSchema>
 
 export const LoginForm: React.FC = () => {
-  const { login, isLoading, error: authError } = useAuthStore()
+  const setSession = useAuthStore((state) => state.setSession)
+  const [isLoading, setIsLoading] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
 
   // Estados de navegación entre vistas
   const [currentStep, setCurrentStep] = useState<
@@ -70,10 +73,18 @@ export const LoginForm: React.FC = () => {
 
   // Submit Login
   const onLoginSubmit = async (data: LoginFormData) => {
+    setIsLoading(true)
+    setAuthError(null)
     try {
-      await login(data.email, data.password)
+      setSession(await iniciarSesion(data.email, data.password))
     } catch (err) {
-      console.error('Error durante inicio de sesión:', err)
+      setAuthError(
+        err instanceof AuthError
+          ? err.message
+          : 'Ocurrió un error inesperado. Inténtalo de nuevo.',
+      )
+    } finally {
+      setIsLoading(false)
     }
   }
 

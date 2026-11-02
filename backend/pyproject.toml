@@ -17,3 +17,8 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["test_*.py", "*_test.py"]
+# Cobertura minima del 85 % (DoD de SCRUM-32): pytest falla si baja de ahi.
+addopts = "--cov=apps --cov-report=term-missing --cov-fail-under=85"
+
+[tool.coverage.run]
+omit = ["*/migrations/*"]

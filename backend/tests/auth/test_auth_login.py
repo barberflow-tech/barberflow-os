@@ -1,34 +1,51 @@
-"""SCRUM-32 / HU-06: login, tokens JWT y endpoints protegidos (AUTH-01 a AUTH-11, AUTH-15)."""
+"""SCRUM-32 / HU-06: login, refresh por cookie y endpoint protegido.
+
+Cubre AUTH-01 a AUTH-11 y AUTH-15 contra el contrato de SCRUM-29 (ver
+AUTH_CONTRACT en conftest.py).
+"""
 
 import pytest
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
-from conftest import AUTH_CONTRACT
+from conftest import AUTH_CONTRACT, refresh_cookie
 
 pytestmark = pytest.mark.django_db
 
-ME_URL = AUTH_CONTRACT["me_url"]
+LOGIN_URL = AUTH_CONTRACT["login_url"]
+REFRESH_URL = AUTH_CONTRACT["refresh_url"]
+PROTECTED_URL = AUTH_CONTRACT["protected_url"]
+ROLES = AUTH_CONTRACT["roles"]
 
 
-def _role_from_login(response):
-    """El rol puede venir en el cuerpo de la respuesta o como claim del token."""
-    body = response.json()
-    if "role" in body:
-        return body["role"]
-    return AccessToken(body["access"]).get("role")
+def _assert_cookie_borrada(response):
+    cookie = refresh_cookie(response) or next(iter(response.cookies.values()), None)
+    assert cookie is not None, "el refresh fallido debe borrar la cookie"
+    assert cookie.value == ""
 
 
-def test_auth01_login_valido_de_cliente_retorna_tokens_jwt(cliente, login):
+# --- Login ---------------------------------------------------------------
+
+
+def test_auth01_login_valido_de_cliente_retorna_access_y_cookie_refresh(cliente, login):
     # Dado un cliente registrado
     # Cuando inicia sesion con credenciales validas
     response = login(cliente.email)
 
-    # Entonces recibe un access y un refresh JWT validos y su rol
+    # Entonces recibe el access en el cuerpo con sus datos
     assert response.status_code == 200
     body = response.json()
     assert str(AccessToken(body["access"])["user_id"]) == str(cliente.pk)
-    assert body["refresh"]
-    assert _role_from_login(response) == AUTH_CONTRACT["roles"]["cliente"]
+    assert body["user"] == {
+        "id": cliente.pk,
+        "email": cliente.email,
+        "role": ROLES["cliente"],
+    }
+    # Y el refresh viaja solo en una cookie HttpOnly, nunca en el cuerpo
+    assert "refresh" not in body
+    cookie = refresh_cookie(response)
+    assert cookie is not None
+    assert cookie.value
 
 
 @pytest.mark.parametrize("role", ["barbero", "admin"])
@@ -39,9 +56,9 @@ def test_auth02_login_valido_retorna_el_rol_para_redirigir(make_user, login, rol
     # Cuando inicia sesion
     response = login(user.email)
 
-    # Entonces el sistema le indica su rol para redirigirlo
+    # Entonces el sistema le indica su rol, en minusculas, para redirigirlo
     assert response.status_code == 200
-    assert _role_from_login(response) == AUTH_CONTRACT["roles"][role]
+    assert response.json()["user"]["role"] == ROLES[role]
 
 
 def test_auth03_contrasena_incorrecta_retorna_401_sin_token(cliente, login):
@@ -49,6 +66,7 @@ def test_auth03_contrasena_incorrecta_retorna_401_sin_token(cliente, login):
 
     assert response.status_code == 401
     assert "access" not in response.json()
+    assert refresh_cookie(response) is None
 
 
 def test_auth04_usuario_inexistente_no_revela_si_el_email_existe(cliente, login):
@@ -67,7 +85,7 @@ def test_auth04_usuario_inexistente_no_revela_si_el_email_existe(cliente, login)
     ids=["vacio", "sin-email", "sin-password"],
 )
 def test_auth05_campos_faltantes_retornan_400(api_client, payload):
-    response = api_client.post(AUTH_CONTRACT["login_url"], payload, format="json")
+    response = api_client.post(LOGIN_URL, payload, format="json")
 
     assert response.status_code == 400
 
@@ -121,51 +139,115 @@ def test_auth08b_fuerza_bruta_bloquea_tras_varios_intentos(cliente, login):
     assert 429 in statuses
 
 
-def test_auth09_token_expirado_retorna_401(cliente, api_client):
+# --- Refresh por cookie --------------------------------------------------
+
+
+def test_auth11_refresh_con_cookie_valida_entrega_nuevo_access(
+    cliente, login, api_client
+):
+    # Dado un cliente que inicio sesion (api_client ya guarda la cookie)
+    login(cliente.email)
+
+    # Cuando pide un access nuevo sin mandar nada en el cuerpo
+    response = api_client.post(REFRESH_URL)
+
+    # Entonces recibe un access nuevo y sus datos
+    assert response.status_code == 200
+    body = response.json()
+    assert str(AccessToken(body["access"])["user_id"]) == str(cliente.pk)
+    assert body["user"]["role"] == ROLES["cliente"]
+    assert "refresh" not in body
+
+
+def test_auth11b_refresh_sin_cookie_retorna_401():
+    response = APIClient().post(REFRESH_URL)
+
+    assert response.status_code == 401
+
+
+def test_auth11c_refresh_con_cookie_expirada_retorna_401_y_borra_la_cookie(
+    cliente, login, api_client
+):
+    # Dado un cliente con sesion, pero cuyo refresh ya vencio
+    cookie_name = refresh_cookie(login(cliente.email)).key
+    expired = RefreshToken.for_user(cliente)
+    expired.set_exp(lifetime=-expired.lifetime)
+    api_client.cookies[cookie_name] = str(expired)
+
+    # Cuando intenta renovar la sesion
+    response = api_client.post(REFRESH_URL)
+
+    # Entonces recibe 401 y el servidor borra la cookie
+    assert response.status_code == 401
+    _assert_cookie_borrada(response)
+
+
+def test_auth11d_refresh_con_cookie_alterada_retorna_401_y_borra_la_cookie(
+    cliente, login, api_client
+):
+    cookie_name = refresh_cookie(login(cliente.email)).key
+    api_client.cookies[cookie_name] = "token-alterado"
+
+    response = api_client.post(REFRESH_URL)
+
+    assert response.status_code == 401
+    _assert_cookie_borrada(response)
+
+
+# --- Endpoint protegido con HasRole("admin") -----------------------------
+
+
+def test_auth09_token_expirado_retorna_401(admin_user, api_client):
     # Dado un access token vencido
-    token = AccessToken.for_user(cliente)
+    token = AccessToken.for_user(admin_user)
     token.set_exp(lifetime=-token.lifetime)
 
     # Cuando se usa en un endpoint protegido
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
-    response = api_client.get(ME_URL)
+    response = api_client.get(PROTECTED_URL)
 
     # Entonces se rechaza
     assert response.status_code == 401
 
 
-def test_auth10_token_manipulado_retorna_401(cliente, api_client):
+def test_auth10_token_manipulado_retorna_401(admin_user, api_client):
     # Dado un token valido al que se le altera la firma
-    token = str(AccessToken.for_user(cliente))
+    token = str(AccessToken.for_user(admin_user))
     tampered = token[:-4] + ("AAAA" if not token.endswith("AAAA") else "BBBB")
 
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {tampered}")
-    response = api_client.get(ME_URL)
+    response = api_client.get(PROTECTED_URL)
 
     assert response.status_code == 401
-
-
-def test_auth11_refresh_valido_entrega_nuevo_access(cliente, login, api_client):
-    refresh = login(cliente.email).json()["refresh"]
-
-    response = api_client.post(
-        AUTH_CONTRACT["refresh_url"], {"refresh": refresh}, format="json"
-    )
-
-    assert response.status_code == 200
-    assert str(AccessToken(response.json()["access"])["user_id"]) == str(cliente.pk)
 
 
 def test_auth15_endpoint_protegido_sin_token_retorna_401(api_client):
-    response = api_client.get(ME_URL)
+    response = api_client.get(PROTECTED_URL)
 
     assert response.status_code == 401
 
 
-def test_endpoint_protegido_con_token_valido_retorna_200(cliente, login, api_client):
-    access = login(cliente.email).json()["access"]
+def test_endpoint_protegido_con_token_de_admin_retorna_200(
+    admin_user, login, api_client
+):
+    access = login(admin_user.email).json()["access"]
 
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
-    response = api_client.get(ME_URL)
+    response = api_client.get(PROTECTED_URL)
 
     assert response.status_code == 200
+
+
+@pytest.mark.parametrize("role", ["cliente", "barbero"])
+def test_endpoint_protegido_con_rol_sin_permiso_retorna_403(
+    make_user, login, api_client, role
+):
+    # Dado un usuario autenticado que no es admin
+    access = login(make_user(role).email).json()["access"]
+
+    # Cuando entra a un endpoint con HasRole("admin")
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+    response = api_client.get(PROTECTED_URL)
+
+    # Entonces queda autenticado pero sin permiso
+    assert response.status_code == 403

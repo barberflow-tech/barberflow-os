@@ -73,7 +73,11 @@ Una tarea/HU está terminada únicamente si:
 
 ## 6. Convenciones de Desarrollo y Git
 
-- **Estrategia de Ramas:** GitFlow (`main`, `develop`, ramas de característica `feature/HU-XX`).
+- **Estrategia de Ramas:** GitFlow (`main`, `develop`, ramas de característica).
+- **Identificador de trabajo:** se usa la **clave de la tarea de Jira** (`SCRUM-N`), no el código de la HU ni el código interno de la subtarea (`SUB-06-C`). Jira solo vincula ramas, commits y PR cuando el nombre contiene la clave `SCRUM-N`. Una tarea = una rama = un PR. La HU va solo como contexto (alcance del commit y título del PR).
+  - Rama: `feature/SCRUM-N-descripcion-corta` (ej. `feature/SCRUM-31-auth-store-guard`).
+  - Commit: `feat(HU-06): descripción en imperativo (SCRUM-31)`; la clave también va en el asunto, no solo en el cuerpo.
+  - PR: `SCRUM-31 · HU-06: descripción`.
 - **Formato de Commits:** *Conventional Commits* obligatorio:
   - `feat: ...` (nuevas características)
   - `fix: ...` (corrección de errores)
@@ -83,7 +87,7 @@ Una tarea/HU está terminada únicamente si:
   - Primero la base de datos con `supabase start`, luego `docker compose up -d` (Backend en puerto 5000, Frontend en 5173). El backend llega a la base en `host.docker.internal:54322`.
   - Paquetes del backend (Python): agregar la librería a `backend/requirements.txt` (o a `requirements-dev.txt` si es solo de desarrollo o pruebas) y reconstruir con `docker compose up -d --build`.
   - Paquetes del frontend (Node): `docker compose exec frontend npm install <pkg>`, o editar `package.json` y reconstruir.
-- **Supabase local:** la base de datos de desarrollo es el stack local de Supabase (Supabase CLI, `supabase/config.toml`): Postgres 16 en el puerto 54322, API/Realtime en 54321 y Studio en 54323. Reemplazó al servicio `postgres_db` de `docker-compose.yml`. Comandos: `supabase start`, `supabase status` (muestra la anon key para el `.env`) y `supabase stop`. Se requiere para SCRUM-35 (Storage) y SCRUM-45 (Realtime). Nunca se desarrolla contra la base de datos de Supabase en la nube; esa solo se usa en Staging, con sus llaves configuradas en Vercel/Render y no en el `.env`.
+- **Supabase local:** la base de datos de desarrollo es el stack local de Supabase (Supabase CLI, `supabase/config.toml`): Postgres 16 en el puerto 54322, API/Realtime en 54321 y Studio en 54323. Reemplazó al servicio `postgres_db` de `docker-compose.yml`. Comandos: `supabase start`, `supabase status` (muestra la anon key para el `.env`) y `supabase stop`. La versión del CLI está fijada en `frontend/package.json` (hoy 2.122.1): con una más vieja (por ejemplo 2.105) el `config.toml` falla con `invalid keys`. Tras un `git pull`, ejecuta `npm install` dentro de `frontend/` en tu PC (fuera de Docker) y usa `npm run supabase -- start` (o `status`, `stop`) desde esa carpeta; así todo el equipo usa la misma versión. Si ya tienes el CLI global (`npm i -g supabase`) en esa versión, también sirve. Se requiere para SCRUM-35 (Storage) y SCRUM-45 (Realtime). Nunca se desarrolla contra la base de datos de Supabase en la nube; esa solo se usa en Staging, con sus llaves configuradas en Vercel/Render y no en el `.env`.
 
 ---
 

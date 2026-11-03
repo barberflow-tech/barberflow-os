@@ -1,11 +1,37 @@
-import { Button } from '@/components/ui/button'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { RoleGuard } from '@/components/auth/RoleGuard'
+import AdminPage from '@/pages/AdminPage'
+import BienvenidaPage from '@/pages/BienvenidaPage'
+import DevCalendarioPage from '@/pages/DevCalendarioPage'
+import InicioPage from '@/pages/InicioPage'
+import LoginPage from '@/pages/LoginPage'
+import NoAutorizadoPage from '@/pages/NoAutorizadoPage'
+import PortafolioPage from '@/pages/PortafolioPage'
+import ReservarPage from '@/pages/ReservarPage'
 
-function App() {
+export function App() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background text-foreground">
-      <h1 className="text-3xl font-semibold">BarberFlow OS</h1>
-      <Button>Shadcn/UI funcionando</Button>
-    </main>
+    <Routes>
+      <Route path="/" element={<InicioPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/reservar" element={<ReservarPage />} />
+      <Route path="/no-autorizado" element={<NoAutorizadoPage />} />
+
+      <Route element={<RoleGuard allowedRoles={['admin', 'barbero', 'cliente']} />}>
+        <Route path="/bienvenida" element={<BienvenidaPage />} />
+      </Route>
+
+      <Route element={<RoleGuard allowedRoles={['admin']} />}>
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/portafolio" element={<PortafolioPage />} />
+      </Route>
+
+      {import.meta.env.DEV && (
+        <Route path="/dev/calendario" element={<DevCalendarioPage />} />
+      )}
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 

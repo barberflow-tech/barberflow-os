@@ -2,7 +2,12 @@ import logging
 
 from django.db import DatabaseError
 from rest_framework import status
-from rest_framework.exceptions import APIException, PermissionDenied, ValidationError, NotFound
+from rest_framework.exceptions import (
+    APIException,
+    PermissionDenied,
+    ValidationError,
+    NotFound,
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -10,7 +15,12 @@ from apps.barberias.models import barberia_de
 from apps.barberos.models import Barbero
 
 from . import services
-from .serializers import CitaSerializer, CrearCitaSerializer, DisponibilidadQuerySerializer, DisponibilidadResponseSerializer
+from .serializers import (
+    CitaSerializer,
+    CrearCitaSerializer,
+    DisponibilidadQuerySerializer,
+    DisponibilidadResponseSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,9 +83,7 @@ class DisponibilidadView(APIView):
         barberia = barberia_de(request.user)
 
         if barberia is None:
-            raise PermissionDenied(
-                "El usuario no pertenece a ninguna barbería."
-            )
+            raise PermissionDenied("El usuario no pertenece a ninguna barbería.")
 
         entrada = DisponibilidadQuerySerializer(data=request.query_params)
         entrada.is_valid(raise_exception=True)

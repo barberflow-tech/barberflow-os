@@ -25,7 +25,7 @@ class Barbero(models.Model):
     def __str__(self) -> str:
         return self.name
 
-    
+
 class HorarioBarbero(models.Model):
     """Horario laboral y descanso de un barbero para un día de la semana."""
 
@@ -97,9 +97,7 @@ class HorarioBarbero(models.Model):
         jornada = datetime.combine(datetime.min, self.open_time)
         cierre = datetime.combine(datetime.min, self.close_time)
         inicio_descanso = datetime.combine(datetime.min, self.break_start)
-        fin_descanso = inicio_descanso + timedelta(
-            minutes=self.break_duration_minutes
-        )
+        fin_descanso = inicio_descanso + timedelta(minutes=self.break_duration_minutes)
 
         if inicio_descanso < jornada or fin_descanso > cierre:
             raise ValidationError(

@@ -20,7 +20,6 @@ RESTRICCION_SOLAPAMIENTO = "cita_sin_solapamiento_por_barbero"
 ZONA_HORARIA_BARBERIA = ZoneInfo("America/Bogota")
 
 
-
 class CitaError(Exception):
     """Error de negocio al gestionar una cita."""
 

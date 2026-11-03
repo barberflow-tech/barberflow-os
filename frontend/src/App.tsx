@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { ServicesManager } from '@/components/admin/ServicesManager'
 import { RoleGuard } from '@/components/auth/RoleGuard'
 import AdminPage from '@/pages/AdminPage'
 import BienvenidaPage from '@/pages/BienvenidaPage'
@@ -24,6 +25,14 @@ export function App() {
       <Route element={<RoleGuard allowedRoles={['admin']} />}>
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/portafolio" element={<PortafolioPage />} />
+        <Route
+          path="/admin/servicios"
+          element={
+            <div className="flex min-h-screen items-center justify-center bg-slate-100 p-6 dark:bg-gray-950">
+              <ServicesManager />
+            </div>
+          }
+        />
       </Route>
 
       {import.meta.env.DEV && (

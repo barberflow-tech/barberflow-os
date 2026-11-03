@@ -64,6 +64,18 @@ describe('App · rutas', () => {
     ).toBeInTheDocument()
   })
 
+  it('Dado un admin con sesión, Cuando entra a /admin/servicios, Entonces ve el catálogo de servicios', () => {
+    iniciarSesionComo('admin')
+    renderEn('/admin/servicios')
+    expect(screen.getByText(/Catálogo de Servicios/i)).toBeInTheDocument()
+  })
+
+  it('Dado un cliente con sesión, Cuando entra a /admin/servicios, Entonces ve "No autorizado"', () => {
+    iniciarSesionComo('cliente')
+    renderEn('/admin/servicios')
+    expect(screen.getByRole('heading', { name: 'No autorizado' })).toBeInTheDocument()
+  })
+
   it('Dado un admin con sesión, Cuando entra a /login, Entonces va al panel', () => {
     iniciarSesionComo('admin')
     renderEn('/login')

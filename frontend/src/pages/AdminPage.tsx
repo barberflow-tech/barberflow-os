@@ -19,6 +19,12 @@ export function AdminPage() {
           Portafolio
         </Link>
         <Link
+          to="/admin/servicios"
+          className="rounded-2xl bg-white p-5 font-semibold text-slate-900 shadow-sm hover:shadow-md"
+        >
+          Catálogo de servicios
+        </Link>
+        <Link
           to="/reservar"
           className="rounded-2xl bg-white p-5 font-semibold text-slate-900 shadow-sm hover:shadow-md"
         >

@@ -4,18 +4,20 @@ La logica de negocio vive aqui y no en las views: la view (siguiente paso
 de HU-02) solo traduce HTTP <-> llamadas a este modulo.
 """
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.barberias.models import Barberia
-from apps.barberos.models import Barbero
+from apps.barberos.models import Barbero, HorarioBarbero
 from apps.catalogo.models import Servicio
 
 from .models import Cita
 
 RESTRICCION_SOLAPAMIENTO = "cita_sin_solapamiento_por_barbero"
+ZONA_HORARIA_BARBERIA = ZoneInfo("America/Bogota")
 
 
 class CitaError(Exception):
@@ -105,3 +107,95 @@ def crear_cita(
 def _restriccion_violada(exc: IntegrityError) -> str | None:
     diag = getattr(exc.__cause__, "diag", None)
     return getattr(diag, "constraint_name", None)
+
+
+def obtener_slots_libres(
+    *,
+    barbero: Barbero,
+    fecha: date,
+    duracion_minutos: int,
+) -> list[dict[str, datetime]]:
+    """Calcula los slots libres de un barbero para una fecha determinada.
+
+    Los slots se generan dentro de su horario laboral y se descartan los
+    que se solapan con su descanso o con citas activas.
+
+    La consulta de citas se realiza una sola vez para toda la jornada.
+    """
+    if duracion_minutos not in (30, 60):
+        raise ValueError("La duración del slot debe ser de 30 o 60 minutos.")
+
+    if not barbero.is_active:
+        return []
+
+    horario = HorarioBarbero.objects.filter(
+        barbero=barbero,
+        weekday=fecha.weekday(),
+        is_active=True,
+    ).first()
+
+    if horario is None:
+        return []
+
+    inicio_jornada = timezone.make_aware(
+        datetime.combine(fecha, horario.open_time),
+        ZONA_HORARIA_BARBERIA,
+    )
+    fin_jornada = timezone.make_aware(
+        datetime.combine(fecha, horario.close_time),
+        ZONA_HORARIA_BARBERIA,
+    )
+
+    inicio_descanso = None
+    fin_descanso = None
+
+    if horario.break_start is not None:
+        inicio_descanso = timezone.make_aware(
+            datetime.combine(fecha, horario.break_start),
+            ZONA_HORARIA_BARBERIA,
+        )
+        fin_descanso = inicio_descanso + timedelta(
+            minutes=horario.break_duration_minutes
+        )
+
+    # Una sola consulta obtiene todas las citas activas que se cruzan
+    # con la jornada laboral.
+    citas_ocupadas = list(
+        Cita.objects.activas()
+        .filter(
+            barber=barbero,
+            start_at__lt=fin_jornada,
+            end_at__gt=inicio_jornada,
+        )
+        .values_list("start_at", "end_at")
+    )
+
+    slots = []
+    duracion = timedelta(minutes=duracion_minutos)
+    inicio_slot = inicio_jornada
+
+    while inicio_slot + duracion <= fin_jornada:
+        fin_slot = inicio_slot + duracion
+
+        se_solapa_con_descanso = (
+            inicio_descanso is not None
+            and inicio_slot < fin_descanso
+            and fin_slot > inicio_descanso
+        )
+
+        se_solapa_con_cita = any(
+            inicio_slot < fin_cita and fin_slot > inicio_cita
+            for inicio_cita, fin_cita in citas_ocupadas
+        )
+
+        if not se_solapa_con_descanso and not se_solapa_con_cita:
+            slots.append(
+                {
+                    "start_at": inicio_slot,
+                    "end_at": fin_slot,
+                }
+            )
+
+        inicio_slot += duracion
+
+    return slots

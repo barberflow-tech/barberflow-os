@@ -41,3 +41,27 @@ class CitaSerializer(serializers.ModelSerializer):
         model = Cita
         fields = ["id", "status", "barber", "service", "start_at", "end_at", "price"]
         read_only_fields = fields
+
+
+class DisponibilidadQuerySerializer(serializers.Serializer):
+    """Valida los parámetros de consulta de disponibilidad."""
+
+    barber = serializers.IntegerField(min_value=1)
+    date = serializers.DateField()
+    slot_duration = serializers.ChoiceField(choices=(30, 60))
+
+
+class SlotDisponibleSerializer(serializers.Serializer):
+    """Representación de un intervalo libre."""
+
+    start_at = serializers.DateTimeField()
+    end_at = serializers.DateTimeField()
+
+
+class DisponibilidadResponseSerializer(serializers.Serializer):
+    """Respuesta de GET /api/v1/availability/."""
+
+    barber = serializers.IntegerField()
+    date = serializers.DateField()
+    slot_duration = serializers.IntegerField()
+    available_slots = SlotDisponibleSerializer(many=True)

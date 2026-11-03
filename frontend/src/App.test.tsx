@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import App from './App'
 
 describe('App', () => {
-  it('renders the calendar and availability title', () => {
+  it('renders the services catalog title', () => {
     render(<App />)
-    // Evalúa que el título real renderizado en pantalla esté presente
-    expect(screen.getByText(/CALENDARIO Y DISPONIBILIDAD/i)).toBeInTheDocument()
+    // Valida el título correcto de la HU-10 que está renderizando la app
+    expect(screen.getByText(/Catálogo de Servicios/i)).toBeInTheDocument()
   })
 })

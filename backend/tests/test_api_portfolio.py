@@ -14,6 +14,14 @@ MOCK_BARBERIA_NAME = "BarberFlow Demo (contexto temporal)"
 MOCK_BARBER_NAME = "Barbero Demo (contexto temporal)"
 
 
+@pytest.fixture(autouse=True)
+def storage_env(monkeypatch):
+    """Configura Storage de prueba para no depender del entorno local o del CI."""
+    monkeypatch.setenv("SUPABASE_SECRET_KEY", "clave-de-prueba")
+    monkeypatch.setenv("SUPABASE_STORAGE_URL", "http://storage.test")
+    monkeypatch.setenv("SUPABASE_STORAGE_BUCKET", "barber-portfolios")
+
+
 @pytest.fixture
 def barbero():
     barberia, _ = Barberia.objects.get_or_create(

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ArrowRight, Check } from 'lucide-react'
-import { crearCita } from '@/lib/reservaApi'
+import { crearCita, ReservaError } from '@/lib/reservaApi'
 import { useReservaWizardStore, type PasoReserva } from '@/stores/useReservaWizardStore'
 import { cn } from '@/lib/utils'
 import { PasoBarbero } from './PasoBarbero'
@@ -50,6 +50,7 @@ export function ReservaWizard() {
   const reiniciar = useReservaWizardStore((s) => s.reiniciar)
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [requiereSesion, setRequiereSesion] = useState(false)
 
   if (cita) return <ReservaExitosa cita={cita} onOtra={reiniciar} />
 
@@ -62,6 +63,7 @@ export function ReservaWizard() {
     if (!servicio || !barbero || !fecha || !hora) return
     setEnviando(true)
     setError(null)
+    setRequiereSesion(false)
     try {
       const nueva = await crearCita({
         servicioId: servicio.id,
@@ -71,6 +73,7 @@ export function ReservaWizard() {
       registrarCita(nueva)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo registrar la reserva.')
+      setRequiereSesion(e instanceof ReservaError && e.requiereSesion)
     } finally {
       setEnviando(false)
     }
@@ -150,7 +153,13 @@ export function ReservaWizard() {
         {paso === 1 && <PasoServicio />}
         {paso === 2 && <PasoBarbero />}
         {paso === 3 && <PasoFechaHora />}
-        {paso === 4 && <PasoConfirmar error={error} onConfirmar={confirmar} />}
+        {paso === 4 && (
+          <PasoConfirmar
+            error={error}
+            requiereSesion={requiereSesion}
+            onConfirmar={confirmar}
+          />
+        )}
       </div>
 
       <footer className="flex items-center justify-between gap-3 border-t border-slate-100 dark:border-white/5 px-4 py-4 sm:px-6">

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { AuthError, iniciarSesion } from '@/lib/authApi'
+import { AuthError, iniciarSesion, registrarCuenta } from '@/lib/authApi'
 import { useAuthStore } from '@/stores/useAuthStore'
 
 // 1. Esquema para Login
@@ -38,7 +38,19 @@ type LoginFormData = z.infer<typeof loginSchema>
 type RegisterFormData = z.infer<typeof registerSchema>
 type ForgotFormData = z.infer<typeof forgotSchema>
 
-export const LoginForm: React.FC = () => {
+type PasoAuth = 'login' | 'register'
+
+interface LoginFormProps {
+  /** Pestaña con la que abre el formulario (la página la deduce de la URL). */
+  pasoInicial?: PasoAuth
+  /** Avisa al cambiar entre «Iniciar sesión» y «Registrarme» para reflejarlo en la URL. */
+  onPasoChange?: (paso: PasoAuth) => void
+}
+
+export const LoginForm: React.FC<LoginFormProps> = ({
+  pasoInicial = 'login',
+  onPasoChange,
+}) => {
   const setSession = useAuthStore((state) => state.setSession)
   const [isLoading, setIsLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
@@ -46,7 +58,17 @@ export const LoginForm: React.FC = () => {
   // Estados de navegación entre vistas
   const [currentStep, setCurrentStep] = useState<
     'login' | 'register' | 'forgot' | 'forgot-success'
-  >('login')
+  >(pasoInicial)
+  // Si la URL cambia (botón «atrás» del navegador), la pestaña la sigue.
+  const [pasoPrevio, setPasoPrevio] = useState(pasoInicial)
+  if (pasoInicial !== pasoPrevio) {
+    setPasoPrevio(pasoInicial)
+    setCurrentStep(pasoInicial)
+  }
+  const irA = (paso: PasoAuth) => {
+    setCurrentStep(paso)
+    onPasoChange?.(paso)
+  }
   const [showPassword, setShowPassword] = useState(false)
   const [sentEmail, setSentEmail] = useState('')
 
@@ -90,9 +112,22 @@ export const LoginForm: React.FC = () => {
 
   // Submit Registro (redirige a login con banner verde)
   const onRegisterSubmit = async (data: RegisterFormData) => {
-    loginForm.setValue('email', data.email)
-    setSuccessMessage('Cuenta creada con éxito. Ya puedes iniciar sesión.')
-    setCurrentStep('login')
+    setIsLoading(true)
+    setAuthError(null)
+    try {
+      await registrarCuenta(data.fullName, data.email, data.password)
+      loginForm.setValue('email', data.email)
+      setSuccessMessage('Cuenta creada con éxito. Ya puedes iniciar sesión.')
+      irA('login')
+    } catch (err) {
+      setAuthError(
+        err instanceof AuthError
+          ? err.message
+          : 'Ocurrió un error inesperado. Inténtalo de nuevo.',
+      )
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Submit Olvidé Contraseña
@@ -209,7 +244,7 @@ export const LoginForm: React.FC = () => {
               <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-gray-800 rounded-2xl">
                 <button
                   type="button"
-                  onClick={() => setCurrentStep('login')}
+                  onClick={() => irA('login')}
                   className={`py-2.5 text-xs font-bold rounded-xl transition-all ${
                     currentStep === 'login'
                       ? 'bg-white dark:bg-gray-900 text-slate-900 dark:text-white shadow-sm'
@@ -222,7 +257,7 @@ export const LoginForm: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setSuccessMessage(null)
-                    setCurrentStep('register')
+                    irA('register')
                   }}
                   className={`py-2.5 text-xs font-bold rounded-xl transition-all ${
                     currentStep === 'register'
@@ -486,9 +521,10 @@ export const LoginForm: React.FC = () => {
 
                   <button
                     type="submit"
-                    className="w-full py-3.5 px-4 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-2 mt-4"
+                    disabled={isLoading}
+                    className="w-full py-3.5 px-4 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-60"
                   >
-                    <span>Crear mi cuenta</span>
+                    <span>{isLoading ? 'Creando cuenta...' : 'Crear mi cuenta'}</span>
                     <span>→</span>
                   </button>
                 </form>
@@ -501,7 +537,7 @@ export const LoginForm: React.FC = () => {
             <div className="space-y-6">
               <button
                 type="button"
-                onClick={() => setCurrentStep('login')}
+                onClick={() => irA('login')}
                 className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center gap-1 transition-all"
               >
                 <span>‹</span> Volver a iniciar sesión
@@ -594,7 +630,7 @@ export const LoginForm: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setCurrentStep('login')}
+                onClick={() => irA('login')}
                 className="w-full py-3.5 px-4 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 transition-all mt-4"
               >
                 Volver a iniciar sesión

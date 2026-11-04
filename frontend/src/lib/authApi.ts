@@ -39,3 +39,40 @@ export async function iniciarSesion(
   const { access, user } = (await response.json()) as { access: string; user: AuthUser }
   return { accessToken: access, user }
 }
+
+/** Primer mensaje de validación que devuelve DRF ({campo: ["mensaje"]}). */
+function primerMensaje(cuerpo: unknown): string | null {
+  if (cuerpo && typeof cuerpo === 'object') {
+    for (const valor of Object.values(cuerpo)) {
+      const mensaje = Array.isArray(valor) ? valor[0] : valor
+      if (typeof mensaje === 'string') return mensaje
+    }
+  }
+  return null
+}
+
+/** Crea una cuenta de cliente (POST /api/v1/auth/register). No inicia sesión. */
+export async function registrarCuenta(
+  fullName: string,
+  email: string,
+  password: string,
+): Promise<void> {
+  let response: Response
+  try {
+    response = await fetch(`${API_URL}/api/v1/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullName, email, password }),
+    })
+  } catch {
+    throw new AuthError('No se pudo conectar con el servidor. Inténtalo de nuevo.')
+  }
+
+  if (response.status === 400) {
+    const detalle = primerMensaje(await response.json().catch(() => null))
+    throw new AuthError(detalle ?? 'Revisa los datos e inténtalo de nuevo.')
+  }
+  if (!response.ok) {
+    throw new AuthError('No pudimos crear tu cuenta. Inténtalo de nuevo más tarde.')
+  }
+}

@@ -132,7 +132,7 @@ def optimize_image(uploaded_file) -> OptimizedImage:
 def _storage_configuration():
     """Obtiene la configuración de Storage sin exponer secretos."""
 
-    service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    service_key = os.getenv("SUPABASE_SECRET_KEY")
     bucket = os.getenv(
         "SUPABASE_STORAGE_BUCKET",
         "barber-portfolios",
@@ -166,7 +166,7 @@ def _storage_configuration():
 def upload_to_storage(content: bytes) -> tuple[str, str]:
     """Sube un WebP a Supabase y devuelve su URL pública y ruta."""
 
-    base_url, service_key, bucket = _storage_configuration()
+    base_url, secret_key, bucket = _storage_configuration()
 
     storage_path = f"{uuid4().hex}.webp"
     encoded_path = urllib.parse.quote(storage_path, safe="/")
@@ -179,8 +179,8 @@ def upload_to_storage(content: bytes) -> tuple[str, str]:
         endpoint,
         data=content,
         headers={
-            "Authorization": f"Bearer {service_key}",
-            "apikey": service_key,
+            "Authorization": f"Bearer {secret_key}",
+            "apikey": secret_key,
             "Content-Type": "image/webp",
             "x-upsert": "false",
         },
@@ -214,7 +214,7 @@ def upload_to_storage(content: bytes) -> tuple[str, str]:
 def delete_from_storage(storage_path: str) -> None:
     """Elimina un objeto de Storage, por ejemplo, ante un fallo de BD."""
 
-    base_url, service_key, bucket = _storage_configuration()
+    base_url, secret_key, bucket = _storage_configuration()
 
     encoded_path = urllib.parse.quote(storage_path, safe="/")
     endpoint = (
@@ -224,8 +224,8 @@ def delete_from_storage(storage_path: str) -> None:
     request = urllib.request.Request(
         endpoint,
         headers={
-            "Authorization": f"Bearer {service_key}",
-            "apikey": service_key,
+            "Authorization": f"Bearer {secret_key}",
+            "apikey": secret_key,
         },
         method="DELETE",
     )

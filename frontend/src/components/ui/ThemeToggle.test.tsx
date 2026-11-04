@@ -36,8 +36,13 @@ describe('ThemeToggle', () => {
     expect(document.documentElement).not.toHaveClass('dark')
   })
 
-  it('Dado el login, Cuando se renderiza, Entonces no muestra el botón', () => {
+  it('Dado el login y el registro, Cuando se renderizan, Entonces muestran el botón', () => {
     renderEn('/login')
+    expect(screen.getByRole('button')).toBeInTheDocument()
+  })
+
+  it('Dado el portafolio del barbero (solo oscuro), Cuando se renderiza, Entonces no muestra el botón', () => {
+    renderEn('/barbero/portafolio')
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 })

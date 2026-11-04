@@ -17,6 +17,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<InicioPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/registro" element={<LoginPage />} />
         <Route path="/reservar" element={<ReservarPage />} />
         <Route path="/no-autorizado" element={<NoAutorizadoPage />} />
 

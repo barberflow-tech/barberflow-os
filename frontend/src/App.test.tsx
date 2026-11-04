@@ -1,13 +1,19 @@
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from './App'
 import { useAuthStore, type Role } from '@/stores/useAuthStore'
+
+function RutaActual() {
+  return <span data-testid="ruta">{useLocation().pathname}</span>
+}
 
 function renderEn(ruta: string) {
   return render(
     <MemoryRouter initialEntries={[ruta]}>
       <App />
+      <RutaActual />
     </MemoryRouter>,
   )
 }
@@ -38,6 +44,32 @@ describe('App · rutas', () => {
   it('Dado un visitante, Cuando entra a /login, Entonces ve el formulario de ingreso', () => {
     renderEn('/login')
     expect(screen.getByPlaceholderText('hola@thiagobarber.co')).toBeInTheDocument()
+  })
+
+  it('Dado un visitante, Cuando entra a /login, Entonces ve la barra, el pie y el botón de tema', () => {
+    renderEn('/login')
+    // El logo aparece en la barra y en el pie.
+    expect(
+      screen.getAllByRole('link', { name: /BarberFlow, ir al inicio/i }),
+    ).toHaveLength(2)
+    expect(screen.getByText(/© 2026 BarberFlow Technologies/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Cambiar a modo/ })).toBeInTheDocument()
+  })
+
+  it('Dado un visitante, Cuando entra a /registro, Entonces abre la pestaña de registro', () => {
+    renderEn('/registro')
+    expect(screen.getByPlaceholderText('Ej. Thiago Angulo')).toBeInTheDocument()
+  })
+
+  it('Dado el login, Cuando pulsa «Registrarme» y vuelve a «Iniciar sesión», Entonces la URL sigue la pestaña', async () => {
+    const user = userEvent.setup()
+    renderEn('/login')
+
+    await user.click(screen.getByRole('button', { name: 'Registrarme' }))
+    expect(screen.getByTestId('ruta')).toHaveTextContent('/registro')
+
+    await user.click(screen.getByRole('button', { name: 'Iniciar sesión' }))
+    expect(screen.getByTestId('ruta')).toHaveTextContent('/login')
   })
 
   it('Dado un visitante, Cuando entra a /reservar, Entonces ve el asistente de reserva', () => {

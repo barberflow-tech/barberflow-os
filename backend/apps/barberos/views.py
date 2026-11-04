@@ -5,8 +5,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.barberos.context import obtener_barbero_portafolio
+from apps.barberos.context import barbero_de
 from apps.barberos.models import PortfolioBarbero
+from apps.usuarios.permissions import HasRole
 
 from .serializers import (
     PortfolioBarberoSerializer,
@@ -25,10 +26,18 @@ from .services import (
 class PortfolioBarberoUploadView(APIView):
     """Carga una imagen optimizada al portafolio del barbero autenticado."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasRole("barbero")]
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
+        # Se resuelve antes de procesar o subir nada: sin barbero no hay carga.
+        barbero = barbero_de(request.user)
+        if barbero is None:
+            return Response(
+                {"detail": "Tu cuenta no esta vinculada a un barbero activo."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         input_serializer = PortfolioUploadSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
 
@@ -58,7 +67,7 @@ class PortfolioBarberoUploadView(APIView):
         try:
             with transaction.atomic():
                 portfolio = PortfolioBarbero.objects.create(
-                    barbero=obtener_barbero_portafolio(),
+                    barbero=barbero,
                     image_url=image_url,
                     storage_path=storage_path,
                     original_filename=optimized_image.original_filename,

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -13,6 +14,14 @@ class Barbero(models.Model):
 
     barberia = models.ForeignKey(
         "barberias.Barberia", on_delete=models.PROTECT, related_name="barberos"
+    )
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="barbero",
+        help_text="Cuenta con la que el barbero inicia sesion (HU-06).",
     )
     name = models.CharField(max_length=150)
     is_active = models.BooleanField(default=True)

@@ -10,8 +10,6 @@ from apps.barberias.models import Barberia
 from apps.barberos.models import Barbero
 
 URL = "/api/v1/barbers/me/portfolio"
-MOCK_BARBERIA_NAME = "BarberFlow Demo (contexto temporal)"
-MOCK_BARBER_NAME = "Barbero Demo (contexto temporal)"
 
 
 @pytest.fixture(autouse=True)
@@ -23,27 +21,31 @@ def storage_env(monkeypatch):
 
 
 @pytest.fixture
-def barbero():
-    barberia, _ = Barberia.objects.get_or_create(
-        name=MOCK_BARBERIA_NAME,
-        defaults={"is_active": True},
-    )
-    barbero, _ = Barbero.objects.get_or_create(
-        barberia=barberia,
-        name=MOCK_BARBER_NAME,
-    )
-    return barbero
+def barberia():
+    return Barberia.objects.create(name="Barberia de prueba", is_active=True)
 
 
 @pytest.fixture
-def api_autenticada(django_user_model, barbero):
-    usuario = django_user_model.objects.create_user(
-        username="barbero_portfolio",
-        password="test-password",
+def usuario_barbero(make_user):
+    return make_user("barbero")
+
+
+@pytest.fixture
+def barbero(barberia, usuario_barbero):
+    return Barbero.objects.create(
+        barberia=barberia, name="Barbero de prueba", user=usuario_barbero
     )
+
+
+def cliente_api(usuario):
     api = APIClient()
     api.force_authenticate(user=usuario)
     return api
+
+
+@pytest.fixture
+def api_autenticada(usuario_barbero, barbero):
+    return cliente_api(usuario_barbero)
 
 
 @pytest.fixture
@@ -138,6 +140,54 @@ def test_visitante_no_autenticado_no_puede_subir_imagen():
 
     # Entonces la API rechaza la solicitud
     assert response.status_code == 401
+
+
+def subir_png(api):
+    imagen = SimpleUploadedFile("t.png", b"x", content_type="image/png")
+    with patch("urllib.request.urlopen") as storage_mock:
+        response = api.post(URL, {"image": imagen}, format="multipart")
+    return response, storage_mock
+
+
+@pytest.mark.django_db
+def test_cliente_no_puede_subir_al_portafolio(make_user):
+    # Dado un usuario con rol cliente
+    # Cuando intenta subir una imagen
+    response, storage_mock = subir_png(cliente_api(make_user("cliente")))
+
+    # Entonces recibe 403 y no se contacta a Storage
+    assert response.status_code == 403
+    storage_mock.assert_not_called()
+
+
+@pytest.mark.django_db
+def test_usuario_barbero_sin_barbero_vinculado_recibe_403(usuario_barbero):
+    # Dado un usuario con rol barbero que no tiene ficha de Barbero
+    # Cuando intenta subir una imagen
+    response, storage_mock = subir_png(cliente_api(usuario_barbero))
+
+    # Entonces recibe 403 y no se contacta a Storage
+    assert response.status_code == 403
+    storage_mock.assert_not_called()
+
+
+@pytest.mark.django_db
+def test_la_imagen_se_guarda_en_el_portafolio_de_su_propio_barbero(
+    make_user, barberia, barbero, api_autenticada, imagen_4mb
+):
+    # Dado otro barbero distinto del autenticado
+    otro_usuario = make_user("barbero", email="otro@barberflow.test")
+    otro = Barbero.objects.create(barberia=barberia, name="Otro", user=otro_usuario)
+
+    # Cuando el barbero autenticado sube una imagen
+    imagen = SimpleUploadedFile("t.png", imagen_4mb, content_type="image/png")
+    with patch("urllib.request.urlopen", return_value=crear_respuesta_storage()):
+        response = api_autenticada.post(URL, {"image": imagen}, format="multipart")
+
+    # Entonces queda en su portafolio y no en el del otro
+    assert response.status_code == 201
+    assert barbero.portfolio_images.count() == 1
+    assert otro.portfolio_images.count() == 0
 
 
 @pytest.mark.django_db

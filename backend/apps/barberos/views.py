@@ -29,6 +29,17 @@ class PortfolioBarberoUploadView(APIView):
     permission_classes = [IsAuthenticated, HasRole("barbero")]
     parser_classes = [MultiPartParser, FormParser]
 
+    def get(self, request):
+        """Fotos del portafolio del barbero autenticado, de la más reciente a la más antigua."""
+        barbero = barbero_de(request.user)
+        if barbero is None:
+            return Response(
+                {"detail": "Tu cuenta no esta vinculada a un barbero activo."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        imagenes = PortfolioBarbero.objects.filter(barbero=barbero)
+        return Response(PortfolioBarberoSerializer(imagenes, many=True).data)
+
     def post(self, request):
         # Se resuelve antes de procesar o subir nada: sin barbero no hay carga.
         barbero = barbero_de(request.user)

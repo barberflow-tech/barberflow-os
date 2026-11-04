@@ -124,4 +124,50 @@ describe('LoginForm', () => {
     const boton = await screen.findByRole('button', { name: /Cargando/i })
     expect(boton).toBeDisabled()
   })
+
+  async function completarRegistro(nombre: string, email: string, password: string) {
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Registrarme' }))
+    await user.type(screen.getByPlaceholderText('Ej. Thiago Angulo'), nombre)
+    await user.type(screen.getByPlaceholderText('hola@thiagobarber.co'), email)
+    await user.type(screen.getByPlaceholderText('Mínimo 8 caracteres'), password)
+    await user.click(screen.getByRole('button', { name: /Crear mi cuenta/i }))
+  }
+
+  it('Dado datos válidos, Cuando se registra, Entonces crea la cuenta en el backend y vuelve al login con aviso', async () => {
+    const fetchMock = vi.fn(() =>
+      respuesta(201, { id: 9, email: 'nuevo@barberflow.test', role: 'cliente' }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    render(<LoginForm />)
+
+    await completarRegistro('Ana Pérez', 'nuevo@barberflow.test', 'Clave-segura-1')
+
+    expect(await screen.findByText(/Cuenta creada con éxito/)).toBeInTheDocument()
+    const [url, opciones] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toMatch(/\/api\/v1\/auth\/register$/)
+    expect(JSON.parse(opciones.body as string)).toEqual({
+      fullName: 'Ana Pérez',
+      email: 'nuevo@barberflow.test',
+      password: 'Clave-segura-1',
+    })
+    // El registro no inicia sesión: el usuario debe ingresar con su cuenta.
+    expect(useAuthStore.getState().user).toBeNull()
+  })
+
+  it('Dado un correo ya registrado, Cuando se registra, Entonces muestra el mensaje del servidor y no cambia de vista', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => respuesta(400, { email: ['Ya existe una cuenta con este correo.'] })),
+    )
+    render(<LoginForm />)
+
+    await completarRegistro('Ana Pérez', 'ana@barberflow.test', 'Clave-segura-1')
+
+    expect(
+      await screen.findByText('Ya existe una cuenta con este correo.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Cuenta creada con éxito/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Crear mi cuenta/i })).toBeEnabled()
+  })
 })

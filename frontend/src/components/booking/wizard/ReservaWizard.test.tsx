@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useReservaWizardStore } from '@/stores/useReservaWizardStore'
 import { ReservaWizard } from './ReservaWizard'
 
-vi.mock('@/lib/reservaApi', () => {
+vi.mock('@/lib/reservaApi', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/reservaApi')>()
   const servicio = {
     id: 1,
     nombre: 'Corte clásico',
@@ -14,6 +15,7 @@ vi.mock('@/lib/reservaApi', () => {
   }
   const barbero = { id: 1, nombre: 'Thiago', rol: 'Master barber', calificacion: 4.9 }
   return {
+    ReservaError: real.ReservaError,
     listarServicios: vi.fn().mockResolvedValue([servicio]),
     listarBarberos: vi.fn().mockResolvedValue([barbero]),
     listarFranjas: vi.fn().mockResolvedValue([
@@ -155,5 +157,25 @@ describe('ReservaWizard', () => {
     expect(
       screen.queryByRole('heading', { name: /reserva confirmada/i }),
     ).not.toBeInTheDocument()
+  })
+
+  it('Dado un visitante sin sesión, Cuando confirma, Entonces se le ofrece iniciar sesión sin perder lo elegido', async () => {
+    const { ReservaError } = await import('@/lib/reservaApi')
+    vi.mocked(crearCita).mockRejectedValueOnce(
+      new ReservaError('Inicia sesión para ver los horarios y reservar.', true),
+    )
+    const user = userEvent.setup()
+    renderWizard()
+    await llegarAlPaso4(user)
+
+    await user.type(screen.getByLabelText(/nombre completo/i), 'Ana Pérez')
+    await user.type(screen.getByLabelText(/celular/i), '3001234567')
+    await user.click(screen.getByRole('button', { name: /confirmar/i }))
+
+    expect(await screen.findByRole('link', { name: 'Iniciar sesión' })).toHaveAttribute(
+      'href',
+      '/login',
+    )
+    expect(useReservaWizardStore.getState().hora).toBe('11:30')
   })
 })

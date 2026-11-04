@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { listarFranjas, type FranjaHoraria } from '@/lib/reservaApi'
+import { Link } from 'react-router-dom'
+import { listarFranjas, ReservaError, type FranjaHoraria } from '@/lib/reservaApi'
 import { useReservaWizardStore } from '@/stores/useReservaWizardStore'
 import { cn } from '@/lib/utils'
 import { aIso, diaMes, fechaLocal } from './formato'
@@ -16,6 +17,7 @@ function celdasDelMes(anio: number, mes: number): Date[] {
 }
 
 export function PasoFechaHora() {
+  const servicio = useReservaWizardStore((s) => s.servicio)
   const barbero = useReservaWizardStore((s) => s.barbero)
   const fecha = useReservaWizardStore((s) => s.fecha)
   const hora = useReservaWizardStore((s) => s.hora)
@@ -24,6 +26,7 @@ export function PasoFechaHora() {
   const [cargado, setCargado] = useState<{
     clave: string
     franjas: FranjaHoraria[]
+    error?: ReservaError
   } | null>(null)
 
   const hoy = useMemo(() => aIso(new Date()), [])
@@ -40,16 +43,26 @@ export function PasoFechaHora() {
     if (!barbero || !fecha) return
     let activo = true
     const clave = `${barbero.id}|${fecha}`
-    void listarFranjas(barbero.id, fecha).then((franjas) => {
-      if (activo) setCargado({ clave, franjas })
-    })
+    listarFranjas(barbero.id, fecha, servicio?.duracionMin)
+      .then((franjas) => {
+        if (activo) setCargado({ clave, franjas })
+      })
+      .catch((e: unknown) => {
+        if (!activo) return
+        const error =
+          e instanceof ReservaError
+            ? e
+            : new ReservaError('No se pudieron cargar los horarios.')
+        setCargado({ clave, franjas: [], error })
+      })
     return () => {
       activo = false
     }
-  }, [barbero, fecha])
+  }, [barbero, fecha, servicio?.duracionMin])
 
-  const franjas =
-    cargado && cargado.clave === `${barbero?.id}|${fecha}` ? cargado.franjas : null
+  const vigente =
+    cargado && cargado.clave === `${barbero?.id}|${fecha}` ? cargado : null
+  const franjas = vigente ? vigente.franjas : null
   const celdas = celdasDelMes(mesVisto.getFullYear(), mesVisto.getMonth())
   const mesActual = hoy.slice(0, 7) === aIso(mesVisto).slice(0, 7)
   const mesTexto = mesVisto.toLocaleDateString('es-CO', {
@@ -145,6 +158,22 @@ export function PasoFechaHora() {
         {!franjas ? (
           <p className="text-sm text-slate-500 dark:text-white/55">
             Cargando horarios…
+          </p>
+        ) : vigente?.error ? (
+          <p
+            role="alert"
+            className="rounded-xl bg-[#FEF2F3] dark:bg-[#d7b36a]/10 p-3 text-sm text-[#E5283C] dark:text-[#d7b36a]"
+          >
+            {vigente.error.message}{' '}
+            {vigente.error.requiereSesion && (
+              <Link to="/login" className="font-semibold underline">
+                Iniciar sesión
+              </Link>
+            )}
+          </p>
+        ) : franjas.length === 0 ? (
+          <p className="text-sm text-slate-500 dark:text-white/55">
+            No hay horarios disponibles este día. Prueba con otra fecha u otro barbero.
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { AuthError, iniciarSesion } from '@/lib/authApi'
+import { AuthError, iniciarSesion, registrarCuenta } from '@/lib/authApi'
 import { useAuthStore } from '@/stores/useAuthStore'
 
 // 1. Esquema para Login
@@ -90,9 +90,22 @@ export const LoginForm: React.FC = () => {
 
   // Submit Registro (redirige a login con banner verde)
   const onRegisterSubmit = async (data: RegisterFormData) => {
-    loginForm.setValue('email', data.email)
-    setSuccessMessage('Cuenta creada con éxito. Ya puedes iniciar sesión.')
-    setCurrentStep('login')
+    setIsLoading(true)
+    setAuthError(null)
+    try {
+      await registrarCuenta(data.fullName, data.email, data.password)
+      loginForm.setValue('email', data.email)
+      setSuccessMessage('Cuenta creada con éxito. Ya puedes iniciar sesión.')
+      setCurrentStep('login')
+    } catch (err) {
+      setAuthError(
+        err instanceof AuthError
+          ? err.message
+          : 'Ocurrió un error inesperado. Inténtalo de nuevo.',
+      )
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Submit Olvidé Contraseña
@@ -486,9 +499,10 @@ export const LoginForm: React.FC = () => {
 
                   <button
                     type="submit"
-                    className="w-full py-3.5 px-4 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-2 mt-4"
+                    disabled={isLoading}
+                    className="w-full py-3.5 px-4 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-60"
                   >
-                    <span>Crear mi cuenta</span>
+                    <span>{isLoading ? 'Creando cuenta...' : 'Crear mi cuenta'}</span>
                     <span>→</span>
                   </button>
                 </form>

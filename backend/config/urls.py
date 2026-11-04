@@ -22,4 +22,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/", include("apps.citas.urls")),
     path("api/v1/", include("apps.catalogo.urls")),
+    path("api/v1/", include("apps.barberos.urls")),
 ]

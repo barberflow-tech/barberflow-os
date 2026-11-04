@@ -6,6 +6,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Paleta de la zona de administración: claro = blanco y rojo, oscuro = negro y dorado. */
+  --color-app: var(--app-bg);
+  --color-app-fg: var(--app-fg);
+  --color-panel: var(--app-panel);
+  --color-brand: var(--app-brand);
+  --color-brand-fg: var(--app-brand-fg);
+  --color-brand-hover: var(--app-brand-hover);
   --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -49,6 +56,12 @@
 }
 
 :root {
+  --app-bg: #f1f5f9;
+  --app-fg: #0b1b3a;
+  --app-panel: #ffffff;
+  --app-brand: #e5283c;
+  --app-brand-fg: #ffffff;
+  --app-brand-hover: #cf1f33;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -84,6 +97,12 @@
 }
 
 .dark {
+  --app-bg: #0f1210;
+  --app-fg: #f4f1e9;
+  --app-panel: #151915;
+  --app-brand: #d7b36a;
+  --app-brand-fg: #111411;
+  --app-brand-hover: #e5c77f;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

@@ -3,11 +3,11 @@ import { Logo } from './Logo'
 
 export function Footer() {
   return (
-    <footer className="bg-[#0B1B3A] text-slate-300">
+    <footer className="bg-[#0B1B3A] dark:bg-[#171c17] text-slate-300">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr]">
         <div className="space-y-4">
           <Logo claro />
-          <p className="max-w-sm text-sm leading-relaxed text-slate-400">
+          <p className="max-w-sm text-sm leading-relaxed text-slate-400 dark:text-white/40">
             El sistema operativo para barberías: agenda en tiempo real, caja diaria y
             comisiones en un solo lugar.
           </p>
@@ -51,7 +51,7 @@ export function Footer() {
       </div>
 
       <div className="border-t border-white/10">
-        <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-slate-500 sm:px-6">
+        <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-slate-500 dark:text-white/55 sm:px-6">
           © 2026 BarberFlow Technologies · Colombia
         </p>
       </div>

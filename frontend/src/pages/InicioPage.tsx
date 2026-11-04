@@ -5,7 +5,6 @@ import {
   ArrowRight,
   CalendarClock,
   Check,
-  Scissors,
   ShieldCheck,
   UserRound,
   Wallet,
@@ -16,6 +15,7 @@ import {
   botonSecundario,
   titulo,
 } from '@/components/booking/wizard/estilos'
+import { ListaServicios } from '@/components/inicio/ListaServicios'
 import { Footer } from '@/components/layout/Footer'
 import { Navbar, type EnlaceNavbar } from '@/components/layout/Navbar'
 
@@ -23,16 +23,6 @@ const enlaces: EnlaceNavbar[] = [
   { href: '#servicios', etiqueta: 'Servicios' },
   { href: '#como-funciona', etiqueta: 'Cómo funciona' },
   { href: '#beneficios', etiqueta: 'Beneficios' },
-]
-
-const servicios = [
-  { nombre: 'Corte clásico', detalle: 'Corte a tijera o máquina, con acabado limpio.' },
-  {
-    nombre: 'Corte + barba premium',
-    detalle: 'El ritual completo: corte, barba y toalla caliente.',
-  },
-  { nombre: 'Perfilado de barba', detalle: 'Líneas definidas y volumen a tu medida.' },
-  { nombre: 'Corte infantil', detalle: 'Atención paciente para los más pequeños.' },
 ]
 
 const pasos = [
@@ -75,22 +65,25 @@ const horasEjemplo = [
 
 export function InicioPage() {
   return (
-    <div className="min-h-screen bg-[#F1F5F9] font-[Inter_Variable] text-[#0B1B3A]">
+    <div className="min-h-screen bg-[#F1F5F9] dark:bg-[#0f1210] font-[Inter_Variable] text-[#0B1B3A] dark:text-[#f4f1e9]">
       <Navbar enlaces={enlaces} />
 
       <main>
         {/* Hero */}
-        <section className="bg-white">
+        <section className="bg-white dark:bg-[#151915]">
           <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:py-24">
             <div className="space-y-6">
-              <p className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold tracking-wider text-slate-600 uppercase">
+              <p className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-1 text-xs font-semibold tracking-wider text-slate-600 dark:text-white/65 uppercase">
                 <span className="size-2 rounded-full bg-[#10B981]" aria-hidden="true" />
                 Reservas en línea 24/7
               </p>
               <h1 className={`${titulo} text-5xl leading-[1.05] sm:text-6xl`}>
-                Tu barbería, <span className="text-[#E5283C]">bajo control.</span>
+                Tu barbería,{' '}
+                <span className="text-[#E5283C] dark:text-[#d7b36a]">
+                  bajo control.
+                </span>
               </h1>
-              <p className="max-w-lg text-lg leading-relaxed text-slate-600">
+              <p className="max-w-lg text-lg leading-relaxed text-slate-600 dark:text-white/65">
                 Reserva tu cita en pocos pasos y deja que la barbería gestione su
                 agenda, su caja y su equipo desde un solo sistema.
               </p>
@@ -107,15 +100,17 @@ export function InicioPage() {
 
             {/* Tarjeta decorativa que imita el asistente de reserva */}
             <div aria-hidden="true" className="relative mx-auto w-full max-w-md">
-              <div className="absolute -inset-4 rounded-[2rem] bg-[#E5283C]/10 blur-2xl" />
-              <div className="relative space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+              <div className="absolute -inset-4 rounded-[2rem] bg-[#E5283C]/10 dark:bg-[#d7b36a]/10 blur-2xl" />
+              <div className="relative space-y-5 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#151915] p-6 shadow-xl">
                 <div className="flex items-center gap-3">
-                  <span className="grid size-11 place-items-center rounded-full bg-[#0B1B3A] text-sm font-bold text-white">
+                  <span className="grid size-11 place-items-center rounded-full bg-[#0B1B3A] dark:bg-[#171c17] text-sm font-bold text-white">
                     TH
                   </span>
                   <div>
                     <p className="font-semibold">Thiago</p>
-                    <p className="text-xs text-slate-500">Master barber · 4.9 ★</p>
+                    <p className="text-xs text-slate-500 dark:text-white/55">
+                      Master barber · 4.9 ★
+                    </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -124,10 +119,10 @@ export function InicioPage() {
                       key={hora}
                       className={`rounded-xl border px-4 py-3 text-center text-sm font-semibold ${
                         estado === 'elegida'
-                          ? 'border-[#E5283C] bg-[#FEF2F3] text-[#E5283C]'
+                          ? 'border-[#E5283C] dark:border-[#d7b36a] bg-[#FEF2F3] dark:bg-[#d7b36a]/10 text-[#E5283C] dark:text-[#d7b36a]'
                           : estado === 'ocupada'
-                            ? 'border-slate-100 bg-slate-50 text-slate-300 line-through'
-                            : 'border-slate-200 text-[#0B1B3A]'
+                            ? 'border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5 text-slate-300 dark:text-white/30 line-through'
+                            : 'border-slate-200 dark:border-white/10 text-[#0B1B3A] dark:text-[#f4f1e9]'
                       }`}
                     >
                       {hora}
@@ -146,41 +141,33 @@ export function InicioPage() {
         <section id="servicios" className="scroll-mt-16 py-16 sm:py-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <h2 className={`${titulo} text-3xl sm:text-4xl`}>Nuestros servicios</h2>
-            <p className="mt-2 max-w-xl text-slate-600">
+            <p className="mt-2 max-w-xl text-slate-600 dark:text-white/65">
               Lo que puedes reservar hoy. Elige el que necesitas y escoge tu horario.
             </p>
-            <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {servicios.map((servicio) => (
-                <li
-                  key={servicio.nombre}
-                  className="space-y-3 rounded-xl border bg-white p-5 transition-colors hover:border-slate-300"
-                >
-                  <span className="grid size-10 place-items-center rounded-lg bg-[#FEF2F3] text-[#E5283C]">
-                    <Scissors className="size-5" aria-hidden="true" />
-                  </span>
-                  <h3 className="font-semibold">{servicio.nombre}</h3>
-                  <p className="text-sm text-slate-600">{servicio.detalle}</p>
-                </li>
-              ))}
-            </ul>
+            <ListaServicios />
           </div>
         </section>
 
         {/* Cómo funciona */}
-        <section id="como-funciona" className="scroll-mt-16 bg-white py-16 sm:py-20">
+        <section
+          id="como-funciona"
+          className="scroll-mt-16 bg-white dark:bg-[#151915] py-16 sm:py-20"
+        >
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <h2 className={`${titulo} text-3xl sm:text-4xl`}>Cómo funciona</h2>
-            <p className="mt-2 max-w-xl text-slate-600">
+            <p className="mt-2 max-w-xl text-slate-600 dark:text-white/65">
               Cuatro pasos, sin llamadas ni mensajes de ida y vuelta.
             </p>
             <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {pasos.map((paso, i) => (
                 <li key={paso.titulo} className="space-y-3">
-                  <span className="grid size-10 place-items-center rounded-full bg-[#0B1B3A] font-[Barlow_Condensed] text-lg font-bold text-white">
+                  <span className="grid size-10 place-items-center rounded-full bg-[#0B1B3A] dark:bg-[#171c17] font-[Barlow_Condensed] text-lg font-bold text-white">
                     {i + 1}
                   </span>
                   <h3 className="font-semibold">{paso.titulo}</h3>
-                  <p className="text-sm text-slate-600">{paso.detalle}</p>
+                  <p className="text-sm text-slate-600 dark:text-white/65">
+                    {paso.detalle}
+                  </p>
                 </li>
               ))}
             </ol>
@@ -195,12 +182,17 @@ export function InicioPage() {
             </h2>
             <ul className="mt-10 grid gap-4 md:grid-cols-3">
               {beneficios.map(({ icono: Icono, titulo: nombre, detalle }) => (
-                <li key={nombre} className="space-y-3 rounded-xl border bg-white p-6">
-                  <span className="grid size-11 place-items-center rounded-xl bg-[#0B1B3A] text-white">
+                <li
+                  key={nombre}
+                  className="space-y-3 rounded-xl border bg-white dark:bg-[#151915] p-6"
+                >
+                  <span className="grid size-11 place-items-center rounded-xl bg-[#0B1B3A] dark:bg-[#171c17] text-white">
                     <Icono className="size-5" aria-hidden="true" />
                   </span>
                   <h3 className="text-lg font-semibold">{nombre}</h3>
-                  <p className="text-sm leading-relaxed text-slate-600">{detalle}</p>
+                  <p className="text-sm leading-relaxed text-slate-600 dark:text-white/65">
+                    {detalle}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -210,12 +202,12 @@ export function InicioPage() {
         {/* Llamado final */}
         <section className="pb-16 sm:pb-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-[#0B1B3A] p-8 text-white sm:p-12 md:flex-row md:items-center">
+            <div className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-[#0B1B3A] dark:bg-[#171c17] p-8 text-white sm:p-12 md:flex-row md:items-center">
               <div>
                 <h2 className="font-[Barlow_Condensed] text-3xl font-bold tracking-wide uppercase sm:text-4xl">
                   ¿Listo para tu próximo corte?
                 </h2>
-                <p className="mt-2 text-slate-300">
+                <p className="mt-2 text-slate-300 dark:text-white/65">
                   Agenda en menos de un minuto y llega sin esperas.
                 </p>
               </div>

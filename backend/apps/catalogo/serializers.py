@@ -12,6 +12,9 @@ class ServicioSerializer(serializers.ModelSerializer):
         min_value=0,
     )
     duration_minutes = serializers.IntegerField(min_value=1)
+    description = serializers.CharField(
+        required=False, allow_blank=True, max_length=500
+    )
 
     class Meta:
         model = Servicio
@@ -20,6 +23,7 @@ class ServicioSerializer(serializers.ModelSerializer):
             "name",
             "price",
             "duration_minutes",
+            "description",
             "is_active",
             "created_at",
             "updated_at",

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { listarServiciosApi } from '@/lib/catalogoApi'
 
 export interface Service {
   id: string
@@ -12,7 +13,6 @@ export interface Service {
 }
 
 interface ServicesState {
-  version: string
   services: Service[]
   isLoading: boolean
   error: string | null
@@ -23,81 +23,40 @@ interface ServicesState {
 }
 
 export const useServicesStore = create<ServicesState>((set) => ({
-  version: 'v4-barber-images',
-
-  services: [
-    {
-      id: '1',
-      name: 'Corte Clásico',
-      duration_minutes: 30,
-      price: 25000,
-      category: 'Cortes',
-      is_active: true,
-      is_featured: true,
-      image_url:
-        'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=600&auto=format&fit=crop&q=80',
-    },
-    {
-      id: '2',
-      name: 'Corte + Barba Premium',
-      duration_minutes: 45,
-      price: 45000,
-      category: 'Combos',
-      is_active: true,
-      is_featured: true,
-      image_url:
-        'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=600&auto=format&fit=crop&q=80',
-    },
-    {
-      id: '3',
-      name: 'Perfilado y Afeitado de Barba',
-      duration_minutes: 25,
-      price: 20000,
-      category: 'Barbas',
-      is_active: true,
-      is_featured: false,
-      image_url:
-        'https://images.pexels.com/photos/18298039/pexels-photo-18298039.jpeg?auto=compress&cs=tinysrgb&w=600',
-    },
-    {
-      id: '4',
-      name: 'Low Fade Texturizado',
-      duration_minutes: 40,
-      price: 30000,
-      category: 'Cortes',
-      is_active: true,
-      is_featured: true,
-      image_url:
-        'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=600&auto=format&fit=crop&q=80',
-    },
-    {
-      id: '5',
-      name: 'Mascarilla Negra & Exfoliación',
-      duration_minutes: 20,
-      price: 18000,
-      category: 'Tratamientos',
-      is_active: true,
-      is_featured: false,
-      image_url:
-        'https://umbraco.departures-international.com/media/uhkesuwq/angan-credit-ari-magg.jpg?anchor=center&format=auto&mode=min&width=1440',
-    },
-    {
-      id: '6',
-      name: 'Corte Skin Fade + Diseño',
-      duration_minutes: 50,
-      price: 38000,
-      category: 'Cortes',
-      is_active: true,
-      is_featured: false,
-      image_url:
-        'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=600&auto=format&fit=crop&q=80',
-    },
-  ],
+  services: [],
 
   isLoading: false,
   error: null,
 
-  fetchServices: async () => {},
+  // Lee el catálogo real. Categoría, destacado e imagen aún no existen en el backend:
+  // se conservan los que el panel haya puesto localmente y, si no, valores por defecto.
+  fetchServices: async () => {
+    set({ isLoading: true, error: null })
+    try {
+      const desdeApi = await listarServiciosApi()
+      set((state) => ({
+        isLoading: false,
+        services: desdeApi.map((s) => {
+          const previo = state.services.find((p) => p.id === String(s.id))
+          return {
+            id: String(s.id),
+            name: s.name,
+            duration_minutes: s.duration_minutes,
+            price: s.price,
+            is_active: s.is_active,
+            category: previo?.category ?? 'General',
+            is_featured: previo?.is_featured ?? false,
+            image_url: previo?.image_url ?? '',
+          }
+        }),
+      }))
+    } catch (e) {
+      set({
+        isLoading: false,
+        error: e instanceof Error ? e.message : 'No se pudieron cargar los servicios.',
+      })
+    }
+  },
 
   addService: async (newServiceData) => {
     const newService: Service = {

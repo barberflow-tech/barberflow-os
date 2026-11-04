@@ -1,9 +1,17 @@
 import { create } from 'zustand'
-import { listarServiciosApi } from '@/lib/catalogoApi'
+import {
+  actualizarServicioApi,
+  crearServicioApi,
+  eliminarServicioApi,
+  listarServiciosApi,
+  type ServicioApi,
+  type ServicioEntrada,
+} from '@/lib/catalogoApi'
 
 export interface Service {
   id: string
   name: string
+  description: string
   duration_minutes: number
   price: number
   category: string
@@ -22,6 +30,30 @@ interface ServicesState {
   deleteService: (id: string) => Promise<void>
 }
 
+const aEntrada = (s: Omit<Service, 'id'>): ServicioEntrada => ({
+  name: s.name,
+  price: s.price,
+  duration_minutes: s.duration_minutes,
+  description: s.description,
+  is_active: s.is_active,
+})
+
+// Categoría, destacado e imagen aún no existen en el backend: solo viven en pantalla.
+const conExtras = (
+  api: ServicioApi,
+  extras: Pick<Service, 'category' | 'is_featured' | 'image_url'>,
+): Service => ({
+  id: String(api.id),
+  name: api.name,
+  description: api.description,
+  duration_minutes: api.duration_minutes,
+  price: api.price,
+  is_active: api.is_active,
+  category: extras.category,
+  is_featured: extras.is_featured,
+  image_url: extras.image_url,
+})
+
 export const useServicesStore = create<ServicesState>((set) => ({
   services: [],
 
@@ -33,7 +65,7 @@ export const useServicesStore = create<ServicesState>((set) => ({
   fetchServices: async () => {
     set({ isLoading: true, error: null })
     try {
-      const desdeApi = await listarServiciosApi()
+      const desdeApi = await listarServiciosApi({ incluirInactivos: true })
       set((state) => ({
         isLoading: false,
         services: desdeApi.map((s) => {
@@ -41,6 +73,7 @@ export const useServicesStore = create<ServicesState>((set) => ({
           return {
             id: String(s.id),
             name: s.name,
+            description: s.description,
             duration_minutes: s.duration_minutes,
             price: s.price,
             is_active: s.is_active,
@@ -58,28 +91,28 @@ export const useServicesStore = create<ServicesState>((set) => ({
     }
   },
 
-  addService: async (newServiceData) => {
-    const newService: Service = {
-      ...newServiceData,
-      id: Date.now().toString(),
-    }
-
-    set((state) => ({
-      services: [...state.services, newService],
-    }))
+  // Crear, editar y eliminar van primero al backend y, si responde bien, se refleja
+  // en pantalla. Si falla, la acción lanza el error y el estado queda intacto.
+  addService: async (datos) => {
+    const creado = await crearServicioApi(aEntrada(datos))
+    set((state) => ({ services: [...state.services, conExtras(creado, datos)] }))
   },
 
-  updateServiceOptimistic: async (id, updatedData) => {
+  updateServiceOptimistic: async (id, cambios) => {
+    const actual = useServicesStore.getState().services.find((s) => s.id === id)
+    if (!actual) return
+    const nuevo = { ...actual, ...cambios }
+    const guardado = await actualizarServicioApi(id, aEntrada(nuevo))
     set((state) => ({
-      services: state.services.map((service) =>
-        service.id === id ? { ...service, ...updatedData } : service,
+      services: state.services.map((s) =>
+        s.id === id ? conExtras(guardado, nuevo) : s,
       ),
     }))
   },
 
   deleteService: async (id) => {
-    set((state) => ({
-      services: state.services.filter((service) => service.id !== id),
-    }))
+    await eliminarServicioApi(id)
+    // El backend desactiva el servicio (borrado lógico): se quita de la lista.
+    set((state) => ({ services: state.services.filter((s) => s.id !== id) }))
   },
 }))

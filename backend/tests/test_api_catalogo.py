@@ -236,3 +236,25 @@ def test_post_rechaza_duracion_cero(api_admin):
 
     assert response.status_code == 400
     assert not Servicio.objects.filter(name="Servicio inválido").exists()
+
+
+@pytest.mark.django_db
+def test_admin_ve_tambien_los_servicios_inactivos_y_el_publico_no(
+    api_admin, api_publica, barberia, servicio
+):
+    # Dado un servicio activo y uno inactivo
+    Servicio.objects.create(
+        barberia=barberia,
+        name="Servicio retirado",
+        price=Decimal("10000.00"),
+        duration_minutes=20,
+        is_active=False,
+    )
+
+    # Cuando el administrador y un visitante consultan el catálogo
+    nombres_admin = {s["name"] for s in api_admin.get(URL).json()}
+    nombres_publico = {s["name"] for s in api_publica.get(URL).json()}
+
+    # Entonces el administrador ve ambos y el visitante solo el activo
+    assert nombres_admin == {"Corte Clásico", "Servicio retirado"}
+    assert nombres_publico == {"Corte Clásico"}

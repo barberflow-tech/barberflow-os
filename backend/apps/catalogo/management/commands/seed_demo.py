@@ -17,6 +17,7 @@ from apps.barberias.models import Membresia
 from apps.barberos.models import Barbero, HorarioBarbero
 from apps.catalogo.context import obtener_barberia_catalogo
 from apps.catalogo.models import Servicio
+from apps.usuarios.models import PerfilUsuario, Rol
 
 SERVICIOS = [
     ("Corte clásico", "35000", 40, "Corte a tijera o máquina, con acabado limpio."),
@@ -33,11 +34,14 @@ BARBEROS = ["Thiago", "Andrés", "Nicolás"]
 # Lunes a sábado, 09:00-19:00, con descanso de 60 min a las 13:00 (domingo cerrado).
 DIAS_LABORALES = range(0, 6)
 
+# Barbero de la lista BARBEROS que usa la cuenta barbero@barberflow.test para entrar.
+BARBERO_CON_CUENTA = "Thiago"
+
 USUARIOS = [
-    # (correo, es_staff, tiene_barbería)
-    ("admin@barberflow.test", True, True),
-    ("barbero@barberflow.test", False, True),
-    ("cliente@barberflow.test", False, False),
+    # (correo, rol, es_staff, tiene_barbería)
+    ("admin@barberflow.test", Rol.ADMIN, True, True),
+    ("barbero@barberflow.test", Rol.BARBERO, False, True),
+    ("cliente@barberflow.test", Rol.CLIENTE, False, False),
 ]
 
 
@@ -70,10 +74,12 @@ class Command(BaseCommand):
                 },
             )
 
+        barberos = {}
         for nombre in BARBEROS:
             barbero, _ = Barbero.objects.get_or_create(
                 barberia=barberia, name=nombre, defaults={"is_active": True}
             )
+            barberos[nombre] = barbero
             for dia in DIAS_LABORALES:
                 HorarioBarbero.objects.update_or_create(
                     barbero=barbero,
@@ -88,7 +94,7 @@ class Command(BaseCommand):
                 )
 
         User = get_user_model()
-        for correo, es_staff, con_barberia in USUARIOS:
+        for correo, rol, es_staff, con_barberia in USUARIOS:
             usuario, _ = User.objects.get_or_create(
                 username=correo, defaults={"email": correo}
             )
@@ -96,6 +102,15 @@ class Command(BaseCommand):
             usuario.is_staff = es_staff
             usuario.set_password(options["password"])
             usuario.save()
+            # La señal ya creó el perfil como cliente; aquí se fija el rol de la demo.
+            PerfilUsuario.objects.update_or_create(user=usuario, defaults={"role": rol})
+            if rol == Rol.BARBERO:
+                # El portafolio (POST /barbers/me/portfolio) resuelve al barbero
+                # por esta vinculación cuenta -> Barbero.
+                Barbero.objects.filter(user=usuario).update(user=None)
+                barbero = barberos[BARBERO_CON_CUENTA]
+                barbero.user = usuario
+                barbero.save(update_fields=["user", "updated_at"])
             if con_barberia:
                 Membresia.objects.get_or_create(
                     user=usuario, defaults={"barberia": barberia}
@@ -105,6 +120,6 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 f"Demo lista en «{barberia.name}»: {len(SERVICIOS)} servicios, "
                 f"{len(BARBEROS)} barberos y {len(USUARIOS)} usuarios "
-                f"({', '.join(c for c, _, _ in USUARIOS)})."
+                f"({', '.join(u[0] for u in USUARIOS)})."
             )
         )

@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { useThemeStore } from '@/stores/useThemeStore'
 
 // Pantallas que no tienen versión clara: no se muestra el botón.
-const SIN_BOTON = ['/login', '/admin/portafolio']
+const SIN_BOTON = ['/login', '/barbero/portafolio']
 
 /** Botón flotante para alternar entre modo claro (blanco y rojo) y oscuro (negro y dorado). */
 export function ThemeToggle() {

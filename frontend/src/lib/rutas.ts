@@ -7,6 +7,8 @@ export function rutaPorRol(role: Role): string {
       return '/admin'
     case 'cliente':
       return '/reservar'
+    case 'barbero':
+      return '/barbero/portafolio'
     default:
       return '/bienvenida'
   }

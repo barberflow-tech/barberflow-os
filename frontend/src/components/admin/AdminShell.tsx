@@ -11,14 +11,13 @@ import { useAuthStore } from '@/stores/useAuthStore'
 
 const enlaces = [
   { to: '/admin', etiqueta: 'Panel', fin: true },
-  { to: '/admin/portafolio', etiqueta: 'Portafolio', fin: false },
   { to: '/admin/servicios', etiqueta: 'Servicios', fin: false },
 ]
 
 /** Marco común del área de administración (mismo estilo oscuro y dorado del portafolio). */
 export function AdminShell({ children }: { children: ReactNode }) {
   const user = useAuthStore((state) => state.user)
-  const clearSession = useAuthStore((state) => state.clearSession)
+  const logout = useAuthStore((state) => state.logout)
 
   return (
     <div className="min-h-screen bg-app font-['DM_Sans',sans-serif] text-app-fg">
@@ -62,7 +61,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <span className="hidden text-app-fg/50 sm:inline">{user?.email}</span>
             <button
               type="button"
-              onClick={clearSession}
+              onClick={() => void logout()}
               className="inline-flex items-center gap-2 rounded-full border border-app-fg/15 px-4 py-2 font-medium text-app-fg/80 transition hover:border-brand/60 hover:text-app-fg"
             >
               <LogOut className="size-4" aria-hidden="true" />

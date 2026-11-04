@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/useAuthStore'
 // Pantalla genérica para roles cuya vista propia aún no existe (p. ej. barbero).
 export function BienvenidaPage() {
   const user = useAuthStore((state) => state.user)
-  const clearSession = useAuthStore((state) => state.clearSession)
+  const logout = useAuthStore((state) => state.logout)
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-100 p-6 text-center">
@@ -19,7 +19,7 @@ export function BienvenidaPage() {
         </Link>
         <button
           type="button"
-          onClick={clearSession}
+          onClick={() => void logout()}
           className="font-semibold text-slate-700 underline"
         >
           Cerrar sesión

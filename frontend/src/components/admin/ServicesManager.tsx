@@ -25,6 +25,7 @@ const CATEGORIAS = ['Cortes', 'Barbas', 'Combos', 'Tratamientos']
 
 const vacio: FormularioServicio = {
   name: '',
+  description: '',
   duration_minutes: 30,
   price: 0,
   category: 'Cortes',
@@ -62,6 +63,9 @@ export function ServicesManager({
   const [editando, setEditando] = useState<Service | null>(null)
   const [fotoOrigen, setFotoOrigen] = useState<FotoPendiente | null>(null)
   const [porBorrar, setPorBorrar] = useState<Service | null>(null)
+  const [errorForm, setErrorForm] = useState<string | null>(null)
+  const [guardando, setGuardando] = useState(false)
+  const [errorLista, setErrorLista] = useState<string | null>(null)
 
   useEffect(() => {
     void fetchServices()
@@ -84,6 +88,7 @@ export function ServicesManager({
     setEditando(null)
     setFotoOrigen(foto ?? null)
     setForm({ ...vacio, image_url: foto?.url ?? '', name: foto?.titulo ?? '' })
+    setErrorForm(null)
     setModalAbierto(true)
   }
 
@@ -92,6 +97,7 @@ export function ServicesManager({
     setFotoOrigen(null)
     setForm({
       name: servicio.name,
+      description: servicio.description,
       duration_minutes: servicio.duration_minutes,
       price: servicio.price,
       category: servicio.category,
@@ -99,6 +105,7 @@ export function ServicesManager({
       is_featured: servicio.is_featured,
       image_url: servicio.image_url,
     })
+    setErrorForm(null)
     setModalAbierto(true)
   }
 
@@ -110,16 +117,41 @@ export function ServicesManager({
 
   const guardar = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (editando) {
-      await updateServiceOptimistic(editando.id, form)
-    } else {
-      await addService(form)
-      if (fotoOrigen) onFotoUsada?.(fotoOrigen.id)
+    setGuardando(true)
+    setErrorForm(null)
+    try {
+      if (editando) {
+        await updateServiceOptimistic(editando.id, form)
+      } else {
+        await addService(form)
+        if (fotoOrigen) onFotoUsada?.(fotoOrigen.id)
+      }
+      cerrarModal()
+    } catch (err) {
+      // El modal queda abierto con lo escrito para poder corregir y reintentar.
+      setErrorForm(
+        err instanceof Error ? err.message : 'No se pudo guardar el servicio.',
+      )
+    } finally {
+      setGuardando(false)
     }
-    cerrarModal()
   }
 
-  const cambiar = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const eliminar = async (servicio: Service) => {
+    setPorBorrar(null)
+    setErrorLista(null)
+    try {
+      await deleteService(servicio.id)
+    } catch (err) {
+      setErrorLista(
+        err instanceof Error ? err.message : 'No se pudo eliminar el servicio.',
+      )
+    }
+  }
+
+  const cambiar = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => {
     const { name, type, value } = e.target
     const dato =
       type === 'checkbox'
@@ -207,9 +239,9 @@ export function ServicesManager({
         ))}
       </div>
 
-      {error && (
+      {(error ?? errorLista) && (
         <p role="alert" className="mb-6 text-sm text-red-600 dark:text-red-400">
-          {error}
+          {error ?? errorLista}
         </p>
       )}
       {isLoading && services.length === 0 && (
@@ -365,6 +397,22 @@ export function ServicesManager({
               />
             </div>
 
+            <div>
+              <label htmlFor="servicio-descripcion" className={etiqueta}>
+                Descripción
+              </label>
+              <textarea
+                id="servicio-descripcion"
+                name="description"
+                rows={2}
+                maxLength={500}
+                value={form.description}
+                onChange={cambiar}
+                placeholder="Qué incluye el servicio"
+                className={campo}
+              />
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="servicio-precio" className={etiqueta}>
@@ -442,11 +490,21 @@ export function ServicesManager({
               </label>
             </div>
 
+            {errorForm && (
+              <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+                {errorForm}
+              </p>
+            )}
+
             <div className="flex justify-end gap-3 pt-2">
               <button type="button" onClick={cerrarModal} className={botonLinea}>
                 Cancelar
               </button>
-              <button type="submit" className={botonDorado}>
+              <button
+                type="submit"
+                disabled={guardando}
+                className={cn(botonDorado, 'disabled:opacity-60')}
+              >
                 {editando ? 'Guardar cambios' : 'Crear servicio'}
               </button>
             </div>
@@ -478,10 +536,7 @@ export function ServicesManager({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  void deleteService(porBorrar.id)
-                  setPorBorrar(null)
-                }}
+                onClick={() => void eliminar(porBorrar)}
                 className="inline-flex items-center rounded-full bg-red-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-400"
               >
                 Eliminar

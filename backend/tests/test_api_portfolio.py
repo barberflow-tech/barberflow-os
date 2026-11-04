@@ -7,7 +7,7 @@ from PIL import Image
 from rest_framework.test import APIClient
 
 from apps.barberias.models import Barberia
-from apps.barberos.models import Barbero
+from apps.barberos.models import Barbero, PortfolioBarbero
 
 URL = "/api/v1/barbers/me/portfolio"
 
@@ -237,3 +237,36 @@ def test_rechaza_archivo_que_no_es_una_imagen(api_autenticada):
     from apps.barberos.models import PortfolioBarbero
 
     assert PortfolioBarbero.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_listar_devuelve_solo_las_fotos_del_barbero_autenticado(
+    make_user, barberia, barbero, api_autenticada
+):
+    # Dado un barbero con una foto y otro barbero con otra
+    otro = Barbero.objects.create(
+        barberia=barberia, name="Otro", user=make_user("barbero", email="o@b.test")
+    )
+    for dueno, ruta in ((barbero, "a.webp"), (otro, "b.webp")):
+        PortfolioBarbero.objects.create(
+            barbero=dueno,
+            image_url=f"http://storage.test/{ruta}",
+            storage_path=ruta,
+            original_filename=ruta,
+            original_size=10,
+            optimized_size=5,
+        )
+
+    # Cuando el primero consulta su portafolio
+    response = api_autenticada.get(URL)
+
+    # Entonces solo ve la suya
+    assert response.status_code == 200
+    assert [f["original_filename"] for f in response.data] == ["a.webp"]
+
+
+@pytest.mark.django_db
+def test_listar_exige_rol_barbero(make_user):
+    response = cliente_api(make_user("cliente")).get(URL)
+
+    assert response.status_code == 403

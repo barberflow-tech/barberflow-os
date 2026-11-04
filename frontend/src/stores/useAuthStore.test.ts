@@ -104,3 +104,42 @@ describe('useAuthStore', () => {
     expect(state.isHydrating).toBe(false)
   })
 })
+
+describe('logout', () => {
+  it('Dado un usuario con sesión, Cuando cierra sesión, Entonces avisa al servidor y limpia el estado', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })))
+    vi.stubGlobal('fetch', fetchMock)
+    useAuthStore.setState({
+      accessToken: 'tok',
+      user: { id: 1, email: 'a@b.test', role: 'barbero' },
+      isHydrating: false,
+    })
+
+    await useAuthStore.getState().logout()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/auth/logout'),
+      expect.objectContaining({ method: 'POST', credentials: 'include' }),
+    )
+    expect(useAuthStore.getState().user).toBeNull()
+    expect(useAuthStore.getState().accessToken).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('Dado que no hay red, Cuando cierra sesión, Entonces igual limpia el estado local', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new Error('offline'))),
+    )
+    useAuthStore.setState({
+      accessToken: 'tok',
+      user: { id: 1, email: 'a@b.test', role: 'barbero' },
+      isHydrating: false,
+    })
+
+    await useAuthStore.getState().logout()
+
+    expect(useAuthStore.getState().user).toBeNull()
+    vi.unstubAllGlobals()
+  })
+})

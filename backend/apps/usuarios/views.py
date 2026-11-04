@@ -131,6 +131,24 @@ class RefreshView(APIView):
         return respuesta
 
 
+class LogoutView(APIView):
+    """POST /api/v1/auth/logout: borra la cookie del refresh token.
+
+    Sin esto, cerrar sesion solo limpiaba el estado del navegador y la cookie
+    HttpOnly (que el frontend no puede borrar) restauraba la sesion al recargar.
+    Es idempotente y publica: si no hay cookie, tambien responde 204.
+    """
+
+    authentication_classes = []
+    permission_classes = [OrigenPermitido]
+
+    def post(self, request):
+        respuesta = Response(status=status.HTTP_204_NO_CONTENT)
+        borrar_cookie_refresh(respuesta)
+        respuesta["Cache-Control"] = "no-store"
+        return respuesta
+
+
 class ProtectedTestView(APIView):
     """GET /api/v1/auth/protected-test: solo para el rol admin.
 

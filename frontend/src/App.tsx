@@ -24,9 +24,12 @@ export function App() {
           <Route path="/bienvenida" element={<BienvenidaPage />} />
         </Route>
 
+        <Route element={<RoleGuard allowedRoles={['barbero']} />}>
+          <Route path="/barbero/portafolio" element={<PortafolioPage />} />
+        </Route>
+
         <Route element={<RoleGuard allowedRoles={['admin']} />}>
           <Route path="/admin" element={<AdminPage />} />
-          <Route path="/admin/portafolio" element={<PortafolioPage />} />
           <Route path="/admin/servicios" element={<ServicesManager />} />
         </Route>
 

@@ -51,7 +51,13 @@ def make_user(db):
             fields["role"] = AUTH_CONTRACT["roles"][role]
         if role == "admin":
             fields["is_staff"] = True
-        return user_model.objects.create_user(password=password, **fields)
+        user = user_model.objects.create_user(password=password, **fields)
+        if not _model_has_field(user_model, "role"):
+            # El rol vive en PerfilUsuario (SCRUM-29); la senal ya lo creo como cliente.
+            perfil = user.perfil
+            perfil.role = AUTH_CONTRACT["roles"][role]
+            perfil.save()
+        return user
 
     return _make_user
 

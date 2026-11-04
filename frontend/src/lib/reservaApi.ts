@@ -1,6 +1,7 @@
 // Capa de datos del wizard de reserva (SCRUM-44).
 // Servicios, franjas (GET /api/v1/availability) y la cita (POST /api/v1/appointments)
-// vienen del backend y exigen sesión. Los barberos siguen siendo los tres de la demo:
+// vienen del backend y no exigen cuenta: con sesión la cita queda a su nombre;
+// sin ella se envían el nombre y el celular de contacto. Los barberos siguen siendo los tres de la demo:
 // la gestión de barberos y de sus horarios (HU-08) es del Sprint 2.
 
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -8,15 +9,8 @@ import { listarServiciosApi } from './catalogoApi'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
 
-/** Error con un mensaje apto para mostrar; `requiereSesion` pide iniciar sesión. */
-export class ReservaError extends Error {
-  requiereSesion: boolean
-
-  constructor(message: string, requiereSesion = false) {
-    super(message)
-    this.requiereSesion = requiereSesion
-  }
-}
+/** Error con un mensaje apto para mostrar al usuario. */
+export class ReservaError extends Error {}
 
 export interface Servicio {
   id: number
@@ -51,6 +45,9 @@ export interface NuevaCita {
   servicioId: number
   barberoId: number
   inicio: string
+  /** Contacto del visitante sin cuenta (con sesión no hace falta). */
+  contactoNombre?: string
+  contactoCelular?: string
 }
 
 // Datos tomados del prototipo de Figma (Prototipo interactivo BarberFlow OS).
@@ -83,11 +80,21 @@ const aIsoColombia = (iso: string) => {
 
 const pausa = (ms = 150) => new Promise<void>((r) => setTimeout(r, ms))
 
-const SESION_EXPIRADA = 'Inicia sesión para ver los horarios y reservar.'
-
-function autorizacion(): Record<string, string> {
-  const token = useAuthStore.getState().accessToken
-  return token ? { Authorization: `Bearer ${token}` } : {}
+/**
+ * Llama a la API enviando el token si hay sesión. Si el token venció (401) se
+ * cierra la sesión y se repite como visitante: reservar no exige cuenta.
+ */
+async function pedir(url: string, init: RequestInit = {}): Promise<Response> {
+  const { accessToken, clearSession } = useAuthStore.getState()
+  const conToken = accessToken
+    ? { ...init, headers: { ...init.headers, Authorization: `Bearer ${accessToken}` } }
+    : init
+  const response = await fetch(url, conToken)
+  if (response.status === 401 && accessToken) {
+    clearSession()
+    return fetch(url, init)
+  }
+  return response
 }
 
 export async function listarServicios(): Promise<Servicio[]> {
@@ -127,14 +134,12 @@ export async function listarFranjas(
   const slot = duracionServicioMin <= 30 ? 30 : 60
   let response: Response
   try {
-    response = await fetch(
+    response = await pedir(
       `${API_URL}/api/v1/availability?barber=${barberoId}&date=${fecha}&slot_duration=${slot}`,
-      { headers: autorizacion() },
     )
   } catch {
     throw new ReservaError('No se pudo conectar con el servidor.')
   }
-  if (response.status === 401) throw new ReservaError(SESION_EXPIRADA, true)
   if (response.status === 404) {
     throw new ReservaError('Ese barbero no está disponible. Elige otro.')
   }
@@ -154,7 +159,7 @@ interface CitaApi {
   price: string
 }
 
-/** Crea la cita (POST /api/v1/appointments) del usuario con sesión. */
+/** Crea la cita (POST /api/v1/appointments), con sesión o como visitante. */
 export async function crearCita(datos: NuevaCita): Promise<CitaConfirmada> {
   const servicio = (await listarServicios()).find((s) => s.id === datos.servicioId)
   const barbero = BARBEROS.find((b) => b.id === datos.barberoId)
@@ -162,19 +167,25 @@ export async function crearCita(datos: NuevaCita): Promise<CitaConfirmada> {
 
   let response: Response
   try {
-    response = await fetch(`${API_URL}/api/v1/appointments`, {
+    response = await pedir(`${API_URL}/api/v1/appointments`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...autorizacion() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         barber: datos.barberoId,
         service: datos.servicioId,
         start_at: datos.inicio,
+        ...(datos.contactoNombre && { contact_name: datos.contactoNombre }),
+        ...(datos.contactoCelular && { contact_phone: datos.contactoCelular }),
       }),
     })
   } catch {
     throw new ReservaError('No se pudo conectar con el servidor.')
   }
-  if (response.status === 401) throw new ReservaError(SESION_EXPIRADA, true)
+  if (response.status === 429) {
+    throw new ReservaError(
+      'Demasiados intentos. Espera un momento e inténtalo de nuevo.',
+    )
+  }
   if (response.status === 403) {
     throw new ReservaError('Tu cuenta no puede reservar citas.')
   }

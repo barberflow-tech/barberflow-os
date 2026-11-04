@@ -151,10 +151,10 @@ def test_autentica_con_jwt(cliente, payload):
 
 
 @pytest.mark.django_db
-def test_sin_autenticacion_retorna_401(payload):
+def test_visitante_sin_contacto_retorna_400(payload):
     response = APIClient().post(URL, payload, format="json")
 
-    assert response.status_code == 401
+    assert response.status_code == 400
     assert Cita.objects.count() == 0
 
 

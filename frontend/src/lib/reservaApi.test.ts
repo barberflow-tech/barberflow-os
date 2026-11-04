@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { crearCita, listarFranjas, ReservaError } from './reservaApi'
+import { crearCita, listarFranjas } from './reservaApi'
 
 vi.mock('./catalogoApi', () => ({
   listarServiciosApi: vi.fn().mockResolvedValue([
@@ -60,15 +60,23 @@ describe('reservaApi con el backend', () => {
     )
   })
 
-  it('Dado un visitante sin sesión, Cuando pide franjas, Entonces se le pide iniciar sesión', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => json({}, 401)),
-    )
-
-    await expect(listarFranjas(1, '2099-11-04', 30)).rejects.toMatchObject({
-      requiereSesion: true,
+  it('Dado un token vencido, Cuando pide franjas, Entonces cierra la sesión y repite como visitante', async () => {
+    useAuthStore.getState().setSession({
+      accessToken: 'vencido',
+      user: { id: 1, email: 'a@b.co', role: 'cliente' },
     })
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(() => json({}, 401))
+      .mockImplementationOnce(() => json({ available_slots: [] }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(listarFranjas(1, '2099-11-04', 30)).resolves.toEqual([])
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    const segunda = fetchMock.mock.calls[1] as unknown as [string, RequestInit?]
+    expect(segunda[1]?.headers).toBeUndefined()
+    expect(useAuthStore.getState().accessToken).toBeNull()
   })
 
   it('Dado un cliente, Cuando crea la cita, Entonces envía POST con barber, service y start_at y devuelve el resumen', async () => {
@@ -115,19 +123,45 @@ describe('reservaApi con el backend', () => {
     ).rejects.toThrow(/acaba de ocupar/)
   })
 
-  it('Dado un 401, Cuando se crea la cita, Entonces pide iniciar sesión', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => json({}, 401)),
+  it('Dado un visitante, Cuando crea la cita, Entonces envía su nombre y celular sin token', async () => {
+    useAuthStore.getState().clearSession()
+    const fetchMock = vi.fn(() =>
+      json(
+        {
+          id: 5,
+          status: 'PENDING',
+          start_at: '2099-11-04T14:00:00Z',
+          price: '35000.00',
+        },
+        201,
+      ),
     )
+    vi.stubGlobal('fetch', fetchMock)
 
-    const error = await crearCita({
+    await crearCita({
       servicioId: 2,
       barberoId: 1,
       inicio: '2099-11-04T09:00:00-05:00',
-    }).catch((e: unknown) => e)
+      contactoNombre: 'Laura Gómez',
+      contactoCelular: '3001234567',
+    })
 
-    expect(error).toBeInstanceOf(ReservaError)
-    expect((error as ReservaError).requiereSesion).toBe(true)
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      contact_name: 'Laura Gómez',
+      contact_phone: '3001234567',
+    })
+    expect(init.headers).not.toHaveProperty('Authorization')
+  })
+
+  it('Dado el límite de intentos, Cuando se crea la cita, Entonces pide esperar', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => json({}, 429)),
+    )
+
+    await expect(
+      crearCita({ servicioId: 2, barberoId: 1, inicio: '2099-11-04T09:00:00-05:00' }),
+    ).rejects.toThrow(/Demasiados intentos/)
   })
 })

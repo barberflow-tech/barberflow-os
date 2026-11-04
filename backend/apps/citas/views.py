@@ -8,7 +8,9 @@ from rest_framework.exceptions import (
     PermissionDenied,
     ValidationError,
 )
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
 from apps.barberias.models import barberia_de
@@ -30,15 +32,23 @@ logger = logging.getLogger(__name__)
 def barberia_para_reservar(usuario):
     """Barbería en la que el usuario puede ver disponibilidad y reservar.
 
-    El personal usa la de su membresía. Un cliente no tiene membresía (se
-    registra sin barbería), así que reserva en la barbería del catálogo, la
-    misma que ve en GET /services: contexto temporal hasta que exista la
+    El personal usa la de su membresía. Un cliente (o un visitante sin
+    cuenta) no tiene membresía, así que reserva en la barbería del catálogo,
+    la misma que ve en GET /services: contexto temporal hasta que exista la
     selección de barbería. Cualquier otro usuario sin membresía recibe None.
     """
+    if not usuario.is_authenticated:
+        return obtener_barberia_catalogo()
     barberia = barberia_de(usuario)
     if barberia is None and rol_de(usuario) == Rol.CLIENTE:
         return obtener_barberia_catalogo()
     return barberia
+
+
+class ReservaVisitanteThrottle(AnonRateThrottle):
+    """Limita las reservas sin cuenta por IP (las autenticadas no se limitan)."""
+
+    scope = "reserva_visitante"
 
 
 class ReservaEnConflicto(APIException):
@@ -54,26 +64,34 @@ class ErrorAlGuardarCita(APIException):
 
 
 class CrearCitaView(APIView):
-    """POST /api/v1/appointments: crea una cita PENDING para el usuario autenticado.
+    """POST /api/v1/appointments: crea una cita PENDING.
 
-    Autenticacion (JWT) y permiso (IsAuthenticated) vienen de REST_FRAMEWORK
-    en settings. La reserva queda acotada a la barberia del usuario (403 si
-    no pertenece a ninguna). Los errores usan el formato estandar de DRF ({"detail": ...}
-    o errores por campo).
+    Es publica: con sesion la cita queda a nombre del usuario (acotada a su
+    barberia, 403 si no tiene); sin sesion exige nombre y celular de contacto
+    y se limita por IP. Los errores usan el formato estandar de DRF
+    ({"detail": ...} o errores por campo).
     """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [ReservaVisitanteThrottle]
 
     def post(self, request):
         barberia = barberia_para_reservar(request.user)
         if barberia is None:
             raise PermissionDenied("El usuario no pertenece a ninguna barberia.")
 
-        entrada = CrearCitaSerializer(data=request.data, barberia=barberia)
+        es_visitante = not request.user.is_authenticated
+        entrada = CrearCitaSerializer(
+            data=request.data, barberia=barberia, requiere_contacto=es_visitante
+        )
         entrada.is_valid(raise_exception=True)
         datos = entrada.validated_data
 
         try:
             cita = services.crear_cita(
-                cliente=request.user,
+                cliente=None if es_visitante else request.user,
+                contacto_nombre=datos.get("contact_name", "") if es_visitante else "",
+                contacto_celular=datos.get("contact_phone", "") if es_visitante else "",
                 barberia=barberia,
                 barbero_id=datos["barber"].pk,
                 servicio_id=datos["service"].pk,
@@ -93,7 +111,9 @@ class CrearCitaView(APIView):
 
 
 class DisponibilidadView(APIView):
-    """GET /api/v1/availability/: consulta los slots libres de un barbero."""
+    """GET /api/v1/availability/: consulta los slots libres de un barbero (publico)."""
+
+    permission_classes = [AllowAny]
 
     def get(self, request):
         barberia = barberia_para_reservar(request.user)

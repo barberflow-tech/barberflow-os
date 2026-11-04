@@ -278,8 +278,8 @@ def test_endpoint_no_expone_barberos_de_otra_barberia(api, otra_barberia, fecha)
 
 
 @pytest.mark.django_db
-def test_endpoint_exige_autenticacion(barbero, fecha):
-    # Cuando un usuario no autenticado consulta disponibilidad
+def test_visitante_solo_ve_barberos_de_la_barberia_del_catalogo(barbero, fecha):
+    # Cuando un visitante sin sesion consulta un barbero de otra barberia
     response = APIClient().get(
         URL,
         {
@@ -289,5 +289,5 @@ def test_endpoint_exige_autenticacion(barbero, fecha):
         },
     )
 
-    # Entonces la API exige autenticación
-    assert response.status_code == 401
+    # Entonces no exige cuenta, pero lo trata como inexistente
+    assert response.status_code == 404

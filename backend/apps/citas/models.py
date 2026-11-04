@@ -36,11 +36,17 @@ class Cita(models.Model):
     barberia = models.ForeignKey(
         "barberias.Barberia", on_delete=models.PROTECT, related_name="citas"
     )
+    # Nulo cuando la cita la agenda un visitante sin cuenta: entonces el
+    # contacto va en contact_name / contact_phone.
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="citas",
+        null=True,
+        blank=True,
     )
+    contact_name = models.CharField(max_length=80, blank=True, default="")
+    contact_phone = models.CharField(max_length=20, blank=True, default="")
     barber = models.ForeignKey(
         "barberos.Barbero", on_delete=models.PROTECT, related_name="citas"
     )
@@ -73,6 +79,12 @@ class Cita(models.Model):
             models.CheckConstraint(
                 condition=models.Q(price__gte=0),
                 name="cita_precio_no_negativo",
+            ),
+            # Toda cita tiene dueño: una cuenta o un contacto de visitante.
+            models.CheckConstraint(
+                condition=models.Q(client__isnull=False)
+                | (~models.Q(contact_name="") & ~models.Q(contact_phone="")),
+                name="cita_con_cliente_o_contacto",
             ),
             # Respaldo en BD: aunque algun camino se salte el bloqueo del
             # servicio, PostgreSQL rechaza dos citas activas solapadas del

@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,7 +32,14 @@ SECRET_KEY = os.getenv(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = []
+# Hosts desde los que se sirve la API, separados por coma. Con DEBUG Django ya
+# admite localhost; fuera de DEBUG (Staging, produccion) la lista vacia hace que
+# TODA peticion falle con 400, asi que hay que definirla ahi.
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+]
 
 
 # Application definition
@@ -46,6 +56,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     # Apps locales
+    "apps.usuarios",
     "apps.barberias",
     "apps.barberos",
     "apps.catalogo",
@@ -130,6 +141,51 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
 }
 
+# SimpleJWT
+# https://django-rest-framework-simplejwt.readthedocs.io/en/latest/settings.html
+# El refresh viaja en cookie HttpOnly y el access en memoria (HU-06). El front
+# solo renueva la sesion al cargar la app, asi que el access no puede ser de
+# pocos minutos. Ambas duraciones se ajustan por entorno.
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        minutes=int(os.getenv("JWT_ACCESS_MINUTES", "15"))
+    ),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", "7"))),
+    "ROTATE_REFRESH_TOKENS": False,
+    "UPDATE_LAST_LOGIN": False,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    # user_id es el claim estandar; email y role los agrega apps.usuarios.tokens.
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+    "TOKEN_OBTAIN_SERIALIZER": "apps.usuarios.tokens.LoginTokenSerializer",
+    "TOKEN_REFRESH_SERIALIZER": "apps.usuarios.tokens.RefreshTokenSerializer",
+}
+
+# Cookie HttpOnly del refresh token (HU-06). Se limita a /api/v1/auth/ para que
+# el navegador solo la envie a login, refresh y logout.
+#   AUTH_COOKIE_SECURE: "True"/"False". Por defecto es Secure, salvo con DEBUG.
+#   AUTH_COOKIE_SAMESITE: Lax (local, mismo sitio), Strict o None. Vercel y
+#     Render son sitios distintos, asi que alli hace falta None, que exige Secure.
+
+_cookie_segura = os.getenv("AUTH_COOKIE_SECURE")
+AUTH_REFRESH_COOKIE = {
+    "NAME": os.getenv("AUTH_REFRESH_COOKIE_NAME", "refresh_token"),
+    "PATH": "/api/v1/auth/",
+    "SECURE": (
+        (not DEBUG) if _cookie_segura is None else _cookie_segura.lower() == "true"
+    ),
+    "SAMESITE": os.getenv("AUTH_COOKIE_SAMESITE", "Lax"),
+}
+if AUTH_REFRESH_COOKIE["SAMESITE"] not in ("Lax", "Strict", "None"):
+    raise ImproperlyConfigured("AUTH_COOKIE_SAMESITE debe ser Lax, Strict o None.")
+if AUTH_REFRESH_COOKIE["SAMESITE"] == "None" and not AUTH_REFRESH_COOKIE["SECURE"]:
+    raise ImproperlyConfigured(
+        "SameSite=None exige una cookie Secure (AUTH_COOKIE_SECURE=True)."
+    )
+
 # CORS
 # https://github.com/adamchainz/django-cors-headers
 
@@ -138,6 +194,9 @@ CORS_ALLOWED_ORIGINS = [
     for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",")
     if origin.strip()
 ]
+# El frontend usa fetch con credentials: 'include'; sin esto el navegador
+# descarta la cookie del refresh token.
+CORS_ALLOW_CREDENTIALS = True
 
 
 # Internationalization

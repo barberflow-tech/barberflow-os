@@ -115,6 +115,8 @@ describe('ReservaWizard', () => {
       servicioId: 1,
       barberoId: 1,
       inicio: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T11:30/),
+      contactoNombre: 'Juan Esteban Gómez',
+      contactoCelular: '3004567890',
     })
 
     await waitFor(() => {
@@ -157,25 +159,5 @@ describe('ReservaWizard', () => {
     expect(
       screen.queryByRole('heading', { name: /reserva confirmada/i }),
     ).not.toBeInTheDocument()
-  })
-
-  it('Dado un visitante sin sesión, Cuando confirma, Entonces se le ofrece iniciar sesión sin perder lo elegido', async () => {
-    const { ReservaError } = await import('@/lib/reservaApi')
-    vi.mocked(crearCita).mockRejectedValueOnce(
-      new ReservaError('Inicia sesión para ver los horarios y reservar.', true),
-    )
-    const user = userEvent.setup()
-    renderWizard()
-    await llegarAlPaso4(user)
-
-    await user.type(screen.getByLabelText(/nombre completo/i), 'Ana Pérez')
-    await user.type(screen.getByLabelText(/celular/i), '3001234567')
-    await user.click(screen.getByRole('button', { name: /confirmar/i }))
-
-    expect(await screen.findByRole('link', { name: 'Iniciar sesión' })).toHaveAttribute(
-      'href',
-      '/login',
-    )
-    expect(useReservaWizardStore.getState().hora).toBe('11:30')
   })
 })

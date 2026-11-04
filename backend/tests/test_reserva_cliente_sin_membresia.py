@@ -1,4 +1,4 @@
-"""Un cliente (registrado sin barbería) reserva en la barbería del catálogo."""
+"""Un cliente (con o sin cuenta) reserva en la barbería del catálogo."""
 
 from datetime import date, time, timedelta
 from decimal import Decimal
@@ -105,3 +105,107 @@ def test_personal_sin_membresia_sigue_sin_poder_reservar(make_user, barbero, rol
     )
 
     assert respuesta.status_code == 403
+
+
+# --- Visitante sin cuenta ----------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _limpiar_throttle():
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+    cache.clear()
+
+
+def _payload_visitante(barbero, servicio, **extra):
+    inicio = timezone.now() + timedelta(days=2)
+    datos = {
+        "barber": barbero.pk,
+        "service": servicio.pk,
+        "start_at": inicio.isoformat(),
+        "contact_name": "Laura Gómez",
+        "contact_phone": "3001234567",
+    }
+    datos.update(extra)
+    return datos
+
+
+def test_visitante_ve_la_disponibilidad(barbero):
+    respuesta = APIClient().get(
+        DISPONIBILIDAD,
+        {
+            "barber": barbero.pk,
+            "date": proximo_lunes().isoformat(),
+            "slot_duration": 60,
+        },
+    )
+
+    assert respuesta.status_code == 200
+    assert len(respuesta.data["available_slots"]) == 10
+
+
+def test_visitante_reserva_con_nombre_y_celular(barbero, servicio):
+    respuesta = APIClient().post(
+        CITAS, _payload_visitante(barbero, servicio), format="json"
+    )
+
+    assert respuesta.status_code == 201
+    cita = Cita.objects.get()
+    assert cita.client is None
+    assert (cita.contact_name, cita.contact_phone) == ("Laura Gómez", "3001234567")
+    assert cita.barberia == obtener_barberia_catalogo()
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"contact_name": ""},
+        {"contact_phone": ""},
+        {"contact_phone": "12345"},
+        {"contact_name": "Al"},
+    ],
+)
+def test_visitante_con_contacto_invalido_retorna_400(barbero, servicio, extra):
+    respuesta = APIClient().post(
+        CITAS, _payload_visitante(barbero, servicio, **extra), format="json"
+    )
+
+    assert respuesta.status_code == 400
+    assert Cita.objects.count() == 0
+
+
+def test_visitante_no_puede_tomar_una_franja_ocupada(barbero, servicio):
+    datos = _payload_visitante(barbero, servicio)
+    APIClient().post(CITAS, datos, format="json")
+
+    respuesta = APIClient().post(CITAS, datos, format="json")
+
+    assert respuesta.status_code == 409
+
+
+def test_cliente_con_cuenta_no_necesita_contacto(make_user, barbero, servicio):
+    datos = _payload_visitante(barbero, servicio)
+    del datos["contact_name"], datos["contact_phone"]
+    cliente = make_user("cliente")
+
+    respuesta = api_de(cliente).post(CITAS, datos, format="json")
+
+    assert respuesta.status_code == 201
+    assert Cita.objects.get().client == cliente
+
+
+def test_visitante_es_limitado_por_ip(barbero, servicio):
+    api = APIClient()
+    estados = [
+        api.post(
+            CITAS,
+            _payload_visitante(barbero, servicio, contact_name="x"),
+            format="json",
+        ).status_code
+        for _ in range(21)
+    ]
+
+    assert estados[-1] == 429
+    assert 429 not in estados[:20]

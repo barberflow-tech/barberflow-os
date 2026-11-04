@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { ArrowRight, Check } from 'lucide-react'
-import { crearCita, ReservaError } from '@/lib/reservaApi'
+import { crearCita } from '@/lib/reservaApi'
 import { useReservaWizardStore, type PasoReserva } from '@/stores/useReservaWizardStore'
 import { cn } from '@/lib/utils'
+import type { ClienteData } from '@/lib/reservaSchema'
 import { PasoBarbero } from './PasoBarbero'
 import { PasoConfirmar } from './PasoConfirmar'
 import { PasoFechaHora } from './PasoFechaHora'
@@ -50,7 +51,6 @@ export function ReservaWizard() {
   const reiniciar = useReservaWizardStore((s) => s.reiniciar)
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [requiereSesion, setRequiereSesion] = useState(false)
 
   if (cita) return <ReservaExitosa cita={cita} onOtra={reiniciar} />
 
@@ -59,21 +59,21 @@ export function ReservaWizard() {
     (paso === 2 && !!barbero) ||
     (paso === 3 && !!fecha && !!hora)
 
-  async function confirmar() {
+  async function confirmar(cliente: ClienteData) {
     if (!servicio || !barbero || !fecha || !hora) return
     setEnviando(true)
     setError(null)
-    setRequiereSesion(false)
     try {
       const nueva = await crearCita({
         servicioId: servicio.id,
         barberoId: barbero.id,
         inicio: construirInicio(fecha, hora),
+        contactoNombre: cliente.nombre,
+        contactoCelular: cliente.celular,
       })
       registrarCita(nueva)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo registrar la reserva.')
-      setRequiereSesion(e instanceof ReservaError && e.requiereSesion)
     } finally {
       setEnviando(false)
     }
@@ -153,13 +153,7 @@ export function ReservaWizard() {
         {paso === 1 && <PasoServicio />}
         {paso === 2 && <PasoBarbero />}
         {paso === 3 && <PasoFechaHora />}
-        {paso === 4 && (
-          <PasoConfirmar
-            error={error}
-            requiereSesion={requiereSesion}
-            onConfirmar={confirmar}
-          />
-        )}
+        {paso === 4 && <PasoConfirmar error={error} onConfirmar={confirmar} />}
       </div>
 
       <footer className="flex items-center justify-between gap-3 border-t border-slate-100 dark:border-white/5 px-4 py-4 sm:px-6">

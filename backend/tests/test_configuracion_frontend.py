@@ -90,9 +90,7 @@ def test_los_endpoints_publicos_de_auth_lo_declaran_explicitamente(vista, permis
 
 @pytest.mark.django_db
 def test_un_endpoint_de_negocio_sigue_exigiendo_autenticacion():
-    assert (
-        APIClient().post("/api/v1/appointments", {}, format="json").status_code == 401
-    )
+    assert APIClient().get("/api/v1/barbers/me/portfolio").status_code == 401
 
 
 # --- SimpleJWT -----------------------------------------------------------

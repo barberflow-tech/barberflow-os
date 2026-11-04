@@ -43,6 +43,8 @@ def crear_cita(
     barbero_id: int,
     servicio_id: int,
     inicio: datetime,
+    contacto_nombre: str = "",
+    contacto_celular: str = "",
 ) -> Cita:
     """Crea una cita en estado PENDING de forma atomica (HU-02).
 
@@ -53,7 +55,12 @@ def crear_cita(
 
     Barbero y servicio se buscan solo dentro de `barberia` (el tenant del
     usuario): un ID de otra barberia se trata igual que uno inexistente.
+
+    `cliente` puede ser None (visitante sin cuenta); entonces el contacto
+    (nombre y celular) es obligatorio.
     """
+    if cliente is None and not (contacto_nombre and contacto_celular):
+        raise HorarioInvalidoError("Falta el nombre o el celular de contacto.")
     # Validaciones  que no dependen del estado de la agenda.
     if timezone.is_naive(inicio):
         raise HorarioInvalidoError("La hora de inicio debe incluir zona horaria.")
@@ -88,6 +95,8 @@ def crear_cita(
             return Cita.objects.create(
                 barberia=barberia,
                 client=cliente,
+                contact_name=contacto_nombre,
+                contact_phone=contacto_celular,
                 barber=barbero,
                 service=servicio,
                 start_at=inicio,

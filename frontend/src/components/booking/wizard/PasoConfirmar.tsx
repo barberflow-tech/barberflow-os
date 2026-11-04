@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { useForm, type Resolver } from 'react-hook-form'
 import {
   clienteSchema,
@@ -23,11 +22,10 @@ const zodResolver: Resolver<ClienteFormValues> = (values) => {
 
 interface Props {
   error: string | null
-  requiereSesion?: boolean
   onConfirmar: (cliente: ClienteData) => void
 }
 
-export function PasoConfirmar({ error, requiereSesion, onConfirmar }: Props) {
+export function PasoConfirmar({ error, onConfirmar }: Props) {
   const servicio = useReservaWizardStore((s) => s.servicio)
   const barbero = useReservaWizardStore((s) => s.barbero)
   const fecha = useReservaWizardStore((s) => s.fecha)
@@ -96,12 +94,7 @@ export function PasoConfirmar({ error, requiereSesion, onConfirmar }: Props) {
             role="alert"
             className="rounded-xl bg-[#FEF2F3] dark:bg-[#d7b36a]/10 p-3 text-sm text-[#E5283C] dark:text-[#d7b36a]"
           >
-            {error}{' '}
-            {requiereSesion && (
-              <Link to="/login" className="font-semibold underline">
-                Iniciar sesión
-              </Link>
-            )}
+            {error}
           </p>
         )}
       </div>

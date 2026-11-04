@@ -1,7 +1,8 @@
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { botonPrimario, botonSecundario } from '@/components/booking/wizard/estilos'
+import { useAuthStore, type Role } from '@/stores/useAuthStore'
 import { Logo } from './Logo'
 
 export interface EnlaceNavbar {
@@ -11,6 +12,53 @@ export interface EnlaceNavbar {
 
 interface NavbarProps {
   enlaces?: EnlaceNavbar[]
+}
+
+// Pantalla propia de cada rol (el cliente no tiene panel: su espacio es la reserva).
+const ENLACE_POR_ROL: Partial<Record<Role, { to: string; etiqueta: string }>> = {
+  admin: { to: '/admin', etiqueta: 'Panel' },
+  barbero: { to: '/barbero/portafolio', etiqueta: 'Mi portafolio' },
+}
+
+/** Accesos de la derecha: según haya sesión o no, y sin repetir la página actual. */
+function Accesos({ onNavegar }: { onNavegar?: () => void }) {
+  const user = useAuthStore((s) => s.user)
+  const logout = useAuthStore((s) => s.logout)
+  const { pathname } = useLocation()
+  const enlaceRol = user ? ENLACE_POR_ROL[user.role] : undefined
+
+  return (
+    <>
+      {user ? (
+        <>
+          {enlaceRol && (
+            <Link to={enlaceRol.to} onClick={onNavegar} className={botonSecundario}>
+              {enlaceRol.etiqueta}
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              onNavegar?.()
+              void logout()
+            }}
+            className={botonSecundario}
+          >
+            Cerrar sesión
+          </button>
+        </>
+      ) : (
+        <Link to="/login" onClick={onNavegar} className={botonSecundario}>
+          Ingresar
+        </Link>
+      )}
+      {pathname !== '/reservar' && (
+        <Link to="/reservar" onClick={onNavegar} className={botonPrimario}>
+          Reservar cita
+        </Link>
+      )}
+    </>
+  )
 }
 
 export function Navbar({ enlaces = [] }: NavbarProps) {
@@ -34,12 +82,7 @@ export function Navbar({ enlaces = [] }: NavbarProps) {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link to="/login" className={botonSecundario}>
-            Ingresar
-          </Link>
-          <Link to="/reservar" className={botonPrimario}>
-            Reservar cita
-          </Link>
+          <Accesos />
         </div>
 
         <button
@@ -75,12 +118,7 @@ export function Navbar({ enlaces = [] }: NavbarProps) {
               </a>
             ))}
             <div className="mt-3 grid grid-cols-2 gap-3">
-              <Link to="/login" className={botonSecundario}>
-                Ingresar
-              </Link>
-              <Link to="/reservar" className={botonPrimario}>
-                Reservar cita
-              </Link>
+              <Accesos onNavegar={() => setAbierto(false)} />
             </div>
           </nav>
         </div>

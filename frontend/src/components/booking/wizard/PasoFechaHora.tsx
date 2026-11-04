@@ -1,6 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { listarFranjas, ReservaError, type FranjaHoraria } from '@/lib/reservaApi'
 import { useReservaWizardStore } from '@/stores/useReservaWizardStore'
 import { cn } from '@/lib/utils'
@@ -164,12 +163,7 @@ export function PasoFechaHora() {
             role="alert"
             className="rounded-xl bg-[#FEF2F3] dark:bg-[#d7b36a]/10 p-3 text-sm text-[#E5283C] dark:text-[#d7b36a]"
           >
-            {vigente.error.message}{' '}
-            {vigente.error.requiereSesion && (
-              <Link to="/login" className="font-semibold underline">
-                Iniciar sesión
-              </Link>
-            )}
+            {vigente.error.message}
           </p>
         ) : franjas.length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-white/55">

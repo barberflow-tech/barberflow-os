@@ -77,6 +77,17 @@ describe('App · rutas', () => {
     expect(screen.getByText('Nuevo agendamiento')).toBeInTheDocument()
   })
 
+  it('Dado un visitante, Cuando entra a /reservar, Entonces puede volver al inicio y ve la barra y el pie', () => {
+    renderEn('/reservar')
+    expect(screen.getByRole('link', { name: /Volver al inicio/ })).toHaveAttribute(
+      'href',
+      '/',
+    )
+    expect(
+      screen.getAllByRole('link', { name: /BarberFlow, ir al inicio/i }),
+    ).toHaveLength(2)
+  })
+
   it('Dado un visitante sin sesión, Cuando entra a /admin, Entonces va al login', () => {
     renderEn('/admin')
     expect(screen.getByPlaceholderText('hola@thiagobarber.co')).toBeInTheDocument()

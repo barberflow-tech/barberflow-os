@@ -90,11 +90,11 @@ describe('App · rutas', () => {
     expect(screen.getByText('Nuevo agendamiento')).toBeInTheDocument()
   })
 
-  it('Dado un barbero con sesión, Cuando entra a /login, Entonces va a la bienvenida', () => {
+  it('Dado un barbero con sesión, Cuando entra a /login, Entonces va a su portafolio', () => {
     iniciarSesionComo('barbero')
     renderEn('/login')
     expect(
-      screen.getByRole('heading', { name: 'Bienvenido a BarberFlow' }),
+      screen.getByRole('heading', { level: 1, name: /El arte está en/i }),
     ).toBeInTheDocument()
   })
 

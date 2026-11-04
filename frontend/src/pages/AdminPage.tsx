@@ -1,15 +1,9 @@
-import { CalendarPlus, Images, Scissors, type LucideIcon } from 'lucide-react'
+import { CalendarPlus, Scissors, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { AdminShell } from '@/components/admin/AdminShell'
 
 const secciones: { to: string; titulo: string; detalle: string; icono: LucideIcon }[] =
   [
-    {
-      to: '/admin/portafolio',
-      titulo: 'Portafolio',
-      detalle: 'Sube las fotografías de tus trabajos y organiza la galería.',
-      icono: Images,
-    },
     {
       to: '/admin/servicios',
       titulo: 'Catálogo de servicios',
@@ -35,10 +29,10 @@ export function AdminPage() {
         Panel de administración
       </h1>
       <p className="mt-3 max-w-xl text-app-fg/60">
-        Gestiona lo que verán tus clientes: tus trabajos, tus servicios y las reservas.
+        Gestiona lo que verán tus clientes: tus servicios y las reservas.
       </p>
 
-      <ul className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-12 grid gap-5 sm:grid-cols-2">
         {secciones.map(({ to, titulo, detalle, icono: Icono }) => (
           <li key={to}>
             <Link

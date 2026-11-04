@@ -6,6 +6,7 @@ import '@fontsource/playfair-display/400-italic.css'
 import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { Dropzone, type DropzoneProps } from './Dropzone'
 
 export interface FotoPortafolio {
@@ -16,60 +17,25 @@ export interface FotoPortafolio {
   alt: string
 }
 
-const unsplash = (id: string) =>
-  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1400&q=80`
-
-// Fotos de muestra del diseño de Figma; se reemplazan por las del portafolio real.
-export const FOTOS_MUESTRA: FotoPortafolio[] = [
-  {
-    id: '1',
-    titulo: 'Fade clásico',
-    descripcion: 'Incluye degradado medio, contornos y barba perfilada.',
-    url: unsplash('1562004760-aceed7bb0fe3'),
-    alt: 'Retrato de hombre con corte fade y barba perfilada',
-  },
-  {
-    id: '2',
-    titulo: 'Textura editorial',
-    descripcion: 'Incluye corte a tijera, textura y acabado natural.',
-    url: unsplash('1578390432942-d323db577792'),
-    alt: 'Hombre de perfil con corte texturizado',
-  },
-  {
-    id: '3',
-    titulo: 'Precisión',
-    descripcion: 'Incluye fade bajo, definición y contornos precisos.',
-    url: unsplash('1672642150228-3fcd5826ec26'),
-    alt: 'Barbero definiendo contornos con máquina',
-  },
-  {
-    id: '4',
-    titulo: 'Corte a tijera',
-    descripcion: 'Incluye diseño de forma, volumen y peinado final.',
-    url: unsplash('1553521041-d168abd31de3'),
-    alt: 'Hombre con corte a tijera y peinado final',
-  },
-  {
-    id: '5',
-    titulo: 'Ritual BarberFlow',
-    descripcion: 'Incluye asesoría, corte, lavado y acabado premium.',
-    url: unsplash('1640301133543-41fe25ad6450'),
-    alt: 'Cliente durante el ritual BarberFlow',
-  },
-]
-
 interface GaleriaPortafolioProps {
-  fotos?: FotoPortafolio[]
+  fotos: FotoPortafolio[]
+  cargando?: boolean
+  error?: string | null
+  onReintentar?: () => void
   onUpload: DropzoneProps['onUpload']
 }
 
 export function GaleriaPortafolio({
-  fotos = FOTOS_MUESTRA,
+  fotos,
+  cargando = false,
+  error = null,
+  onReintentar,
   onUpload,
 }: GaleriaPortafolioProps) {
   const [actual, setActual] = useState(0)
   const [abierto, setAbierto] = useState(false)
-  const foto = fotos[actual]
+  const logout = useAuthStore((state) => state.logout)
+  const foto = fotos[Math.min(actual, fotos.length - 1)]
   const mover = (d: number) => setActual((i) => (i + d + fotos.length) % fotos.length)
 
   return (
@@ -89,15 +55,24 @@ export function GaleriaPortafolio({
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setAbierto(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#d7b36a] px-5 py-3 text-sm font-semibold text-[#111411] transition hover:bg-[#e5c77f]"
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Subir fotografía</span>
-            <span className="sm:hidden">Subir</span>
-          </button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="rounded-full border border-white/15 px-3 py-2.5 text-sm font-medium whitespace-nowrap text-white/75 sm:px-4 sm:py-3 transition hover:border-[#d7b36a]/60 hover:text-white"
+            >
+              Cerrar sesión
+            </button>
+            <button
+              type="button"
+              onClick={() => setAbierto(true)}
+              className="inline-flex items-center gap-2 rounded-full bg-[#d7b36a] px-5 py-3 text-sm font-semibold text-[#111411] transition hover:bg-[#e5c77f]"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Subir fotografía</span>
+              <span className="sm:hidden">Subir</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -118,10 +93,52 @@ export function GaleriaPortafolio({
               Cali.
             </p>
             <p className="mt-3 text-xs font-medium tracking-[0.14em] text-white/40 uppercase">
-              {fotos.length} fotografías
+              {fotos.length} {fotos.length === 1 ? 'fotografía' : 'fotografías'}
             </p>
           </div>
         </div>
+
+        {cargando && (
+          <p role="status" className="py-20 text-center text-white/60">
+            Cargando tu portafolio...
+          </p>
+        )}
+
+        {!cargando && error && (
+          <div
+            role="alert"
+            className="flex flex-col items-center gap-4 rounded-[2rem] border border-red-500/30 bg-red-500/10 px-6 py-14 text-center"
+          >
+            <p className="text-sm text-red-200">{error}</p>
+            {onReintentar && (
+              <button
+                type="button"
+                onClick={onReintentar}
+                className="rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-white transition hover:border-[#d7b36a]"
+              >
+                Reintentar
+              </button>
+            )}
+          </div>
+        )}
+
+        {!cargando && !error && !foto && (
+          <div className="flex flex-col items-center gap-4 rounded-[2rem] border border-dashed border-white/20 px-6 py-20 text-center">
+            <p className="font-['Playfair_Display',serif] text-3xl text-white">
+              Aún no tienes fotografías
+            </p>
+            <p className="max-w-sm text-sm text-white/55">
+              Sube tus mejores cortes para que tus clientes vean tu trabajo.
+            </p>
+            <button
+              type="button"
+              onClick={() => setAbierto(true)}
+              className="rounded-full bg-[#d7b36a] px-6 py-3 text-sm font-semibold text-[#111411] transition hover:bg-[#e5c77f]"
+            >
+              Subir mi primera fotografía
+            </button>
+          </div>
+        )}
 
         {foto && (
           <section
@@ -265,7 +282,7 @@ function DialogoSubida({
         <div className="space-y-5 px-6 py-6 sm:px-8">
           <Dropzone onUpload={onUpload} />
           <p className="text-xs text-white/40">
-            En producción, estas fotos se guardarán de forma segura en tu portafolio.
+            Las fotos se optimizan y se guardan de forma segura en tu portafolio.
           </p>
         </div>
       </div>

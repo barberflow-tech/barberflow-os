@@ -5,6 +5,6 @@ describe('rutaPorRol', () => {
   it('envía a cada rol a su pantalla inicial', () => {
     expect(rutaPorRol('admin')).toBe('/admin')
     expect(rutaPorRol('cliente')).toBe('/reservar')
-    expect(rutaPorRol('barbero')).toBe('/bienvenida')
+    expect(rutaPorRol('barbero')).toBe('/barbero/portafolio')
   })
 })

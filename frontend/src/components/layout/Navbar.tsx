@@ -17,7 +17,7 @@ export function Navbar({ enlaces = [] }: NavbarProps) {
   const [abierto, setAbierto] = useState(false)
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-slate-200 dark:border-white/10 bg-white/90 dark:bg-[#0f1210]/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Logo />
 
@@ -26,7 +26,7 @@ export function Navbar({ enlaces = [] }: NavbarProps) {
             <a
               key={enlace.href}
               href={enlace.href}
-              className="text-sm font-medium text-slate-600 transition-colors hover:text-[#0B1B3A]"
+              className="text-sm font-medium text-slate-600 dark:text-white/65 transition-colors hover:text-[#0B1B3A] dark:hover:text-[#f4f1e9]"
             >
               {enlace.etiqueta}
             </a>
@@ -48,7 +48,7 @@ export function Navbar({ enlaces = [] }: NavbarProps) {
           aria-expanded={abierto}
           aria-controls="menu-movil"
           aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
-          className="grid size-10 place-items-center rounded-xl border border-slate-200 text-[#0B1B3A] md:hidden"
+          className="grid size-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10 text-[#0B1B3A] dark:text-[#f4f1e9] md:hidden"
         >
           {abierto ? (
             <X className="size-5" aria-hidden="true" />
@@ -59,14 +59,17 @@ export function Navbar({ enlaces = [] }: NavbarProps) {
       </div>
 
       {abierto && (
-        <div id="menu-movil" className="border-t border-slate-200 bg-white md:hidden">
+        <div
+          id="menu-movil"
+          className="border-t border-slate-200 dark:border-white/10 bg-white dark:bg-[#151915] md:hidden"
+        >
           <nav aria-label="Principal móvil" className="flex flex-col gap-1 p-4">
             {enlaces.map((enlace) => (
               <a
                 key={enlace.href}
                 href={enlace.href}
                 onClick={() => setAbierto(false)}
-                className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 dark:text-white/80 hover:bg-slate-50 dark:hover:bg-white/5"
               >
                 {enlace.etiqueta}
               </a>

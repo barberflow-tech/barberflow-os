@@ -13,6 +13,8 @@ from rest_framework.views import APIView
 
 from apps.barberias.models import barberia_de
 from apps.barberos.models import Barbero
+from apps.catalogo.context import obtener_barberia_catalogo
+from apps.usuarios.models import Rol, rol_de
 
 from . import services
 from .serializers import (
@@ -23,6 +25,20 @@ from .serializers import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def barberia_para_reservar(usuario):
+    """Barbería en la que el usuario puede ver disponibilidad y reservar.
+
+    El personal usa la de su membresía. Un cliente no tiene membresía (se
+    registra sin barbería), así que reserva en la barbería del catálogo, la
+    misma que ve en GET /services: contexto temporal hasta que exista la
+    selección de barbería. Cualquier otro usuario sin membresía recibe None.
+    """
+    barberia = barberia_de(usuario)
+    if barberia is None and rol_de(usuario) == Rol.CLIENTE:
+        return obtener_barberia_catalogo()
+    return barberia
 
 
 class ReservaEnConflicto(APIException):
@@ -47,7 +63,7 @@ class CrearCitaView(APIView):
     """
 
     def post(self, request):
-        barberia = barberia_de(request.user)
+        barberia = barberia_para_reservar(request.user)
         if barberia is None:
             raise PermissionDenied("El usuario no pertenece a ninguna barberia.")
 
@@ -80,7 +96,7 @@ class DisponibilidadView(APIView):
     """GET /api/v1/availability/: consulta los slots libres de un barbero."""
 
     def get(self, request):
-        barberia = barberia_de(request.user)
+        barberia = barberia_para_reservar(request.user)
 
         if barberia is None:
             raise PermissionDenied("El usuario no pertenece a ninguna barbería.")

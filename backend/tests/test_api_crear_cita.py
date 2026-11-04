@@ -119,6 +119,8 @@ def test_servicio_de_otra_barberia_retorna_400(api, payload, otra_barberia):
 def test_usuario_sin_barberia_retorna_403(django_user_model, payload):
     # Dado un usuario autenticado que no pertenece a ninguna barberia
     usuario = django_user_model.objects.create_user(username="suelto", password="x")
+    usuario.perfil.role = "barbero"  # un cliente sí puede reservar sin membresía
+    usuario.perfil.save()
     api = APIClient()
     api.force_authenticate(user=usuario)
 

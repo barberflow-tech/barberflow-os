@@ -20,10 +20,12 @@ class ServicioListCreateView(APIView):
 
     def get(self, request):
         barberia = obtener_barberia_catalogo()
-        servicios = Servicio.objects.filter(
-            barberia=barberia,
-            is_active=True,
-        ).order_by("name")
+        servicios = Servicio.objects.filter(barberia=barberia)
+        # El público solo ve los activos; el administrador ve también los
+        # inactivos para poder reactivarlos (igual que en el detalle).
+        if not request.user.is_staff:
+            servicios = servicios.filter(is_active=True)
+        servicios = servicios.order_by("name")
         serializer = ServicioSerializer(servicios, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

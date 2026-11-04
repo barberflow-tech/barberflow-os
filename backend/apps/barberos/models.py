@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -13,6 +14,14 @@ class Barbero(models.Model):
 
     barberia = models.ForeignKey(
         "barberias.Barberia", on_delete=models.PROTECT, related_name="barberos"
+    )
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="barbero",
+        help_text="Cuenta con la que el barbero inicia sesion (HU-06).",
     )
     name = models.CharField(max_length=150)
     is_active = models.BooleanField(default=True)
@@ -114,3 +123,26 @@ class HorarioBarbero(models.Model):
 
     def __str__(self):
         return f"{self.barbero} - {self.get_weekday_display()}"
+
+
+class PortfolioBarbero(models.Model):
+    """Imagen optimizada del portafolio público de un barbero."""
+
+    barbero = models.ForeignKey(
+        Barbero,
+        on_delete=models.CASCADE,
+        related_name="portfolio_images",
+    )
+    image_url = models.URLField(max_length=500)
+    storage_path = models.CharField(max_length=512, unique=True)
+    original_filename = models.CharField(max_length=255)
+    original_size = models.PositiveBigIntegerField()
+    optimized_size = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        db_table = "barber_portfolios"
+
+    def __str__(self):
+        return f"Portafolio de {self.barbero.name}"

@@ -48,7 +48,10 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
     >
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <label htmlFor="nombre" className="text-xs font-semibold text-slate-600">
+          <label
+            htmlFor="nombre"
+            className="text-xs font-semibold text-slate-600 dark:text-white/65"
+          >
             Nombre completo
           </label>
           <input
@@ -59,11 +62,16 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
             {...register('nombre')}
           />
           {errors.nombre && (
-            <p className="text-xs text-[#E5283C]">{errors.nombre.message}</p>
+            <p className="text-xs text-[#E5283C] dark:text-[#d7b36a]">
+              {errors.nombre.message}
+            </p>
           )}
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="celular" className="text-xs font-semibold text-slate-600">
+          <label
+            htmlFor="celular"
+            className="text-xs font-semibold text-slate-600 dark:text-white/65"
+          >
             Celular
           </label>
           <input
@@ -76,29 +84,33 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
             {...register('celular')}
           />
           {errors.celular && (
-            <p className="text-xs text-[#E5283C]">{errors.celular.message}</p>
+            <p className="text-xs text-[#E5283C] dark:text-[#d7b36a]">
+              {errors.celular.message}
+            </p>
           )}
         </div>
         {error && (
           <p
             role="alert"
-            className="rounded-xl bg-[#FEF2F3] p-3 text-sm text-[#E5283C]"
+            className="rounded-xl bg-[#FEF2F3] dark:bg-[#d7b36a]/10 p-3 text-sm text-[#E5283C] dark:text-[#d7b36a]"
           >
             {error}
           </p>
         )}
       </div>
 
-      <section className="rounded-2xl bg-slate-50 p-5">
-        <h3 className="mb-4 text-sm font-bold text-[#0B1B3A]">Resumen</h3>
+      <section className="rounded-2xl bg-slate-50 dark:bg-white/5 p-5">
+        <h3 className="mb-4 text-sm font-bold text-[#0B1B3A] dark:text-[#f4f1e9]">
+          Resumen
+        </h3>
         <dl className="space-y-3">
           <Fila etiqueta="Servicio" valor={servicio?.nombre} />
           <Fila etiqueta="Profesional" valor={barbero?.nombre} />
           <Fila etiqueta="Fecha" valor={fecha ? fechaLarga(fecha) : undefined} />
           <Fila etiqueta="Hora" valor={hora ?? undefined} />
-          <div className="flex items-baseline justify-between border-t border-slate-200 pt-3">
-            <dt className="text-xs text-slate-500">Total</dt>
-            <dd className="text-xl font-bold text-[#0B1B3A]">
+          <div className="flex items-baseline justify-between border-t border-slate-200 dark:border-white/10 pt-3">
+            <dt className="text-xs text-slate-500 dark:text-white/55">Total</dt>
+            <dd className="text-xl font-bold text-[#0B1B3A] dark:text-[#f4f1e9]">
               {servicio ? formatearPrecio(servicio.precio) : '—'}
             </dd>
           </div>
@@ -111,8 +123,8 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
 function Fila({ etiqueta, valor }: { etiqueta: string; valor?: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <dt className="text-xs text-slate-500">{etiqueta}</dt>
-      <dd className="text-right text-xs font-semibold text-[#0B1B3A] first-letter:uppercase">
+      <dt className="text-xs text-slate-500 dark:text-white/55">{etiqueta}</dt>
+      <dd className="text-right text-xs font-semibold text-[#0B1B3A] dark:text-[#f4f1e9] first-letter:uppercase">
         {valor ?? '—'}
       </dd>
     </div>

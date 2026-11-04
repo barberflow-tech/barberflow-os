@@ -85,7 +85,7 @@ export function ReservaWizard() {
         : enc.subtitulo
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#151915] shadow-sm">
       <ol
         className="flex items-start justify-between px-4 py-5 sm:px-6"
         aria-label="Progreso de la reserva"
@@ -104,7 +104,9 @@ export function ReservaWizard() {
                   aria-hidden="true"
                   className={cn(
                     'absolute right-1/2 top-4 h-px w-full',
-                    hecho || actual ? 'bg-emerald-500' : 'bg-slate-200',
+                    hecho || actual
+                      ? 'bg-emerald-500'
+                      : 'bg-slate-200 dark:bg-white/15',
                   )}
                 />
               )}
@@ -112,8 +114,11 @@ export function ReservaWizard() {
                 className={cn(
                   'relative z-10 flex size-8 items-center justify-center rounded-full text-xs font-bold',
                   hecho && 'bg-emerald-500 text-white',
-                  actual && 'bg-[#E5283C] text-white ring-4 ring-[#E5283C]/15',
-                  !hecho && !actual && 'bg-slate-100 text-slate-400',
+                  actual &&
+                    'bg-[#E5283C] dark:bg-[#d7b36a] text-white dark:text-[#111411] ring-4 ring-[#E5283C]/15',
+                  !hecho &&
+                    !actual &&
+                    'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-white/40',
                 )}
               >
                 {hecho ? <Check className="size-4" /> : p.n}
@@ -122,7 +127,9 @@ export function ReservaWizard() {
                 className={cn(
                   'text-[10px] font-semibold uppercase tracking-wider',
                   !actual && 'hidden sm:block',
-                  actual ? 'text-[#0B1B3A]' : 'text-slate-400',
+                  actual
+                    ? 'text-[#0B1B3A] dark:text-[#f4f1e9]'
+                    : 'text-slate-400 dark:text-white/40',
                 )}
               >
                 {p.titulo}
@@ -132,10 +139,12 @@ export function ReservaWizard() {
         })}
       </ol>
 
-      <div className="border-t border-slate-100 px-4 py-5 sm:px-6 sm:py-6">
+      <div className="border-t border-slate-100 dark:border-white/5 px-4 py-5 sm:px-6 sm:py-6">
         <header className="mb-5">
-          <h2 className="text-lg font-bold text-[#0B1B3A]">{enc.titulo}</h2>
-          <p className="text-sm text-slate-500">{subtitulo}</p>
+          <h2 className="text-lg font-bold text-[#0B1B3A] dark:text-[#f4f1e9]">
+            {enc.titulo}
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-white/55">{subtitulo}</p>
         </header>
 
         {paso === 1 && <PasoServicio />}
@@ -144,7 +153,7 @@ export function ReservaWizard() {
         {paso === 4 && <PasoConfirmar error={error} onConfirmar={confirmar} />}
       </div>
 
-      <footer className="flex items-center justify-between gap-3 border-t border-slate-100 px-4 py-4 sm:px-6">
+      <footer className="flex items-center justify-between gap-3 border-t border-slate-100 dark:border-white/5 px-4 py-4 sm:px-6">
         <button
           type="button"
           className={botonSecundario}
@@ -153,7 +162,7 @@ export function ReservaWizard() {
         >
           Atrás
         </button>
-        <span className="hidden whitespace-nowrap text-[11px] text-slate-400 min-[380px]:block sm:text-xs">
+        <span className="hidden whitespace-nowrap text-[11px] text-slate-400 dark:text-white/40 min-[380px]:block sm:text-xs">
           Paso {paso} de 4
         </span>
         {paso < 4 ? (

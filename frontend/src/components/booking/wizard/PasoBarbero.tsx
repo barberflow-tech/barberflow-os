@@ -21,7 +21,10 @@ export function PasoBarbero() {
     }
   }, [])
 
-  if (!barberos) return <p className="text-sm text-slate-500">Cargando barberos…</p>
+  if (!barberos)
+    return (
+      <p className="text-sm text-slate-500 dark:text-white/55">Cargando barberos…</p>
+    )
 
   return (
     <div className="grid gap-3 sm:grid-cols-3">
@@ -41,13 +44,15 @@ export function PasoBarbero() {
           >
             <span
               aria-hidden="true"
-              className="mb-2 flex size-14 items-center justify-center rounded-full bg-[#0B1B3A] text-sm font-bold text-white"
+              className="mb-2 flex size-14 items-center justify-center rounded-full bg-[#0B1B3A] dark:bg-[#171c17] text-sm font-bold text-white"
             >
               {iniciales(b.nombre)}
             </span>
-            <span className="text-sm font-bold text-[#0B1B3A]">{b.nombre}</span>
-            <span className="text-xs text-slate-500">{b.rol}</span>
-            <span className="mt-1 text-xs text-slate-500">
+            <span className="text-sm font-bold text-[#0B1B3A] dark:text-[#f4f1e9]">
+              {b.nombre}
+            </span>
+            <span className="text-xs text-slate-500 dark:text-white/55">{b.rol}</span>
+            <span className="mt-1 text-xs text-slate-500 dark:text-white/55">
               <span className="text-amber-500">★</span>{' '}
               <span className="font-semibold text-amber-600">
                 {b.calificacion.toFixed(1)}

@@ -1,10 +1,29 @@
-import React, { useState } from 'react'
-import { useServicesStore } from '../../stores/useServicesStore'
-import type { Service } from '../../stores/useServicesStore'
+import { Clock, Pencil, Plus, Scissors, Star, Trash2, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { formatearPrecio } from '@/components/booking/wizard/formato'
+import { cn } from '@/lib/utils'
+import { useServicesStore, type Service } from '@/stores/useServicesStore'
+import { AdminShell } from './AdminShell'
 
-type ServiceFormData = Omit<Service, 'id'>
+/** Foto del portafolio que todavía no es un servicio del catálogo. */
+export interface FotoPendiente {
+  id: string
+  url: string
+  titulo?: string
+}
 
-const initialFormData: ServiceFormData = {
+interface ServicesManagerProps {
+  /** Fotos listas para convertirse en servicio (nombre, precio, duración y categoría). */
+  fotosPendientes?: FotoPendiente[]
+  /** Se llama cuando una foto pendiente ya se convirtió en servicio. */
+  onFotoUsada?: (id: string) => void
+}
+
+type FormularioServicio = Omit<Service, 'id'>
+
+const CATEGORIAS = ['Cortes', 'Barbas', 'Combos', 'Tratamientos']
+
+const vacio: FormularioServicio = {
   name: '',
   duration_minutes: 30,
   price: 0,
@@ -14,477 +33,463 @@ const initialFormData: ServiceFormData = {
   image_url: '',
 }
 
-export const ServicesManager: React.FC = () => {
-  const { services, updateServiceOptimistic, deleteService } = useServicesStore()
+const campo =
+  'w-full rounded-xl border border-app-fg/15 bg-app-fg/5 px-4 py-3 text-sm text-app-fg placeholder:text-app-fg/30 focus:border-brand focus:outline-none'
+const etiqueta =
+  'mb-1.5 block text-xs font-semibold tracking-wide text-app-fg/60 uppercase'
+const botonDorado =
+  'inline-flex items-center justify-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-fg transition hover:bg-brand-hover'
+const botonLinea =
+  'inline-flex items-center justify-center gap-2 rounded-full border border-app-fg/15 px-4 py-2 text-sm font-medium text-app-fg/80 transition hover:border-brand/60 hover:text-app-fg'
 
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingService, setEditingService] = useState<Service | null>(null)
+export function ServicesManager({
+  fotosPendientes = [],
+  onFotoUsada,
+}: ServicesManagerProps) {
+  const {
+    services,
+    isLoading,
+    error,
+    fetchServices,
+    addService,
+    updateServiceOptimistic,
+    deleteService,
+  } = useServicesStore()
 
-  const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null)
+  const [filtro, setFiltro] = useState('Todas')
+  const [form, setForm] = useState<FormularioServicio>({ ...vacio })
+  const [modalAbierto, setModalAbierto] = useState(false)
+  const [editando, setEditando] = useState<Service | null>(null)
+  const [fotoOrigen, setFotoOrigen] = useState<FotoPendiente | null>(null)
+  const [porBorrar, setPorBorrar] = useState<Service | null>(null)
 
-  const [selectedCategory, setSelectedCategory] = useState('Todas')
+  useEffect(() => {
+    void fetchServices()
+  }, [fetchServices])
 
-  const [formData, setFormData] = useState<ServiceFormData>({ ...initialFormData })
-
-  const [imagePreview, setImagePreview] = useState('')
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const target = e.target
-    const { name, type } = target
-
-    let value: string | number | boolean
-
-    if (type === 'checkbox') {
-      value = (target as HTMLInputElement).checked
-    } else if (name === 'price' || name === 'duration_minutes') {
-      value = Number(target.value)
-    } else {
-      value = target.value
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-
-    if (!file) return
-
-    if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecciona un archivo de imagen.')
-      e.target.value = ''
-      return
-    }
-
-    const reader = new FileReader()
-
-    reader.onload = () => {
-      const imageData = reader.result as string
-
-      setImagePreview(imageData)
-
-      setFormData((prev) => ({
-        ...prev,
-        image_url: imageData,
-      }))
-    }
-
-    reader.onerror = () => {
-      alert('No se pudo cargar la imagen.')
-    }
-
-    reader.readAsDataURL(file)
-  }
-
-  const resetForm = () => {
-    setFormData({ ...initialFormData })
-    setEditingService(null)
-    setImagePreview('')
-  }
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-
-    if (!editingService) return
-
-    updateServiceOptimistic(editingService.id, formData)
-
-    setIsModalOpen(false)
-    resetForm()
-  }
-
-  const handleEditClick = (service: Service) => {
-    setEditingService(service)
-
-    setFormData({
-      name: service.name,
-      duration_minutes: service.duration_minutes,
-      price: service.price,
-      category: service.category,
-      is_active: service.is_active,
-      is_featured: service.is_featured,
-      image_url: service.image_url,
-    })
-
-    setImagePreview(service.image_url)
-    setIsModalOpen(true)
-  }
-
-  const handleDelete = (service: Service) => {
-    setServiceToDelete(service)
-  }
-
-  const confirmDelete = () => {
-    if (!serviceToDelete) return
-
-    deleteService(serviceToDelete.id)
-    setServiceToDelete(null)
-  }
-
-  const filteredServices =
-    selectedCategory === 'Todas'
-      ? services
-      : selectedCategory === 'Destacados'
-        ? services.filter((service) => service.is_featured)
-        : services.filter((service) => service.category === selectedCategory)
-
-  const categories = [
+  const categorias = [
     'Todas',
-    'Cortes',
-    'Barbas',
-    'Tratamientos',
-    'Combos',
+    ...new Set([...CATEGORIAS, ...services.map((s) => s.category)]),
     'Destacados',
   ]
+  const visibles = services.filter((s) =>
+    filtro === 'Todas'
+      ? true
+      : filtro === 'Destacados'
+        ? s.is_featured
+        : s.category === filtro,
+  )
+
+  const abrirNuevo = (foto?: FotoPendiente) => {
+    setEditando(null)
+    setFotoOrigen(foto ?? null)
+    setForm({ ...vacio, image_url: foto?.url ?? '', name: foto?.titulo ?? '' })
+    setModalAbierto(true)
+  }
+
+  const abrirEdicion = (servicio: Service) => {
+    setEditando(servicio)
+    setFotoOrigen(null)
+    setForm({
+      name: servicio.name,
+      duration_minutes: servicio.duration_minutes,
+      price: servicio.price,
+      category: servicio.category,
+      is_active: servicio.is_active,
+      is_featured: servicio.is_featured,
+      image_url: servicio.image_url,
+    })
+    setModalAbierto(true)
+  }
+
+  const cerrarModal = () => {
+    setModalAbierto(false)
+    setEditando(null)
+    setFotoOrigen(null)
+  }
+
+  const guardar = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (editando) {
+      await updateServiceOptimistic(editando.id, form)
+    } else {
+      await addService(form)
+      if (fotoOrigen) onFotoUsada?.(fotoOrigen.id)
+    }
+    cerrarModal()
+  }
+
+  const cambiar = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, type, value } = e.target
+    const dato =
+      type === 'checkbox'
+        ? (e.target as HTMLInputElement).checked
+        : type === 'number'
+          ? Number(value)
+          : value
+    setForm((prev) => ({ ...prev, [name]: dato }))
+  }
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 space-y-6 bg-slate-50 dark:bg-gray-950 min-h-screen">
-      {/* Encabezado */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-gray-800 gap-4">
+    <AdminShell>
+      <div className="mb-10 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
-            Catálogo de Servicios
+          <p className="mb-4 flex items-center gap-3 text-xs font-semibold tracking-[0.22em] text-brand uppercase">
+            <span className="h-px w-8 bg-brand" />
+            Servicios
+          </p>
+          <h1 className="font-['Playfair_Display',serif] text-4xl leading-tight sm:text-5xl">
+            Catálogo de servicios
           </h1>
-
-          <p className="text-xs text-slate-500 mt-1">
-            Administra precios, tiempos de atención, estados y servicios destacados.
+          <p className="mt-3 max-w-xl text-app-fg/60">
+            Lo que tus clientes pueden reservar. Ajusta nombre, precio, duración y
+            categoría.
           </p>
         </div>
-
-        <span className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-gray-800 px-3 py-2 rounded-xl">
-          {services.length} servicios registrados
-        </span>
+        <button type="button" onClick={() => abrirNuevo()} className={botonDorado}>
+          <Plus className="size-4" aria-hidden="true" />
+          Nuevo servicio
+        </button>
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-gray-900 p-4 rounded-3xl border border-slate-200 dark:border-gray-800 shadow-sm">
-        <div className="flex gap-2 overflow-x-auto pb-1 w-full sm:w-auto">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-all ${
-                selectedCategory === category
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
-                  : 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-              }`}
-            >
-              {category === 'Destacados' ? '⭐ ' : ''}
-              {category}
-            </button>
-          ))}
-        </div>
-
-        <div className="text-xs text-slate-400 font-medium whitespace-nowrap">
-          Mostrando:{' '}
-          <span className="text-slate-700 dark:text-slate-200 font-bold">
-            {filteredServices.length} elementos
-          </span>
-        </div>
-      </div>
-
-      {/* Tarjetas de servicios */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {filteredServices.map((service) => (
-          <div
-            key={service.id}
-            className="group relative bg-white dark:bg-gray-900 rounded-3xl border border-slate-200 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
-          >
-            {/* Imagen */}
-            <div className="relative h-48 bg-slate-100 dark:bg-gray-800">
-              <img
-                src={service.image_url}
-                alt={service.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none'
-                }}
-              />
-
-              {/* Favoritos */}
-              <button
-                onClick={() =>
-                  updateServiceOptimistic(service.id, {
-                    is_featured: !service.is_featured,
-                  })
-                }
-                className={`absolute top-3 left-3 w-9 h-9 rounded-full flex items-center justify-center shadow-md cursor-pointer transition-transform hover:scale-110 ${
-                  service.is_featured
-                    ? 'bg-amber-400 text-white'
-                    : 'bg-white/90 text-slate-400'
-                }`}
-                title={
-                  service.is_featured ? 'Quitar de destacados' : 'Marcar como destacado'
-                }
+      {fotosPendientes.length > 0 && (
+        <section
+          aria-label="Fotos del portafolio por configurar"
+          className="mb-10 rounded-2xl border border-brand/30 bg-brand/[0.04] p-5"
+        >
+          <h2 className="font-['Playfair_Display',serif] text-xl">
+            Fotos del portafolio por configurar
+          </h2>
+          <p className="mt-1 text-sm text-app-fg/55">
+            Subiste estas fotos en el portafolio. Conviértelas en servicio poniéndoles
+            nombre, precio, duración y categoría.
+          </p>
+          <ul className="mt-5 grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {fotosPendientes.map((foto) => (
+              <li
+                key={foto.id}
+                className="overflow-hidden rounded-xl border border-app-fg/10 bg-app"
               >
-                ★
-              </button>
-
-              {/* Editar y eliminar */}
-              <div className="absolute top-3 right-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <img src={foto.url} alt="" className="h-32 w-full object-cover" />
                 <button
-                  onClick={() => handleEditClick(service)}
-                  className="w-9 h-9 rounded-full bg-white/90 text-slate-700 flex items-center justify-center shadow-md hover:bg-white transition-transform hover:scale-105"
-                  title="Editar servicio"
+                  type="button"
+                  onClick={() => abrirNuevo(foto)}
+                  className="w-full px-3 py-2.5 text-xs font-semibold text-brand transition hover:bg-app-fg/5"
                 >
-                  ✏️
+                  Configurar servicio
                 </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
-                <button
-                  onClick={() => handleDelete(service)}
-                  className="w-9 h-9 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md hover:bg-red-700 transition-transform hover:scale-105"
-                  title="Eliminar servicio"
-                >
-                  🗑
-                </button>
-              </div>
-
-              {/* Categoría */}
-              <div className="absolute bottom-3 left-3">
-                <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md text-white uppercase tracking-wider">
-                  {service.category}
-                </span>
-              </div>
-            </div>
-
-            {/* Información */}
-            <div className="p-4 flex flex-col justify-between flex-grow space-y-3">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1">
-                  {service.name}
-                </h3>
-
-                <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                  <span>⏱️ {service.duration_minutes} min</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-gray-800">
-                <span className="text-base font-black text-slate-900 dark:text-white">
-                  ${service.price.toLocaleString('es-CO')}
-                </span>
-
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
-                  Activo
-                </span>
-              </div>
-            </div>
-          </div>
+      <div
+        role="group"
+        aria-label="Filtrar por categoría"
+        className="mb-8 flex flex-wrap gap-2"
+      >
+        {categorias.map((categoria) => (
+          <button
+            key={categoria}
+            type="button"
+            aria-pressed={filtro === categoria}
+            onClick={() => setFiltro(categoria)}
+            className={cn(
+              'rounded-full border px-4 py-1.5 text-sm transition',
+              filtro === categoria
+                ? 'border-brand bg-brand font-semibold text-brand-fg'
+                : 'border-app-fg/15 text-app-fg/70 hover:border-app-fg/40',
+            )}
+          >
+            {categoria}
+          </button>
         ))}
       </div>
 
-      {/* Modal de edición */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl border border-slate-200 dark:border-gray-800 space-y-4">
-            <h2 className="text-lg font-black text-slate-900 dark:text-white">
-              Editar Servicio
-            </h2>
+      {error && (
+        <p role="alert" className="mb-6 text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
+      {isLoading && services.length === 0 && (
+        <p className="text-sm text-app-fg/50">Cargando servicios…</p>
+      )}
+      {!isLoading && !error && services.length === 0 && (
+        <p className="text-sm text-app-fg/50">
+          Aún no hay servicios en el catálogo. Crea uno con «Nuevo servicio».
+        </p>
+      )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Nombre */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Nombre del Servicio
-                </label>
-
-                <input
-                  type="text"
-                  name="name"
-                  required
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 text-slate-900 dark:text-white"
-                  placeholder="Ej. Corte Fade"
+      <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {visibles.map((servicio) => (
+          <li
+            key={servicio.id}
+            className="flex flex-col overflow-hidden rounded-2xl border border-app-fg/10 bg-app-fg/[0.03] transition hover:border-brand/50"
+          >
+            <div className="relative h-44 bg-app-fg/5">
+              {servicio.image_url ? (
+                <img
+                  src={servicio.image_url}
+                  alt={servicio.name}
+                  className="h-full w-full object-cover"
                 />
-              </div>
-
-              {/* Precio y duración */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Precio ($)
-                  </label>
-
-                  <input
-                    type="number"
-                    name="price"
-                    required
-                    min="0"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 text-slate-900 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Duración (min)
-                  </label>
-
-                  <input
-                    type="number"
-                    name="duration_minutes"
-                    required
-                    min="5"
-                    step="5"
-                    value={formData.duration_minutes}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 text-slate-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              {/* Categoría */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Categoría
-                </label>
-
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 text-slate-900 dark:text-white"
+              ) : (
+                <div
+                  aria-hidden="true"
+                  className="grid h-full place-items-center text-app-fg/20"
                 >
-                  <option value="Cortes">Cortes</option>
-                  <option value="Barbas">Barbas</option>
-                  <option value="Tratamientos">Tratamientos</option>
-                  <option value="Combos">Combos</option>
-                </select>
-              </div>
-
-              {/* Imagen */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  Imagen del servicio
-                </label>
-
-                <div className="relative overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800">
-                  {imagePreview ? (
-                    <img
-                      src={imagePreview}
-                      alt="Vista previa del servicio"
-                      className="w-full h-44 object-cover"
-                    />
-                  ) : (
-                    <div className="h-44 flex flex-col items-center justify-center text-slate-400">
-                      <span className="text-3xl mb-2">📷</span>
-                      <span className="text-xs">Selecciona una imagen</span>
-                    </div>
-                  )}
-
-                  <label className="flex items-center justify-center gap-2 p-3 bg-white dark:bg-gray-900 border-t border-slate-200 dark:border-gray-700 text-sm font-bold text-slate-700 dark:text-white cursor-pointer hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors">
-                    <span>📸</span>
-                    Cambiar imagen
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                  </label>
+                  <Scissors className="size-12" />
                 </div>
+              )}
+              <span className="absolute bottom-3 left-3 rounded-full bg-app/85 px-3 py-1 text-[0.65rem] font-semibold tracking-wider text-brand uppercase backdrop-blur">
+                {servicio.category}
+              </span>
+              <button
+                type="button"
+                aria-label={
+                  servicio.is_featured
+                    ? `Quitar ${servicio.name} de destacados`
+                    : `Destacar ${servicio.name}`
+                }
+                aria-pressed={servicio.is_featured}
+                onClick={() =>
+                  void updateServiceOptimistic(servicio.id, {
+                    is_featured: !servicio.is_featured,
+                  })
+                }
+                className="absolute top-3 right-3 grid size-9 place-items-center rounded-full bg-app/85 backdrop-blur transition hover:bg-app"
+              >
+                <Star
+                  className={cn(
+                    'size-4',
+                    servicio.is_featured ? 'fill-brand text-brand' : 'text-app-fg/70',
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
+            </div>
 
-                <p className="text-[11px] text-slate-400 mt-2">
-                  Formatos compatibles: JPG, PNG y WEBP.
-                </p>
+            <div className="flex flex-1 flex-col gap-3 p-5">
+              <h3 className="font-['Playfair_Display',serif] text-xl">
+                {servicio.name}
+              </h3>
+              <p className="flex items-center gap-1.5 text-sm text-app-fg/55">
+                <Clock className="size-3.5" aria-hidden="true" />
+                {servicio.duration_minutes} min
+              </p>
+              <div className="mt-auto flex items-center justify-between">
+                <span className="text-lg font-semibold text-brand">
+                  {formatearPrecio(servicio.price)}
+                </span>
+                <span
+                  className={cn(
+                    'rounded-full px-2.5 py-0.5 text-xs font-semibold',
+                    servicio.is_active
+                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-app-fg/10 text-app-fg/50',
+                  )}
+                >
+                  {servicio.is_active ? 'Activo' : 'Inactivo'}
+                </span>
               </div>
-
-              {/* Botones */}
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-gray-800">
+              <div className="flex gap-2 border-t border-app-fg/10 pt-4">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsModalOpen(false)
-                    resetForm()
-                  }}
-                  className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-all"
+                  onClick={() => abrirEdicion(servicio)}
+                  className={cn(botonLinea, 'flex-1')}
                 >
-                  Cancelar
+                  <Pencil className="size-3.5" aria-hidden="true" />
+                  Editar
                 </button>
-
                 <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm hover:opacity-90 transition-all"
+                  type="button"
+                  aria-label={`Eliminar ${servicio.name}`}
+                  onClick={() => setPorBorrar(servicio)}
+                  className={cn(
+                    botonLinea,
+                    'px-3 hover:border-red-400/60 hover:text-red-300',
+                  )}
                 >
-                  Guardar Cambios
+                  <Trash2 className="size-4" aria-hidden="true" />
                 </button>
               </div>
-            </form>
-          </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {modalAbierto && (
+        <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/70 p-4">
+          <form
+            role="dialog"
+            aria-modal="true"
+            aria-label={editando ? 'Editar servicio' : 'Nuevo servicio'}
+            onSubmit={(e) => void guardar(e)}
+            className="w-full max-w-lg space-y-5 rounded-2xl border border-app-fg/10 bg-panel p-6"
+          >
+            <div className="flex items-start justify-between">
+              <h2 className="font-['Playfair_Display',serif] text-2xl">
+                {editando ? 'Editar servicio' : 'Nuevo servicio'}
+              </h2>
+              <button
+                type="button"
+                aria-label="Cerrar"
+                onClick={cerrarModal}
+                className="text-app-fg/50 hover:text-app-fg"
+              >
+                <X className="size-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            {form.image_url && (
+              <img
+                src={form.image_url}
+                alt="Vista previa del servicio"
+                className="h-40 w-full rounded-xl object-cover"
+              />
+            )}
+
+            <div>
+              <label htmlFor="servicio-nombre" className={etiqueta}>
+                Nombre
+              </label>
+              <input
+                id="servicio-nombre"
+                name="name"
+                required
+                value={form.name}
+                onChange={cambiar}
+                placeholder="Ej. Corte clásico"
+                className={campo}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="servicio-precio" className={etiqueta}>
+                  Precio (COP)
+                </label>
+                <input
+                  id="servicio-precio"
+                  name="price"
+                  type="number"
+                  min={0}
+                  step={1000}
+                  required
+                  value={form.price}
+                  onChange={cambiar}
+                  className={campo}
+                />
+              </div>
+              <div>
+                <label htmlFor="servicio-duracion" className={etiqueta}>
+                  Duración (min)
+                </label>
+                <input
+                  id="servicio-duracion"
+                  name="duration_minutes"
+                  type="number"
+                  min={5}
+                  step={5}
+                  required
+                  value={form.duration_minutes}
+                  onChange={cambiar}
+                  className={campo}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="servicio-categoria" className={etiqueta}>
+                Categoría
+              </label>
+              <select
+                id="servicio-categoria"
+                name="category"
+                value={form.category}
+                onChange={cambiar}
+                className={campo}
+              >
+                {[...new Set([...CATEGORIAS, form.category])].map((c) => (
+                  <option key={c} value={c} className="bg-panel">
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-wrap gap-6 text-sm text-app-fg/75">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  name="is_active"
+                  checked={form.is_active}
+                  onChange={cambiar}
+                  className="accent-brand"
+                />
+                Servicio activo
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  name="is_featured"
+                  checked={form.is_featured}
+                  onChange={cambiar}
+                  className="accent-brand"
+                />
+                Destacado
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={cerrarModal} className={botonLinea}>
+                Cancelar
+              </button>
+              <button type="submit" className={botonDorado}>
+                {editando ? 'Guardar cambios' : 'Crear servicio'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
-      {/* Modal personalizado de eliminación */}
-      {serviceToDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      {porBorrar && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4">
           <div
-            role="dialog"
+            role="alertdialog"
             aria-modal="true"
-            aria-labelledby="delete-service-title"
-            className="w-full max-w-md rounded-3xl bg-white dark:bg-gray-900 p-6 shadow-2xl border border-slate-200 dark:border-gray-800"
+            aria-label="Eliminar servicio"
+            className="w-full max-w-sm space-y-4 rounded-2xl border border-app-fg/10 bg-panel p-6"
           >
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 flex items-center justify-center rounded-full bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 mb-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M12 9v4" />
-                  <path d="M12 17h.01" />
-                  <path d="M10.3 3.9 1.8 18.2a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
-                </svg>
-              </div>
-
-              <h2
-                id="delete-service-title"
-                className="text-xl font-black text-slate-900 dark:text-white"
-              >
-                ¿Eliminar servicio?
-              </h2>
-
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Estás a punto de eliminar{' '}
-                <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {serviceToDelete.name}
-                </span>
-                . Esta acción no se puede deshacer.
-              </p>
-            </div>
-
-            <div className="flex gap-3 mt-8">
+            <h2 className="font-['Playfair_Display',serif] text-xl">
+              Eliminar servicio
+            </h2>
+            <p className="text-sm text-app-fg/65">
+              ¿Quieres eliminar «{porBorrar.name}» del catálogo?
+            </p>
+            <div className="flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setServiceToDelete(null)}
-                className="flex-1 rounded-xl border border-slate-200 dark:border-gray-700 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors"
+                onClick={() => setPorBorrar(null)}
+                className={botonLinea}
               >
                 Cancelar
               </button>
-
               <button
                 type="button"
-                onClick={confirmDelete}
-                className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-700 shadow-sm transition-colors"
+                onClick={() => {
+                  void deleteService(porBorrar.id)
+                  setPorBorrar(null)
+                }}
+                className="inline-flex items-center rounded-full bg-red-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-400"
               >
-                Sí, eliminar
+                Eliminar
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </AdminShell>
   )
 }

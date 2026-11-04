@@ -64,30 +64,35 @@ export function PasoFechaHora() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,320px)_1fr]">
-      <div className="rounded-2xl border border-slate-200 p-4">
+      <div className="rounded-2xl border border-slate-200 dark:border-white/10 p-4">
         <div className="mb-3 flex items-center justify-between">
           <button
             type="button"
             aria-label="Mes anterior"
             disabled={mesActual}
             onClick={() => mover(-1)}
-            className="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 disabled:opacity-30"
+            className="flex size-8 items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/55 disabled:opacity-30"
           >
             <ChevronLeft className="size-4" />
           </button>
-          <span className="text-sm font-bold text-[#0B1B3A]">{tituloMes}</span>
+          <span className="text-sm font-bold text-[#0B1B3A] dark:text-[#f4f1e9]">
+            {tituloMes}
+          </span>
           <button
             type="button"
             aria-label="Mes siguiente"
             onClick={() => mover(1)}
-            className="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500"
+            className="flex size-8 items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/55"
           >
             <ChevronRight className="size-4" />
           </button>
         </div>
         <div className="grid grid-cols-7 gap-1 text-center">
           {DIAS.map((d, i) => (
-            <span key={i} className="py-1 text-[10px] font-semibold text-slate-400">
+            <span
+              key={i}
+              className="py-1 text-[10px] font-semibold text-slate-400 dark:text-white/40"
+            >
               {d}
             </span>
           ))}
@@ -109,9 +114,10 @@ export function PasoFechaHora() {
                 disabled={pasado || !delMes}
                 onClick={() => seleccionarFecha(iso)}
                 className={cn(
-                  'aspect-square rounded-lg text-xs font-medium text-[#0B1B3A] transition-colors hover:bg-slate-100 disabled:hover:bg-transparent',
-                  (pasado || !delMes) && 'text-slate-300',
-                  activo && 'bg-[#E5283C] font-bold text-white hover:bg-[#E5283C]',
+                  'aspect-square rounded-lg text-xs font-medium text-[#0B1B3A] dark:text-[#f4f1e9] transition-colors hover:bg-slate-100 dark:hover:bg-white/10 disabled:hover:bg-transparent',
+                  (pasado || !delMes) && 'text-slate-300 dark:text-white/30',
+                  activo &&
+                    'bg-[#E5283C] dark:bg-[#d7b36a] font-bold text-white dark:text-[#111411] hover:bg-[#E5283C] dark:hover:bg-[#d7b36a]',
                 )}
               >
                 {d.getDate()}
@@ -120,8 +126,8 @@ export function PasoFechaHora() {
           })}
         </div>
         {fecha && (
-          <p className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500">
-            <span className="size-1.5 rounded-full bg-[#E5283C]" />
+          <p className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-white/55">
+            <span className="size-1.5 rounded-full bg-[#E5283C] dark:bg-[#d7b36a]" />
             Día seleccionado:{' '}
             {fechaLocal(fecha).toLocaleDateString('es-CO', {
               weekday: 'short',
@@ -133,11 +139,13 @@ export function PasoFechaHora() {
       </div>
 
       <div>
-        <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-white/40">
           Horarios para el {fecha ? diaMes(fecha) : '…'}
         </h3>
         {!franjas ? (
-          <p className="text-sm text-slate-500">Cargando horarios…</p>
+          <p className="text-sm text-slate-500 dark:text-white/55">
+            Cargando horarios…
+          </p>
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {franjas.map((f) => (
@@ -149,11 +157,11 @@ export function PasoFechaHora() {
                 disabled={!f.disponible}
                 onClick={() => seleccionarHora(f.hora)}
                 className={cn(
-                  'h-11 rounded-xl border border-slate-200 bg-white text-sm font-medium text-[#0B1B3A] transition-colors hover:border-slate-300',
+                  'h-11 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#151915] text-sm font-medium text-[#0B1B3A] dark:text-[#f4f1e9] transition-colors hover:border-slate-300 dark:hover:border-white/20',
                   hora === f.hora &&
-                    'border-[#E5283C] bg-[#FEF2F3] text-[#E5283C] hover:border-[#E5283C]',
+                    'border-[#E5283C] dark:border-[#d7b36a] bg-[#FEF2F3] dark:bg-[#d7b36a]/10 text-[#E5283C] dark:text-[#d7b36a] hover:border-[#E5283C] dark:hover:border-[#d7b36a]',
                   !f.disponible &&
-                    'cursor-not-allowed border-transparent bg-slate-50 text-slate-300 hover:border-transparent',
+                    'cursor-not-allowed border-transparent bg-slate-50 dark:bg-white/5 text-slate-300 dark:text-white/30 hover:border-transparent',
                 )}
               >
                 {f.hora}
@@ -161,7 +169,9 @@ export function PasoFechaHora() {
             ))}
           </div>
         )}
-        <p className="mt-4 text-xs text-slate-400">Hora local de Popayán, Colombia</p>
+        <p className="mt-4 text-xs text-slate-400 dark:text-white/40">
+          Hora local de Popayán, Colombia
+        </p>
       </div>
     </div>
   )

@@ -43,9 +43,7 @@ class PortfolioBarberoUploadView(APIView):
             )
 
         try:
-            image_url, storage_path = upload_to_storage(
-                optimized_image.content
-            )
+            image_url, storage_path = upload_to_storage(optimized_image.content)
         except StorageConfigurationError as exc:
             return Response(
                 {"detail": str(exc)},

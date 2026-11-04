@@ -10,7 +10,6 @@ from uuid import uuid4
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024
 MAX_OPTIMIZED_SIZE = 500 * 1024
 MAX_IMAGE_PIXELS = 40_000_000
@@ -45,9 +44,7 @@ def optimize_image(uploaded_file) -> OptimizedImage:
     original_size = uploaded_file.size
 
     if original_size > MAX_UPLOAD_SIZE:
-        raise ImageValidationError(
-            "La imagen no puede superar los 5 MiB."
-        )
+        raise ImageValidationError("La imagen no puede superar los 5 MiB.")
 
     if original_size == 0:
         raise ImageValidationError("El archivo está vacío.")
@@ -171,9 +168,7 @@ def upload_to_storage(content: bytes) -> tuple[str, str]:
     storage_path = f"{uuid4().hex}.webp"
     encoded_path = urllib.parse.quote(storage_path, safe="/")
 
-    endpoint = (
-        f"{base_url}/storage/v1/object/{bucket}/{encoded_path}"
-    )
+    endpoint = f"{base_url}/storage/v1/object/{bucket}/{encoded_path}"
 
     request = urllib.request.Request(
         endpoint,
@@ -190,9 +185,7 @@ def upload_to_storage(content: bytes) -> tuple[str, str]:
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             if response.status not in (200, 201):
-                raise StorageUploadError(
-                    "Supabase no confirmó la carga de la imagen."
-                )
+                raise StorageUploadError("Supabase no confirmó la carga de la imagen.")
 
     except urllib.error.HTTPError as exc:
         raise StorageUploadError(
@@ -203,10 +196,7 @@ def upload_to_storage(content: bytes) -> tuple[str, str]:
             "No fue posible conectar con Supabase Storage."
         ) from exc
 
-    public_url = (
-        f"{base_url}/storage/v1/object/public/"
-        f"{bucket}/{encoded_path}"
-    )
+    public_url = f"{base_url}/storage/v1/object/public/" f"{bucket}/{encoded_path}"
 
     return public_url, storage_path
 
@@ -217,9 +207,7 @@ def delete_from_storage(storage_path: str) -> None:
     base_url, secret_key, bucket = _storage_configuration()
 
     encoded_path = urllib.parse.quote(storage_path, safe="/")
-    endpoint = (
-        f"{base_url}/storage/v1/object/{bucket}/{encoded_path}"
-    )
+    endpoint = f"{base_url}/storage/v1/object/{bucket}/{encoded_path}"
 
     request = urllib.request.Request(
         endpoint,

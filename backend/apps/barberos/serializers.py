@@ -10,14 +10,10 @@ class PortfolioUploadSerializer(serializers.Serializer):
 
     def validate_image(self, value):
         if value.size > MAX_UPLOAD_SIZE:
-            raise serializers.ValidationError(
-                "La imagen no puede superar los 5 MiB."
-            )
+            raise serializers.ValidationError("La imagen no puede superar los 5 MiB.")
 
         if value.size == 0:
-            raise serializers.ValidationError(
-                "El archivo está vacío."
-            )
+            raise serializers.ValidationError("El archivo está vacío.")
 
         return value
 
@@ -34,4 +30,3 @@ class PortfolioBarberoSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = fields
-        

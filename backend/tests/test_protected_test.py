@@ -59,7 +59,9 @@ def test_cliente_recibe_403(api, django_user_model):
 
     # Entonces recibe 403 Forbidden
     assert respuesta.status_code == 403
-    assert respuesta.json() == {"detail": "No tienes permiso para realizar esta accion."}
+    assert respuesta.json() == {
+        "detail": "No tienes permiso para realizar esta accion."
+    }
 
 
 def test_admin_recibe_200(api, django_user_model):

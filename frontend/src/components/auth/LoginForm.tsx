@@ -1,3 +1,4 @@
+import { Scissors } from 'lucide-react'
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -150,20 +151,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto min-h-[620px] grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden border border-slate-200 dark:border-gray-800 shadow-2xl bg-white dark:bg-gray-900">
+    <div className="w-full max-w-5xl mx-auto min-h-[620px] grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl bg-white dark:bg-[#151915]">
       {/* 🔴 COLUMNA IZQUIERDA: BRANDING BARBERFLOW OS */}
-      <div className="lg:col-span-6 bg-slate-950 text-white p-8 sm:p-12 flex flex-col justify-between relative overflow-hidden">
-        <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-red-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -left-20 -top-20 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="lg:col-span-6 bg-slate-950 dark:bg-[#0a0c0b] text-white p-8 sm:p-12 flex flex-col justify-between relative overflow-hidden">
+        <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-red-600/20 dark:bg-[#d7b36a]/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -left-20 -top-20 w-80 h-80 bg-blue-600/10 dark:bg-[#d7b36a]/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 space-y-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center font-black text-white text-lg">
-              ✂️
+            <div className="w-10 h-10 bg-red-600 dark:bg-[#d7b36a] rounded-xl flex items-center justify-center font-black text-white dark:text-[#111411] text-lg">
+              <Scissors className="size-5" aria-hidden="true" />
             </div>
             <div>
               <h1 className="font-black tracking-wider text-lg leading-none uppercase">
-                BARBER<span className="text-red-500">FLOW</span>
+                BARBER<span className="text-red-500 dark:text-[#d7b36a]">FLOW</span>
               </h1>
               <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">
                 OPERATING SYSTEM
@@ -171,8 +172,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </div>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold uppercase tracking-wider">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 dark:bg-white/5 border border-slate-800 dark:border-white/10 text-slate-300 text-xs font-semibold uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-blue-500 dark:bg-[#d7b36a] animate-pulse"></span>
             GESTIÓN INTELIGENTE
           </div>
         </div>
@@ -180,7 +181,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         <div className="relative z-10 space-y-4 my-8">
           <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight uppercase">
             TU BARBERÍA, <br />
-            <span className="text-red-500">BAJO CONTROL.</span>
+            <span className="text-red-500 dark:text-[#d7b36a]">BAJO CONTROL.</span>
           </h2>
           <p className="text-sm text-slate-400 max-w-md leading-relaxed">
             Agenda, clientes, servicios y crecimiento. Todo lo que Thiago Barber
@@ -205,7 +206,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       </div>
 
       {/* ⚪ COLUMNA DERECHA: PANELES DINÁMICOS */}
-      <div className="lg:col-span-6 p-8 sm:p-12 flex flex-col justify-center bg-white dark:bg-gray-900">
+      <div className="lg:col-span-6 p-8 sm:p-12 flex flex-col justify-center bg-white dark:bg-[#151915]">
         <div className="max-w-md w-full mx-auto space-y-6">
           {/* VISTAS 1 & 2: LOGIN Y REGISTRO */}
           {(currentStep === 'login' || currentStep === 'register') && (
@@ -241,13 +242,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               )}
 
               {/* Tabs Conmutadores */}
-              <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-gray-800 rounded-2xl">
+              <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl">
                 <button
                   type="button"
                   onClick={() => irA('login')}
                   className={`py-2.5 text-xs font-bold rounded-xl transition-all ${
                     currentStep === 'login'
-                      ? 'bg-white dark:bg-gray-900 text-slate-900 dark:text-white shadow-sm'
+                      ? 'bg-white dark:bg-[#151915] text-slate-900 dark:text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -261,7 +262,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   }}
                   className={`py-2.5 text-xs font-bold rounded-xl transition-all ${
                     currentStep === 'register'
-                      ? 'bg-white dark:bg-gray-900 text-slate-900 dark:text-white shadow-sm'
+                      ? 'bg-white dark:bg-[#151915] text-slate-900 dark:text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -270,7 +271,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               </div>
 
               {authError && (
-                <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-2xl text-xs text-red-600 dark:text-red-400 font-medium text-center">
+                <div className="p-3 bg-red-50 dark:bg-[#d7b36a]/10 border border-red-200 dark:border-[#d7b36a]/30 rounded-2xl text-xs text-red-600 dark:text-[#d7b36a] font-medium text-center">
                   {authError}
                 </div>
               )}
@@ -293,11 +294,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       className={`w-full px-4 py-3 rounded-2xl border text-sm transition-all outline-none ${
                         loginForm.formState.errors.email
                           ? 'border-red-500 bg-red-50/10'
-                          : 'border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-900 dark:text-white'
+                          : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
                       }`}
                     />
                     {loginForm.formState.errors.email && (
-                      <span className="text-xs text-red-500 font-medium block">
+                      <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
                         {loginForm.formState.errors.email.message}
                       </span>
                     )}
@@ -315,13 +316,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                         className={`w-full px-4 py-3 pr-12 rounded-2xl border text-sm transition-all outline-none ${
                           loginForm.formState.errors.password
                             ? 'border-red-500 bg-red-50/10'
-                            : 'border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-900 dark:text-white'
+                            : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
                         }`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2 p-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-all"
+                        className="absolute right-2 p-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-all"
                       >
                         {showPassword ? (
                           <svg
@@ -359,7 +360,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       </button>
                     </div>
                     {loginForm.formState.errors.password && (
-                      <span className="text-xs text-red-500 font-medium block">
+                      <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
                         {loginForm.formState.errors.password.message}
                       </span>
                     )}
@@ -370,7 +371,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       <input
                         type="checkbox"
                         {...loginForm.register('rememberMe')}
-                        className="rounded border-slate-300 text-red-600 focus:ring-red-500"
+                        className="rounded border-slate-300 text-red-600 dark:text-[#d7b36a] focus:ring-red-500 dark:focus:ring-[#d7b36a]"
                       />
                       Recordarme
                     </label>
@@ -380,7 +381,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                         setSuccessMessage(null)
                         setCurrentStep('forgot')
                       }}
-                      className="text-red-600 hover:text-red-700 dark:text-red-400 font-medium"
+                      className="text-red-600 hover:text-red-700 dark:hover:text-[#e5c77f] dark:text-[#d7b36a] font-medium"
                     >
                       ¿Olvidaste tu contraseña?
                     </button>
@@ -389,7 +390,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-3.5 px-4 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-2 mt-4"
+                    className="w-full py-3.5 px-4 bg-red-600 dark:bg-[#d7b36a] hover:bg-red-700 dark:hover:bg-[#e5c77f] active:scale-95 text-white dark:text-[#111411] font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 dark:shadow-[#d7b36a]/20 transition-all flex items-center justify-center gap-2 mt-4"
                   >
                     <span>{isLoading ? 'Cargando...' : 'Ingresar a BarberFlow'}</span>
                     <span>→</span>
@@ -415,11 +416,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       className={`w-full px-4 py-3 rounded-2xl border text-sm transition-all outline-none ${
                         registerForm.formState.errors.fullName
                           ? 'border-red-500 bg-red-50/10'
-                          : 'border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-900 dark:text-white'
+                          : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
                       }`}
                     />
                     {registerForm.formState.errors.fullName && (
-                      <span className="text-xs text-red-500 font-medium block">
+                      <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
                         {registerForm.formState.errors.fullName.message}
                       </span>
                     )}
@@ -436,11 +437,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       className={`w-full px-4 py-3 rounded-2xl border text-sm transition-all outline-none ${
                         registerForm.formState.errors.email
                           ? 'border-red-500 bg-red-50/10'
-                          : 'border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-900 dark:text-white'
+                          : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
                       }`}
                     />
                     {registerForm.formState.errors.email && (
-                      <span className="text-xs text-red-500 font-medium block">
+                      <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
                         {registerForm.formState.errors.email.message}
                       </span>
                     )}
@@ -458,13 +459,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                         className={`w-full px-4 py-3 pr-12 rounded-2xl border text-sm transition-all outline-none ${
                           registerForm.formState.errors.password
                             ? 'border-red-500 bg-red-50/10'
-                            : 'border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-900 dark:text-white'
+                            : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
                         }`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2 p-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-all"
+                        className="absolute right-2 p-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-all"
                       >
                         {showPassword ? (
                           <svg
@@ -502,7 +503,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       </button>
                     </div>
                     {registerForm.formState.errors.password && (
-                      <span className="text-xs text-red-500 font-medium block">
+                      <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
                         {registerForm.formState.errors.password.message}
                       </span>
                     )}
@@ -513,7 +514,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       <input
                         type="checkbox"
                         {...registerForm.register('rememberMe')}
-                        className="rounded border-slate-300 text-red-600 focus:ring-red-500"
+                        className="rounded border-slate-300 text-red-600 dark:text-[#d7b36a] focus:ring-red-500 dark:focus:ring-[#d7b36a]"
                       />
                       Recordarme
                     </label>
@@ -522,7 +523,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-3.5 px-4 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-60"
+                    className="w-full py-3.5 px-4 bg-red-600 dark:bg-[#d7b36a] hover:bg-red-700 dark:hover:bg-[#e5c77f] active:scale-95 text-white dark:text-[#111411] font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 dark:shadow-[#d7b36a]/20 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-60"
                   >
                     <span>{isLoading ? 'Creando cuenta...' : 'Crear mi cuenta'}</span>
                     <span>→</span>
@@ -569,11 +570,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                     className={`w-full px-4 py-3 rounded-2xl border text-sm transition-all outline-none ${
                       forgotForm.formState.errors.email
                         ? 'border-red-500 bg-red-50/10'
-                        : 'border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-900 dark:text-white'
+                        : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
                     }`}
                   />
                   {forgotForm.formState.errors.email && (
-                    <span className="text-xs text-red-500 font-medium block">
+                    <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
                       {forgotForm.formState.errors.email.message}
                     </span>
                   )}
@@ -581,14 +582,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 px-4 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-2 mt-2"
+                  className="w-full py-3.5 px-4 bg-red-600 dark:bg-[#d7b36a] hover:bg-red-700 dark:hover:bg-[#e5c77f] active:scale-95 text-white dark:text-[#111411] font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 dark:shadow-[#d7b36a]/20 transition-all flex items-center justify-center gap-2 mt-2"
                 >
                   <span>Enviar enlace de recuperación</span>
                   <span>→</span>
                 </button>
               </form>
 
-              <div className="p-3 bg-slate-50 dark:bg-gray-800/60 rounded-2xl text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 justify-center">
+              <div className="p-3 bg-slate-50 dark:bg-white/5 rounded-2xl text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 justify-center">
                 <span>🛡️</span> Por seguridad, el enlace será válido durante 30 minutos.
               </div>
             </div>
@@ -631,7 +632,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               <button
                 type="button"
                 onClick={() => irA('login')}
-                className="w-full py-3.5 px-4 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 transition-all mt-4"
+                className="w-full py-3.5 px-4 bg-red-600 dark:bg-[#d7b36a] hover:bg-red-700 dark:hover:bg-[#e5c77f] active:scale-95 text-white dark:text-[#111411] font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 dark:shadow-[#d7b36a]/20 transition-all mt-4"
               >
                 Volver a iniciar sesión
               </button>
@@ -641,7 +642,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 type="button"
                 disabled={isResending}
                 onClick={handleResendCode}
-                className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 font-semibold block mx-auto transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-xs text-red-600 hover:text-red-700 dark:hover:text-[#e5c77f] dark:text-[#d7b36a] font-semibold block mx-auto transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isResending ? 'Reenviando enlace...' : 'No recibí el correo, reenviar'}
               </button>

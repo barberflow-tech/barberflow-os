@@ -24,6 +24,27 @@ def test_seed_demo_crea_los_datos_y_es_idempotente(settings):
     assert admin.is_staff and admin.check_password("Demo12345!")
 
 
+def test_seed_demo_asigna_roles_y_liga_al_barbero_con_su_cuenta(settings):
+    settings.DEBUG = True
+
+    call_command("seed_demo")
+    call_command("seed_demo")
+
+    roles = {
+        u.username: u.perfil.role
+        for u in get_user_model().objects.select_related("perfil")
+    }
+    assert roles == {
+        "admin@barberflow.test": "admin",
+        "barbero@barberflow.test": "barbero",
+        "cliente@barberflow.test": "cliente",
+    }
+    assert (
+        Barbero.objects.get(user__username="barbero@barberflow.test").name == "Thiago"
+    )
+    assert Barbero.objects.filter(user__isnull=False).count() == 1
+
+
 def test_seed_demo_se_ve_en_el_endpoint_publico(settings, client):
     settings.DEBUG = True
     call_command("seed_demo")

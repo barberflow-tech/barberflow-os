@@ -313,7 +313,7 @@ export function BloqueosManager() {
   } = useBloqueosStore()
 
   const [modalAbierto, setModalAbierto] = useState(false)
-  const [bloqueoEditando, setBloqueoEditando] = useState<string | null>(null)
+  const [bloqueoEditando, setBloqueoEditando] = useState<Bloqueo['id'] | null>(null)
   const [fecha, setFecha] = useState('')
   const [horaInicio, setHoraInicio] = useState('')
   const [horaFin, setHoraFin] = useState('')
@@ -321,7 +321,7 @@ export function BloqueosManager() {
   const [diaCompleto, setDiaCompleto] = useState(false)
   const [errorLocal, setErrorLocal] = useState<string | null>(null)
   const [guardado, setGuardado] = useState(false)
-  const [bloqueoAEliminar, setBloqueoAEliminar] = useState<string | null>(null)
+  const [bloqueoAEliminar, setBloqueoAEliminar] = useState<Bloqueo['id'] | null>(null)
   const [eliminando, setEliminando] = useState(false)
   const [errorEliminar, setErrorEliminar] = useState<string | null>(null)
   const [busqueda, setBusqueda] = useState('')
@@ -398,7 +398,7 @@ export function BloqueosManager() {
         horaFin: fin,
         motivo: motivo.trim(),
       }
-      if (bloqueoEditando) {
+      if (bloqueoEditando !== null) {
         await actualizarBloqueo(bloqueoEditando, datosBloqueo)
       } else {
         await crearBloqueo(datosBloqueo)
@@ -697,7 +697,7 @@ export function BloqueosManager() {
             <div className="sticky top-0 z-20 flex items-start justify-between border-b border-slate-100 bg-white/95 px-5 py-5 backdrop-blur sm:px-7 dark:border-slate-800 dark:bg-slate-900/95">
               <div className="flex items-start gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-600 dark:text-amber-400">
-                  {bloqueoEditando ? (
+                  {bloqueoEditando !== null ? (
                     <Pencil className="h-5 w-5" />
                   ) : (
                     <CalendarCheck className="h-5 w-5" />
@@ -708,7 +708,7 @@ export function BloqueosManager() {
                     id="titulo-modal-bloqueo"
                     className="text-lg font-black text-slate-900 dark:text-white sm:text-xl"
                   >
-                    {bloqueoEditando ? 'Editar bloqueo' : 'Nuevo bloqueo'}
+                    {bloqueoEditando !== null ? 'Editar bloqueo' : 'Nuevo bloqueo'}
                   </h2>
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     Define cuándo y por qué no estará disponible la agenda.
@@ -859,7 +859,7 @@ export function BloqueosManager() {
                 <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-400">
                   <CheckCircle2 className="h-4 w-4" />
                   <p className="text-xs font-bold">
-                    {bloqueoEditando
+                    {bloqueoEditando !== null
                       ? 'Cambios guardados correctamente.'
                       : 'Bloqueo registrado correctamente.'}
                   </p>
@@ -915,12 +915,14 @@ export function BloqueosManager() {
                     </>
                   ) : (
                     <>
-                      {bloqueoEditando ? (
+                      {bloqueoEditando !== null ? (
                         <CheckCircle2 className="h-4 w-4" />
                       ) : (
                         <Plus className="h-4 w-4" />
                       )}
-                      {bloqueoEditando ? 'Guardar cambios' : 'Confirmar bloqueo'}
+                      {bloqueoEditando !== null
+                        ? 'Guardar cambios'
+                        : 'Confirmar bloqueo'}
                     </>
                   )}
                 </button>
@@ -1005,7 +1007,7 @@ export function BloqueosManager() {
                 type="button"
                 onClick={confirmarEliminar}
                 disabled={eliminando}
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-xs font-black text-white transition hover:bg-red-700 disabled:opacity-50"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-xs font-black text-white transition hover:bg-red-700 disabled:opacity-50"
               >
                 {eliminando ? (
                   <>

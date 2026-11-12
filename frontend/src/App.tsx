@@ -29,6 +29,7 @@ export function App() {
           <Route path="/barbero/portafolio" element={<PortafolioPage />} />
         </Route>
 
+        {/* Rutas exclusivas de Administrador */}
         <Route element={<RoleGuard allowedRoles={['admin']} />}>
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin/servicios" element={<ServicesManager />} />

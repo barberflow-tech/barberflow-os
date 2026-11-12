@@ -399,7 +399,7 @@ export function BloqueosManager() {
         motivo: motivo.trim(),
       }
       if (bloqueoEditando !== null) {
-        await actualizarBloqueo(bloqueoEditando, datosBloqueo)
+        await actualizarBloqueo(String(bloqueoEditando), datosBloqueo)
       } else {
         await crearBloqueo(datosBloqueo)
       }
@@ -420,7 +420,7 @@ export function BloqueosManager() {
     try {
       setEliminando(true)
       setErrorEliminar(null)
-      await eliminarBloqueo(bloqueoAEliminar)
+      await eliminarBloqueo(String(bloqueoAEliminar))
       setBloqueoAEliminar(null)
     } catch {
       setErrorEliminar('No se pudo eliminar el bloqueo. Inténtalo de nuevo.')

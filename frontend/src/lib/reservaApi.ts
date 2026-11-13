@@ -157,6 +157,8 @@ interface CitaApi {
   status: string
   start_at: string
   price: string
+  barber?: number
+  service?: number
 }
 
 /** Crea la cita (POST /api/v1/appointments), con sesión o como visitante. */
@@ -203,6 +205,119 @@ export async function crearCita(datos: NuevaCita): Promise<CitaConfirmada> {
     servicio,
     barbero,
     // La API responde en UTC: la pantalla muestra la hora de la barbería.
+    inicio: aIsoColombia(cita.start_at),
+    total: Number(cita.price),
+  }
+}
+
+// ======================================================================
+// AMPLIACIÓN PARA HU-03 (SUB-03-B): Listar, Cancelar y Reprogramar citas
+// ======================================================================
+
+export interface CitaPerfilApi {
+  id: number
+  status: string
+  start_at: string
+  price: string
+  service: {
+    id: number
+    name: string
+    price: number
+    duration_minutes: number
+    description?: string
+  }
+  barber: {
+    id: number
+    name: string
+    rol?: string
+    calificacion?: number
+  }
+}
+
+/** Lista las citas del usuario autenticado (GET /api/v1/appointments/). */
+export async function listarMisCitasApi(): Promise<CitaConfirmada[]> {
+  let response: Response
+  try {
+    response = await pedir(`${API_URL}/api/v1/appointments/`)
+  } catch {
+    throw new ReservaError('No se pudo conectar con el servidor.')
+  }
+  if (!response.ok) throw new ReservaError('No se pudieron cargar tus citas.')
+
+  const data = (await response.json()) as CitaPerfilApi[]
+  return data.map((cita) => ({
+    id: cita.id,
+    estado: cita.status,
+    servicio: {
+      id: cita.service.id,
+      nombre: cita.service.name,
+      precio: Number(cita.service.price),
+      duracionMin: cita.service.duration_minutes,
+      descripcion: cita.service.description,
+    },
+    barbero: {
+      id: cita.barber.id,
+      nombre: cita.barber.name,
+      rol: cita.barber.rol ?? 'Barber',
+      calificacion: cita.barber.calificacion ?? 4.8,
+    },
+    inicio: aIsoColombia(cita.start_at),
+    total: Number(cita.price),
+  }))
+}
+
+/** Cancela una cita (DELETE /api/v1/appointments/{id}/). */
+export async function cancelarCitaApi(citaId: number | string): Promise<void> {
+  let response: Response
+  try {
+    response = await pedir(`${API_URL}/api/v1/appointments/${citaId}/`, {
+      method: 'DELETE',
+    })
+  } catch {
+    throw new ReservaError('No se pudo conectar con el servidor.')
+  }
+  if (!response.ok) {
+    throw new ReservaError(
+      'No se pudo cancelar la cita. Verifica que falten más de 12 horas.',
+    )
+  }
+}
+
+/** Reprograma una cita existente (PATCH /api/v1/appointments/{id}/). */
+export async function reprogramarCitaApi(
+  citaId: number | string,
+  nuevoInicio: string,
+): Promise<CitaConfirmada> {
+  let response: Response
+  try {
+    response = await pedir(`${API_URL}/api/v1/appointments/${citaId}/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ start_at: nuevoInicio }),
+    })
+  } catch {
+    throw new ReservaError('No se pudo conectar con el servidor.')
+  }
+  if (response.status === 409) {
+    throw new ReservaError('Ese horario ya no está disponible. Elige otro.')
+  }
+  if (!response.ok) {
+    throw new ReservaError(
+      'No se pudo reprogramar la cita. Verifica la antelación mínima de 12 horas.',
+    )
+  }
+
+  const cita = (await response.json()) as CitaApi
+  const serviciosDisponibles = await listarServicios()
+  const servicio =
+    serviciosDisponibles.find((s) => s.id === cita.service) ?? serviciosDisponibles[0]
+  const barbero = BARBEROS.find((b) => b.id === cita.barber) ?? BARBEROS[0]
+
+  return {
+    id: cita.id,
+    estado: cita.status,
+    servicio,
+    barbero,
     inicio: aIsoColombia(cita.start_at),
     total: Number(cita.price),
   }

@@ -139,7 +139,11 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-    "DEFAULT_THROTTLE_RATES": {"reserva_visitante": "20/hour"},
+    "DEFAULT_THROTTLE_RATES": {
+        "reserva_visitante": "20/hour",
+        "recuperar_contrasena": "5/hour",
+        "restablecer_contrasena": "20/hour",
+    },
 }
 
 # SimpleJWT
@@ -186,6 +190,36 @@ if AUTH_REFRESH_COOKIE["SAMESITE"] == "None" and not AUTH_REFRESH_COOKIE["SECURE
     raise ImproperlyConfigured(
         "SameSite=None exige una cookie Secure (AUTH_COOKIE_SECURE=True)."
     )
+
+# Correo y recuperacion de contrasena
+#   EMAIL_HOST: servidor SMTP. Vacio = los correos NO se envian: se imprimen en el
+#     log del backend (modo local sin cuenta; el enlace se copia de ahi).
+#     Gmail: smtp.gmail.com, puerto 587, TLS, y como clave una "contrasena de
+#     aplicacion" (exige verificacion en 2 pasos), no la clave normal de la cuenta.
+#   EMAIL_HOST_USER / EMAIL_HOST_PASSWORD: credenciales SMTP.
+#   DEFAULT_FROM_EMAIL: remitente. Gmail lo sobrescribe con la cuenta autenticada.
+#   FRONTEND_URL: base de los enlaces del correo (la pagina /restablecer).
+#   PASSWORD_RESET_MINUTES: vigencia del enlace.
+EMAIL_HOST = os.getenv("EMAIL_HOST", "")
+EMAIL_BACKEND = (
+    "django.core.mail.backends.smtp.EmailBackend"
+    if EMAIL_HOST
+    else "django.core.mail.backends.console.EmailBackend"
+)
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
+EMAIL_TIMEOUT = 10
+# "or": en el .env la variable puede existir vacia y entonces getenv devuelve "".
+DEFAULT_FROM_EMAIL = (
+    os.getenv("DEFAULT_FROM_EMAIL")
+    or EMAIL_HOST_USER
+    or "BarberFlow <no-reply@barberflow.local>"
+)
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
+PASSWORD_RESET_MINUTES = int(os.getenv("PASSWORD_RESET_MINUTES", "30"))
+PASSWORD_RESET_TIMEOUT = PASSWORD_RESET_MINUTES * 60
 
 # CORS
 # https://github.com/adamchainz/django-cors-headers

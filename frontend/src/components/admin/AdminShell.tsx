@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/useAuthStore'
 const enlaces = [
   { to: '/admin', etiqueta: 'Panel', fin: true },
   { to: '/admin/servicios', etiqueta: 'Servicios', fin: false },
+  { to: '/admin/barberos', etiqueta: 'Barberos', fin: false },
 ]
 
 /** Marco común del área de administración (mismo estilo oscuro y dorado del portafolio). */

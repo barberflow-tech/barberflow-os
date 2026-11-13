@@ -2,8 +2,11 @@ from collections.abc import Mapping
 
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers, status
 from rest_framework.exceptions import APIException
 
@@ -125,3 +128,40 @@ class LoginSerializer(serializers.Serializer):
             username=candidatos[0].get_username(),
             password=password,
         )
+
+
+ENLACE_INVALIDO = "El enlace no es válido o ya venció. Solicita uno nuevo."
+
+
+class RecuperarContrasenaSerializer(serializers.Serializer):
+    """Payload de POST /api/v1/auth/password-reset: solo el correo."""
+
+    email = serializers.EmailField(max_length=LONGITUD_MAX_EMAIL)
+
+
+class RestablecerContrasenaSerializer(serializers.Serializer):
+    """Payload de POST /api/v1/auth/password-reset/confirm.
+
+    Valida el par uid/token del correo y la nueva contrasena.
+    """
+
+    uid = serializers.CharField(max_length=64)
+    token = serializers.CharField(max_length=128)
+    password = serializers.CharField(
+        write_only=True, trim_whitespace=False, max_length=128
+    )
+
+    def validate(self, attrs):
+        try:
+            pk = force_str(urlsafe_base64_decode(attrs["uid"]))
+            usuario = User.objects.get(pk=pk, is_active=True)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise serializers.ValidationError({"detail": ENLACE_INVALIDO})
+        if not default_token_generator.check_token(usuario, attrs["token"]):
+            raise serializers.ValidationError({"detail": ENLACE_INVALIDO})
+        try:
+            validate_password(attrs["password"], user=usuario)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({"password": list(exc.messages)})
+        attrs["user"] = usuario
+        return attrs

@@ -5,6 +5,7 @@
 // la gestión de barberos y de sus horarios (HU-08) es del Sprint 2.
 
 import { useAuthStore } from '@/stores/useAuthStore'
+import { listarBarberosApi } from './barberosApi'
 import { listarServiciosApi } from './catalogoApi'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
@@ -44,18 +45,21 @@ export interface CitaConfirmada {
 export interface NuevaCita {
   servicioId: number
   barberoId: number
+  /** Barbero elegido, para el resumen de la cita confirmada. */
+  barbero?: Barbero
   inicio: string
   /** Contacto del visitante sin cuenta (con sesión no hace falta). */
   contactoNombre?: string
   contactoCelular?: string
 }
 
-// Datos tomados del prototipo de Figma (Prototipo interactivo BarberFlow OS).
-const BARBEROS: Barbero[] = [
-  { id: 1, nombre: 'Thiago', rol: 'Master barber', calificacion: 4.9 },
-  { id: 2, nombre: 'Andrés', rol: 'Barber senior', calificacion: 4.8 },
-  { id: 3, nombre: 'Nicolás', rol: 'Barber', calificacion: 4.7 },
-]
+// Rol y calificación siguen viniendo del prototipo de Figma (Prototipo interactivo
+// BarberFlow OS): el backend aún no los guarda (gestión de barberos, HU-08).
+const EXTRAS_PROTOTIPO: Record<string, Pick<Barbero, 'rol' | 'calificacion'>> = {
+  Thiago: { rol: 'Master barber', calificacion: 4.9 },
+  Andrés: { rol: 'Barber senior', calificacion: 4.8 },
+  Nicolás: { rol: 'Barber', calificacion: 4.7 },
+}
 
 const ZONA_BARBERIA = 'America/Bogota'
 const horaLocal = new Intl.DateTimeFormat('en-GB', {
@@ -77,8 +81,6 @@ const aIsoColombia = (iso: string) => {
   const d = new Date(iso)
   return `${fechaLocalBarberia.format(d)}T${horaLocal.format(d)}:00-05:00`
 }
-
-const pausa = (ms = 150) => new Promise<void>((r) => setTimeout(r, ms))
 
 /**
  * Llama a la API enviando el token si hay sesión. Si el token venció (401) se
@@ -110,9 +112,14 @@ export async function listarServicios(): Promise<Servicio[]> {
     }))
 }
 
-export async function listarBarberos(): Promise<Barbero[]> {
-  await pausa()
-  return BARBEROS
+/** Barberos que realizan el servicio (los asigna el admin); sin servicio, todos. */
+export async function listarBarberos(servicioId?: number): Promise<Barbero[]> {
+  const barberos = await listarBarberosApi(servicioId)
+  return barberos.map((b) => ({
+    id: b.id,
+    nombre: b.name,
+    ...(EXTRAS_PROTOTIPO[b.name] ?? { rol: 'Barbero', calificacion: 0 }),
+  }))
 }
 
 interface SlotApi {
@@ -162,8 +169,14 @@ interface CitaApi {
 /** Crea la cita (POST /api/v1/appointments), con sesión o como visitante. */
 export async function crearCita(datos: NuevaCita): Promise<CitaConfirmada> {
   const servicio = (await listarServicios()).find((s) => s.id === datos.servicioId)
-  const barbero = BARBEROS.find((b) => b.id === datos.barberoId)
-  if (!servicio || !barbero) throw new ReservaError('No se pudo registrar la reserva.')
+  if (!servicio) throw new ReservaError('No se pudo registrar la reserva.')
+  // El wizard ya conoce al barbero elegido; sin él se arma uno mínimo con el id.
+  const barbero: Barbero = datos.barbero ?? {
+    id: datos.barberoId,
+    nombre: 'Barbero',
+    rol: 'Barbero',
+    calificacion: 0,
+  }
 
   let response: Response
   try {

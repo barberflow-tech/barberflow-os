@@ -51,6 +51,66 @@ function primerMensaje(cuerpo: unknown): string | null {
   return null
 }
 
+/**
+ * Pide el correo de recuperación (POST /api/v1/auth/password-reset). El backend responde
+ * igual exista o no la cuenta, así que un éxito no confirma que el correo esté registrado.
+ */
+export async function solicitarRecuperacion(email: string): Promise<void> {
+  let response: Response
+  try {
+    response = await fetch(`${API_URL}/api/v1/auth/password-reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
+  } catch {
+    throw new AuthError('No se pudo conectar con el servidor. Inténtalo de nuevo.')
+  }
+
+  if (response.status === 429) {
+    throw new AuthError(
+      'Hiciste demasiadas solicitudes. Inténtalo de nuevo en una hora.',
+    )
+  }
+  if (response.status === 400) {
+    throw new AuthError('Ingresa un correo electrónico válido.')
+  }
+  if (!response.ok) {
+    throw new AuthError('No pudimos enviar el correo. Inténtalo de nuevo más tarde.')
+  }
+}
+
+/** Fija la nueva contraseña con el uid y el token del enlace (POST /auth/password-reset/confirm). */
+export async function restablecerContrasena(
+  uid: string,
+  token: string,
+  password: string,
+): Promise<void> {
+  let response: Response
+  try {
+    response = await fetch(`${API_URL}/api/v1/auth/password-reset/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, token, password }),
+    })
+  } catch {
+    throw new AuthError('No se pudo conectar con el servidor. Inténtalo de nuevo.')
+  }
+
+  if (response.status === 400) {
+    const detalle = primerMensaje(await response.json().catch(() => null))
+    throw new AuthError(detalle ?? 'Revisa los datos e inténtalo de nuevo.')
+  }
+  if (response.status === 429) {
+    throw new AuthError('Demasiados intentos. Inténtalo de nuevo más tarde.')
+  }
+  if (!response.ok) {
+    throw new AuthError(
+      'No pudimos cambiar tu contraseña. Inténtalo de nuevo más tarde.',
+    )
+  }
+}
+
 /** Crea una cuenta de cliente (POST /api/v1/auth/register). No inicia sesión. */
 export async function registrarCuenta(
   fullName: string,

@@ -170,4 +170,125 @@ describe('LoginForm', () => {
     expect(screen.queryByText(/Cuenta creada con éxito/)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Crear mi cuenta/i })).toBeEnabled()
   })
+
+  it('Dado un correo, Cuando pide recuperar la contraseña, Entonces llama al backend y muestra "Revisa tu correo"', async () => {
+    const fetchMock = vi.fn(() => respuesta(202, { detail: 'ok' }))
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+    render(<LoginForm />)
+
+    await user.click(
+      screen.getByRole('button', { name: /¿Olvidaste tu contraseña\?/i }),
+    )
+    await user.type(
+      screen.getByPlaceholderText('hola@thiagobarber.co'),
+      'ana@barberflow.test',
+    )
+    await user.click(
+      screen.getByRole('button', { name: /Enviar enlace de recuperación/i }),
+    )
+
+    expect(await screen.findByText('REVISA TU CORREO')).toBeInTheDocument()
+    const [url, opciones] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toMatch(/\/api\/v1\/auth\/password-reset$/)
+    expect(JSON.parse(opciones.body as string)).toEqual({
+      email: 'ana@barberflow.test',
+    })
+  })
+
+  it('Dado que el servidor falla, Cuando pide recuperar la contraseña, Entonces muestra el error y no dice que se envió', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => respuesta(500)),
+    )
+    const user = userEvent.setup()
+    render(<LoginForm />)
+
+    await user.click(
+      screen.getByRole('button', { name: /¿Olvidaste tu contraseña\?/i }),
+    )
+    await user.type(
+      screen.getByPlaceholderText('hola@thiagobarber.co'),
+      'ana@barberflow.test',
+    )
+    await user.click(
+      screen.getByRole('button', { name: /Enviar enlace de recuperación/i }),
+    )
+
+    expect(await screen.findByText(/No pudimos enviar el correo/)).toBeInTheDocument()
+    expect(screen.queryByText('REVISA TU CORREO')).not.toBeInTheDocument()
+  })
+
+  it('Dado el enlace del correo, Cuando elige una contraseña nueva, Entonces la envía con uid y token y vuelve al login con aviso', async () => {
+    const fetchMock = vi.fn(() => respuesta(200, { detail: 'ok' }))
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+    render(<LoginForm restablecer={{ uid: 'MQ', token: 'abc-123' }} />)
+
+    await user.type(
+      screen.getByPlaceholderText('Mínimo 8 caracteres'),
+      'Navaja.Dorada-2027',
+    )
+    await user.type(
+      screen.getByPlaceholderText('Repite la contraseña'),
+      'Navaja.Dorada-2027',
+    )
+    await user.click(screen.getByRole('button', { name: /Cambiar contraseña/i }))
+
+    expect(await screen.findByText(/Contraseña actualizada/)).toBeInTheDocument()
+    const [url, opciones] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toMatch(/\/api\/v1\/auth\/password-reset\/confirm$/)
+    expect(JSON.parse(opciones.body as string)).toEqual({
+      uid: 'MQ',
+      token: 'abc-123',
+      password: 'Navaja.Dorada-2027',
+    })
+  })
+
+  it('Dado dos contraseñas distintas, Cuando intenta cambiarla, Entonces avisa sin llamar a la API', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+    render(<LoginForm restablecer={{ uid: 'MQ', token: 'abc-123' }} />)
+
+    await user.type(
+      screen.getByPlaceholderText('Mínimo 8 caracteres'),
+      'Navaja.Dorada-2027',
+    )
+    await user.type(
+      screen.getByPlaceholderText('Repite la contraseña'),
+      'Otra.Cosa-2027',
+    )
+    await user.click(screen.getByRole('button', { name: /Cambiar contraseña/i }))
+
+    expect(await screen.findByText('Las contraseñas no coinciden')).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('Dado un enlace vencido, Cuando cambia la contraseña, Entonces muestra el mensaje del servidor', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        respuesta(400, {
+          detail: 'El enlace no es válido o ya venció. Solicita uno nuevo.',
+        }),
+      ),
+    )
+    const user = userEvent.setup()
+    render(<LoginForm restablecer={{ uid: 'MQ', token: 'viejo' }} />)
+
+    await user.type(
+      screen.getByPlaceholderText('Mínimo 8 caracteres'),
+      'Navaja.Dorada-2027',
+    )
+    await user.type(
+      screen.getByPlaceholderText('Repite la contraseña'),
+      'Navaja.Dorada-2027',
+    )
+    await user.click(screen.getByRole('button', { name: /Cambiar contraseña/i }))
+
+    expect(
+      await screen.findByText(/El enlace no es válido o ya venció/),
+    ).toBeInTheDocument()
+  })
 })

@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { Dropzone, type DropzoneProps } from './Dropzone'
+import { Dropzone } from './Dropzone'
 
 export interface FotoPortafolio {
   id: string
@@ -15,6 +15,15 @@ export interface FotoPortafolio {
   descripcion: string
   url: string
   alt: string
+  /** Precio y duración los define el administrador en el catálogo. */
+  precio?: string
+  duracion?: string
+}
+
+export interface ServicioOpcion {
+  id: number
+  nombre: string
+  precio: string
 }
 
 interface GaleriaPortafolioProps {
@@ -22,7 +31,12 @@ interface GaleriaPortafolioProps {
   cargando?: boolean
   error?: string | null
   onReintentar?: () => void
-  onUpload: DropzoneProps['onUpload']
+  servicios?: ServicioOpcion[]
+  onUpload: (
+    archivo: File,
+    onProgress: (pct: number) => void,
+    datos: { servicioId: number; nota: string },
+  ) => Promise<void>
 }
 
 export function GaleriaPortafolio({
@@ -30,6 +44,7 @@ export function GaleriaPortafolio({
   cargando = false,
   error = null,
   onReintentar,
+  servicios = [],
   onUpload,
 }: GaleriaPortafolioProps) {
   const [actual, setActual] = useState(0)
@@ -161,7 +176,19 @@ export function GaleriaPortafolio({
                     <h2 className="font-['Playfair_Display',serif] text-3xl text-white sm:text-5xl">
                       {foto.titulo}
                     </h2>
-                    <p className="mt-2 text-sm text-white/70">{foto.descripcion}</p>
+                    {foto.precio && (
+                      <p className="mt-2 text-lg font-semibold text-[#d7b36a]">
+                        {foto.precio}
+                        {foto.duracion && (
+                          <span className="ml-2 text-sm font-normal text-white/60">
+                            · {foto.duracion}
+                          </span>
+                        )}
+                      </p>
+                    )}
+                    <p className="mt-2 max-w-xl text-sm text-white/70">
+                      {foto.descripcion}
+                    </p>
                   </div>
                   <p className="hidden shrink-0 text-sm text-white/70 tabular-nums sm:block">
                     {String(actual + 1).padStart(2, '0')} /{' '}
@@ -215,6 +242,11 @@ export function GaleriaPortafolio({
                   <span className="block bg-[#171a18] p-3">
                     <span className="block text-xs font-semibold text-white">
                       {f.titulo}
+                      {f.precio && (
+                        <span className="ml-2 font-medium text-[#d7b36a]">
+                          {f.precio}
+                        </span>
+                      )}
                     </span>
                     <span className="mt-1 block text-[0.68rem] leading-4 text-white/50">
                       {f.descripcion}
@@ -228,7 +260,11 @@ export function GaleriaPortafolio({
       </div>
 
       {abierto && (
-        <DialogoSubida onCerrar={() => setAbierto(false)} onUpload={onUpload} />
+        <DialogoSubida
+          onCerrar={() => setAbierto(false)}
+          servicios={servicios}
+          onUpload={onUpload}
+        />
       )}
     </main>
   )
@@ -236,11 +272,15 @@ export function GaleriaPortafolio({
 
 function DialogoSubida({
   onCerrar,
+  servicios,
   onUpload,
 }: {
   onCerrar: () => void
-  onUpload: DropzoneProps['onUpload']
+  servicios: ServicioOpcion[]
+  onUpload: GaleriaPortafolioProps['onUpload']
 }) {
+  const [servicioId, setServicioId] = useState<number | undefined>(undefined)
+  const [nota, setNota] = useState('')
   useEffect(() => {
     const alTeclear = (e: KeyboardEvent) => e.key === 'Escape' && onCerrar()
     document.addEventListener('keydown', alTeclear)
@@ -280,7 +320,71 @@ function DialogoSubida({
           </button>
         </div>
         <div className="space-y-5 px-6 py-6 sm:px-8">
-          <Dropzone onUpload={onUpload} />
+          {servicios.length === 0 ? (
+            <p
+              role="status"
+              className="rounded-2xl border border-white/10 bg-[#0f1210] p-5 text-sm text-white/70"
+            >
+              El administrador aún no te asignó servicios. Cuando lo haga podrás
+              publicar fotos de esos cortes.
+            </p>
+          ) : (
+            <>
+              <div>
+                <label
+                  htmlFor="servicio-foto"
+                  className="mb-2 block text-xs font-semibold tracking-[0.14em] text-white/60 uppercase"
+                >
+                  ¿Qué corte muestra la foto?
+                </label>
+                <select
+                  id="servicio-foto"
+                  value={servicioId ?? ''}
+                  onChange={(e) =>
+                    setServicioId(e.target.value ? Number(e.target.value) : undefined)
+                  }
+                  className="w-full rounded-xl border border-white/15 bg-[#0f1210] px-4 py-3 text-sm text-white outline-none focus:border-[#d7b36a]"
+                >
+                  <option value="">Elige un corte…</option>
+                  {servicios.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nombre} · {s.precio}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-xs text-white/40">
+                  El precio y la descripción los define el administrador en el catálogo.
+                </p>
+              </div>
+              {servicioId !== undefined && (
+                <>
+                  <div>
+                    <label
+                      htmlFor="nota-foto"
+                      className="mb-2 block text-xs font-semibold tracking-[0.14em] text-white/60 uppercase"
+                    >
+                      Nota (opcional)
+                    </label>
+                    <input
+                      id="nota-foto"
+                      type="text"
+                      maxLength={200}
+                      value={nota}
+                      onChange={(e) => setNota(e.target.value)}
+                      placeholder="Ej.: degradado bajo con textura arriba"
+                      className="w-full rounded-xl border border-white/15 bg-[#0f1210] px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#d7b36a]"
+                    />
+                  </div>
+                  <Dropzone
+                    onUpload={(archivo, onProgress) =>
+                      onUpload(archivo, onProgress, { servicioId, nota: nota.trim() })
+                    }
+                    onTerminado={onCerrar}
+                  />
+                </>
+              )}
+            </>
+          )}
           <p className="text-xs text-white/40">
             Las fotos se optimizan y se guardan de forma segura en tu portafolio.
           </p>

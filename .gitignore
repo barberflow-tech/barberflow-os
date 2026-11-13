@@ -16,6 +16,8 @@ venv/
 staticfiles/
 *.egg-info/
 .pytest_cache/
+.coverage
+htmlcov/
 .ruff_cache/
 
 # Notas locales de sesion (no se suben a GitHub)

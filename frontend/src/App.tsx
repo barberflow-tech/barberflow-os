@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { RolesManager } from '@/components/admin/RolesManager'
 import { ServicesManager } from '@/components/admin/ServicesManager'
 import { RoleGuard } from '@/components/auth/RoleGuard'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -32,6 +33,7 @@ export function App() {
         <Route element={<RoleGuard allowedRoles={['admin']} />}>
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin/servicios" element={<ServicesManager />} />
+          <Route path="/admin/usuarios" element={<RolesManager />} />
         </Route>
 
         {import.meta.env.DEV && (

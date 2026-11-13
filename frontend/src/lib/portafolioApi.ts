@@ -6,13 +6,30 @@ import { useAuthStore } from '@/stores/useAuthStore'
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
 const URL_PORTAFOLIO = `${API_URL}/api/v1/barbers/me/portfolio`
 
+/** Corte del catálogo vinculado a la foto: lo define el administrador. */
+export interface ServicioFotoApi {
+  id: number
+  name: string
+  price: string
+  duration_minutes: number
+  description: string
+}
+
 export interface FotoApi {
   id: number
+  servicio: ServicioFotoApi | null
+  nota: string
   image_url: string
   original_filename: string
   original_size: number
   optimized_size: number
   created_at: string
+}
+
+/** Lo que el barbero indica al subir: el corte (obligatorio) y una nota propia. */
+export interface DatosFoto {
+  servicioId: number
+  nota: string
 }
 
 /** Error con un mensaje apto para mostrar al usuario. */
@@ -48,6 +65,7 @@ export async function listarPortafolio(): Promise<FotoApi[]> {
 export function subirFoto(
   archivo: File,
   onProgress: (pct: number) => void,
+  datos: DatosFoto,
 ): Promise<FotoApi> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
@@ -75,8 +93,24 @@ export function subirFoto(
       const detalle = (cuerpo as { detail?: string } | undefined)?.detail
       reject(new PortafolioError(mensajePorEstado(xhr.status, detalle)))
     }
-    const datos = new FormData()
-    datos.append('image', archivo)
-    xhr.send(datos)
+    const formulario = new FormData()
+    formulario.append('image', archivo)
+    formulario.append('servicio', String(datos.servicioId))
+    if (datos.nota) formulario.append('nota', datos.nota)
+    xhr.send(formulario)
   })
+}
+
+/** Servicios activos que el admin le asignó al barbero autenticado. */
+export async function listarMisServicios(): Promise<ServicioFotoApi[]> {
+  let response: Response
+  try {
+    response = await fetch(`${API_URL}/api/v1/barbers/me/services`, {
+      headers: autorizacion(),
+    })
+  } catch {
+    throw new PortafolioError('No se pudo conectar con el servidor.')
+  }
+  if (!response.ok) throw new PortafolioError(mensajePorEstado(response.status))
+  return (await response.json()) as ServicioFotoApi[]
 }

@@ -114,6 +114,7 @@ describe('ReservaWizard', () => {
     expect(crearCita).toHaveBeenCalledWith({
       servicioId: 1,
       barberoId: 1,
+      barbero: expect.objectContaining({ id: 1, nombre: 'Thiago' }),
       inicio: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T11:30/),
       contactoNombre: 'Juan Esteban Gómez',
       contactoCelular: '3004567890',

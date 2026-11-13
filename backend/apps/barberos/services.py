@@ -196,7 +196,13 @@ def upload_to_storage(content: bytes) -> tuple[str, str]:
             "No fue posible conectar con Supabase Storage."
         ) from exc
 
-    public_url = f"{base_url}/storage/v1/object/public/" f"{bucket}/{encoded_path}"
+    # La URL que se guarda la abre el navegador, no el contenedor: no puede
+    # usar host.docker.internal. SUPABASE_URL (la de la API local o de la nube)
+    # es alcanzable desde el navegador.
+    public_base = (
+        os.getenv("SUPABASE_PUBLIC_URL") or os.getenv("SUPABASE_URL") or base_url
+    ).rstrip("/")
+    public_url = f"{public_base}/storage/v1/object/public/" f"{bucket}/{encoded_path}"
 
     return public_url, storage_path
 

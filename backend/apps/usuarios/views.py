@@ -1,14 +1,26 @@
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 
 from .cookies import borrar_cookie_refresh, nombre_cookie_refresh, poner_cookie_refresh
+from .correo import enviar_recuperacion_contrasena
 from .models import rol_de
 from .permissions import HasRole, OrigenPermitido
-from .serializers import LoginSerializer, RegistroSerializer
+from .serializers import (
+    LoginSerializer,
+    RecuperarContrasenaSerializer,
+    RegistroSerializer,
+    RestablecerContrasenaSerializer,
+)
 from .tokens import LoginTokenSerializer, RefreshTokenSerializer
 
 
@@ -147,6 +159,75 @@ class LogoutView(APIView):
         borrar_cookie_refresh(respuesta)
         respuesta["Cache-Control"] = "no-store"
         return respuesta
+
+
+class RecuperarContrasenaThrottle(AnonRateThrottle):
+    """Limita por IP los correos de recuperacion (evita el spam a un tercero)."""
+
+    scope = "recuperar_contrasena"
+
+
+class RestablecerContrasenaThrottle(AnonRateThrottle):
+    scope = "restablecer_contrasena"
+
+
+MENSAJE_RECUPERACION = (
+    "Si el correo está registrado, te enviamos las instrucciones para restablecer "
+    "tu contraseña."
+)
+
+
+class RecuperarContrasenaView(APIView):
+    """POST /api/v1/auth/password-reset: envia el enlace para restablecer.
+
+    La respuesta es la misma exista o no la cuenta (y falle o no el envio), para
+    que nadie pueda averiguar que correos estan registrados.
+    """
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [RecuperarContrasenaThrottle]
+
+    def post(self, request):
+        entrada = RecuperarContrasenaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        email = entrada.validated_data["email"].strip()
+
+        usuario = (
+            get_user_model().objects.filter(email__iexact=email, is_active=True).first()
+        )
+        if usuario is not None and usuario.has_usable_password():
+            uid = urlsafe_base64_encode(force_bytes(usuario.pk))
+            token = default_token_generator.make_token(usuario)
+            enlace = f"{settings.FRONTEND_URL}/restablecer?uid={uid}&token={token}"
+            enviar_recuperacion_contrasena(
+                usuario.email, enlace, settings.PASSWORD_RESET_MINUTES
+            )
+        return Response(
+            {"detail": MENSAJE_RECUPERACION}, status=status.HTTP_202_ACCEPTED
+        )
+
+
+class RestablecerContrasenaView(APIView):
+    """POST /api/v1/auth/password-reset/confirm: fija la nueva contrasena.
+
+    No inicia sesion: el frontend lleva al usuario al login. El token de Django
+    se invalida solo al cambiar la contrasena, asi que el enlace sirve una vez.
+    """
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [RestablecerContrasenaThrottle]
+
+    def post(self, request):
+        entrada = RestablecerContrasenaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        usuario = entrada.validated_data["user"]
+        usuario.set_password(entrada.validated_data["password"])
+        usuario.save(update_fields=["password"])
+        return Response(
+            {"detail": "Contraseña actualizada."}, status=status.HTTP_200_OK
+        )
 
 
 class ProtectedTestView(APIView):

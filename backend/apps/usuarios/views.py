@@ -7,7 +7,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 
 from .cookies import borrar_cookie_refresh, nombre_cookie_refresh, poner_cookie_refresh
 from .models import rol_de
-from .permissions import HasRole, OrigenPermitido
+from .permissions import OrigenPermitido, SoloAdministrador
 from .serializers import LoginSerializer, RegistroSerializer
 from .tokens import LoginTokenSerializer, RefreshTokenSerializer
 
@@ -158,7 +158,7 @@ class ProtectedTestView(APIView):
     autenticacion (JWT) viene de REST_FRAMEWORK en settings.
     """
 
-    permission_classes = [HasRole("admin")]
+    permission_classes = [SoloAdministrador]
 
     def get(self, request):
         return Response(

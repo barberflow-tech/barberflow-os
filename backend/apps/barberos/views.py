@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from apps.barberos.context import barbero_de
 from apps.barberos.models import PortfolioBarbero
-from apps.usuarios.permissions import HasRole
+from apps.usuarios.permissions import SoloBarbero
 
 from .serializers import (
     PortfolioBarberoSerializer,
@@ -26,7 +26,7 @@ from .services import (
 class PortfolioBarberoUploadView(APIView):
     """Carga una imagen optimizada al portafolio del barbero autenticado."""
 
-    permission_classes = [IsAuthenticated, HasRole("barbero")]
+    permission_classes = [IsAuthenticated, SoloBarbero]
     parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request):

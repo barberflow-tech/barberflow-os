@@ -239,3 +239,31 @@ Esta característica no es un requerimiento típico de un cliente convencional (
 6. **Migrar y crear el superusuario:** `docker compose exec backend python manage.py migrate` y `docker compose exec backend python manage.py createsuperuser`. El panel de Django queda en `http://localhost:5000/admin/`.
 7. **Ver la base de datos:** Supabase Studio en `http://127.0.0.1:54323`, o pgAdmin/DBeaver con host `localhost`, puerto **54322**, usuario `postgres`, contraseña `postgres`, base `postgres`.
 8. **Nunca desarrolles contra la nube:** las llaves de Supabase Cloud (Staging) no van en el `.env`; solo se configuran en Vercel/Render.
+
+### Correo transaccional (SCRUM-64)
+
+Configura el host, el puerto, el usuario SMTP, la contraseña y un remitente
+verificado en el entorno del backend. Los nombres de las variables están en
+`.env.example`. Usa `EMAIL_USE_TLS=True` para STARTTLS o `EMAIL_USE_SSL=True`
+para TLS implícito, según el puerto de tu proveedor. Activa una sola opción.
+En Render Free, selecciona un proveedor con un puerto alternativo como 2525,
+ya que Render bloquea 25, 465 y 587 en ese plan.
+
+Aplica la migración con `docker compose exec backend python manage.py migrate`
+en local o con `python manage.py migrate` en el entorno del backend desplegado.
+Para enviar un aviso desde el backend:
+
+```python
+from apps.notificaciones.services import send_notification_email
+
+delivery = send_notification_email(
+    recipient="cliente@example.com",
+    subject="Recordatorio de tu cita",
+    body="Tu cita es mañana a las 10:00.",
+)
+```
+
+Cada llamada crea un registro. `sent` indica que el backend de correo aceptó
+el envío, `failed` registra el tipo de error y `pending` indica un intento
+aún sin resultado registrado. Si el aviso depende de una operación con
+`transaction.atomic()`, programa la llamada con `transaction.on_commit()`.

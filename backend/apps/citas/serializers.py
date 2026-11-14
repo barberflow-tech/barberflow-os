@@ -4,7 +4,8 @@ from rest_framework import serializers
 from apps.barberos.models import Barbero
 from apps.catalogo.models import Servicio
 
-from .models import Cita
+from .models import BloqueoAgenda, Cita
+from .services import ZONA_HORARIA_BARBERIA
 
 
 class CrearCitaSerializer(serializers.Serializer):
@@ -91,3 +92,28 @@ class DisponibilidadResponseSerializer(serializers.Serializer):
     date = serializers.DateField()
     slot_duration = serializers.IntegerField()
     available_slots = SlotDisponibleSerializer(many=True)
+
+
+class BloqueoAgendaSerializer(serializers.ModelSerializer):
+    barber = serializers.PrimaryKeyRelatedField(queryset=Barbero.objects.none())
+    start_at = serializers.DateTimeField(default_timezone=ZONA_HORARIA_BARBERIA)
+    end_at = serializers.DateTimeField(default_timezone=ZONA_HORARIA_BARBERIA)
+
+    class Meta:
+        model = BloqueoAgenda
+        fields = ["id", "barber", "start_at", "end_at", "reason"]
+        read_only_fields = ["id"]
+
+    def __init__(self, *args, barberia=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if barberia is not None:
+            self.fields["barber"].queryset = Barbero.objects.filter(
+                barberia=barberia, is_active=True
+            )
+
+    def validate(self, attrs):
+        if attrs["end_at"] <= attrs["start_at"]:
+            raise serializers.ValidationError(
+                {"end_at": "El fin debe ser posterior al inicio."}
+            )
+        return attrs

@@ -101,3 +101,34 @@ class Cita(models.Model):
 
     def __str__(self) -> str:
         return f"{self.barber} {self.start_at:%Y-%m-%d %H:%M} ({self.status})"
+
+
+class BloqueoAgendaQuerySet(models.QuerySet):
+    def solapados(self, barbero, inicio: datetime, fin: datetime):
+        """Bloqueos del barbero que se cruzan con [inicio, fin)."""
+        return self.filter(barber=barbero, start_at__lt=fin, end_at__gt=inicio)
+
+
+class BloqueoAgenda(models.Model):
+    barber = models.ForeignKey(
+        "barberos.Barbero", on_delete=models.CASCADE, related_name="bloqueos_agenda"
+    )
+    start_at = models.DateTimeField()
+    end_at = models.DateTimeField()
+    reason = models.CharField(max_length=255)
+
+    objects = BloqueoAgendaQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["start_at", "pk"]
+        indexes = [
+            models.Index(
+                fields=["barber", "start_at"], name="bloqueo_barbero_inicio_idx"
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(end_at__gt=models.F("start_at")),
+                name="bloqueo_fin_posterior_inicio",
+            ),
+        ]

@@ -71,7 +71,7 @@ class Cita(models.Model):
     # altera el historico (HU-10).
     price = models.DecimalField(max_digits=10, decimal_places=2)
     # Cancelacion por el cliente (HU-03). `late_cancellation` congela la
-    # decision con la regla vigente ese dia (12 h o menos de antelacion) para
+    # decision con la regla vigente ese dia (antelacion minima o menos) para
     # que HU-19 (SmartGuard) la cuente sin recalcularla. Las citas canceladas
     # antes de existir estos campos quedan con cancelled_at nulo.
     cancelled_at = models.DateTimeField(null=True, blank=True)

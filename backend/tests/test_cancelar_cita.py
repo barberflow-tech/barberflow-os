@@ -20,7 +20,7 @@ from apps.catalogo.models import Servicio
 from apps.citas import services
 from apps.citas.models import Cita
 
-DOCE_HORAS = timedelta(hours=12)
+ANTICIPACION = services.ANTICIPACION_MINIMA
 
 
 def url_cancelar(cita_id) -> str:
@@ -59,7 +59,7 @@ def servicio(barberia):
 
 @pytest.fixture
 def inicio():
-    # Siempre a mas de 15 h de "ahora": nunca cae en la ventana de 12 h.
+    # Siempre a mas de 15 h de "ahora": nunca cae en la ventana de antelacion.
     return (timezone.now() + timedelta(days=1)).replace(
         hour=15, minute=0, second=0, microsecond=0
     )
@@ -95,26 +95,30 @@ def api_de(usuario) -> APIClient:
     return api
 
 
-# --- Regla de las 12 horas (sin base de datos) --------------------------------
+# --- Regla de la antelacion minima (sin base de datos) --------------------------------
 
 
-def test_tiene_anticipacion_minima_con_mas_de_12_horas():
+def test_tiene_anticipacion_minima_con_mas_de_la_antelacion_minima():
     ahora = datetime(2026, 11, 20, 8, 0, tzinfo=zona_utc.utc)
 
-    justo_12_horas = ahora + DOCE_HORAS
-    mas_de_12_horas = justo_12_horas + timedelta(seconds=1)
+    justo_la_antelacion_minima = ahora + ANTICIPACION
+    mas_de_la_antelacion_minima = justo_la_antelacion_minima + timedelta(seconds=1)
 
-    assert services.tiene_anticipacion_minima(justo_12_horas, ahora) is False
-    assert services.tiene_anticipacion_minima(mas_de_12_horas, ahora) is True
+    assert (
+        services.tiene_anticipacion_minima(justo_la_antelacion_minima, ahora) is False
+    )
+    assert (
+        services.tiene_anticipacion_minima(mas_de_la_antelacion_minima, ahora) is True
+    )
 
 
-def test_tiene_anticipacion_minima_rechaza_menos_de_12_horas_y_citas_pasadas():
+def test_tiene_anticipacion_minima_rechaza_menos_de_la_antelacion_minima_y_citas_pasadas():
     ahora = datetime(2026, 11, 20, 8, 0, tzinfo=zona_utc.utc)
 
-    en_seis_horas = ahora + timedelta(hours=6)
+    dentro_del_margen = ahora + ANTICIPACION / 2
     hace_una_hora = ahora - timedelta(hours=1)
 
-    assert services.tiene_anticipacion_minima(en_seis_horas, ahora) is False
+    assert services.tiene_anticipacion_minima(dentro_del_margen, ahora) is False
     assert services.tiene_anticipacion_minima(hace_una_hora, ahora) is False
 
 
@@ -124,7 +128,7 @@ def test_tiene_anticipacion_minima_rechaza_menos_de_12_horas_y_citas_pasadas():
 @pytest.mark.django_db
 @pytest.mark.parametrize("estado", [Cita.Estado.PENDING, Cita.Estado.CONFIRMED])
 def test_cancelar_cita_propietario(propietario, barbero, servicio, inicio, estado):
-    # Dado una cita activa del cliente con mas de 12 h de antelacion
+    # Dado una cita activa del cliente con mas de la antelacion minima
     cita = crear_cita_en_bd(
         cliente=propietario,
         barbero=barbero,
@@ -167,9 +171,11 @@ def test_liberar_franja_al_cancelar_permite_reservarla_de_nuevo(
 
 
 @pytest.mark.django_db
-def test_registrar_cancelacion_tardia_con_menos_de_12_horas(propietario, cita):
+def test_registrar_cancelacion_tardia_con_menos_de_la_antelacion_minima(
+    propietario, cita
+):
     # Dado una cita que empieza en 6 horas
-    ahora = cita.start_at - timedelta(hours=6)
+    ahora = cita.start_at - ANTICIPACION / 2
 
     # Cuando se cancela
     services.cancelar_cita(cita_id=cita.pk, usuario=propietario, ahora=ahora)
@@ -182,10 +188,12 @@ def test_registrar_cancelacion_tardia_con_menos_de_12_horas(propietario, cita):
 
 
 @pytest.mark.django_db
-def test_registrar_cancelacion_tardia_exactamente_a_12_horas(propietario, cita):
-    # Dado el borde exacto: faltan 12 h justas (no "mas de 12 h")
+def test_registrar_cancelacion_tardia_exactamente_a_la_antelacion_minima(
+    propietario, cita
+):
+    # Dado el borde exacto: falta justo la antelacion minima (no "mas de")
     services.cancelar_cita(
-        cita_id=cita.pk, usuario=propietario, ahora=cita.start_at - DOCE_HORAS
+        cita_id=cita.pk, usuario=propietario, ahora=cita.start_at - ANTICIPACION
     )
 
     cita.refresh_from_db()
@@ -193,9 +201,11 @@ def test_registrar_cancelacion_tardia_exactamente_a_12_horas(propietario, cita):
 
 
 @pytest.mark.django_db
-def test_no_registrar_cancelacion_tardia_con_mas_de_12_horas(propietario, cita):
-    # Dado que faltan 12 h y 1 s
-    ahora = cita.start_at - DOCE_HORAS - timedelta(seconds=1)
+def test_no_registrar_cancelacion_tardia_con_mas_de_la_antelacion_minima(
+    propietario, cita
+):
+    # Dado que falta la antelacion minima y 1 s
+    ahora = cita.start_at - ANTICIPACION - timedelta(seconds=1)
 
     services.cancelar_cita(cita_id=cita.pk, usuario=propietario, ahora=ahora)
 
@@ -266,12 +276,12 @@ def test_rechazar_cancelacion_de_cita_en_estado_no_modificable(
 def test_no_sobrescribir_la_cancelacion_original_al_cancelar_dos_veces(
     propietario, cita
 ):
-    primera = cita.start_at - timedelta(hours=6)
+    primera = cita.start_at - ANTICIPACION / 2
     services.cancelar_cita(cita_id=cita.pk, usuario=propietario, ahora=primera)
 
     with pytest.raises(services.EstadoCitaInvalidoError):
         services.cancelar_cita(
-            cita_id=cita.pk, usuario=propietario, ahora=cita.start_at - DOCE_HORAS * 2
+            cita_id=cita.pk, usuario=propietario, ahora=cita.start_at - ANTICIPACION * 2
         )
 
     cita.refresh_from_db()
@@ -322,7 +332,7 @@ def test_acepta_barra_final_al_cancelar(propietario, cita):
 
 
 @pytest.mark.django_db
-def test_retornar_200_y_marca_tardia_con_menos_de_12_horas(
+def test_retornar_200_y_marca_tardia_con_menos_de_la_antelacion_minima(
     propietario, barbero, servicio
 ):
     # Dado una cita que empieza en 6 horas
@@ -330,7 +340,7 @@ def test_retornar_200_y_marca_tardia_con_menos_de_12_horas(
         cliente=propietario,
         barbero=barbero,
         servicio=servicio,
-        inicio=timezone.now() + timedelta(hours=6),
+        inicio=timezone.now() + ANTICIPACION / 2,
     )
 
     response = api_de(propietario).post(url_cancelar(cita.pk))
@@ -414,8 +424,8 @@ def test_fallo_al_guardar_hace_rollback_y_retorna_500(propietario, cita, monkeyp
 
     monkeypatch.setattr(Cita, "save", guardar_y_fallar)
 
-    # Cuando el propietario cancela con menos de 12 h (cambia los tres campos)
-    Cita.objects.filter(pk=cita.pk).update(start_at=timezone.now() + timedelta(hours=6))
+    # Cuando el propietario cancela con menos de la antelacion minima (cambia los tres campos)
+    Cita.objects.filter(pk=cita.pk).update(start_at=timezone.now() + ANTICIPACION / 2)
     response = api_de(propietario).post(url_cancelar(cita.pk))
 
     # Entonces responde 500 en JSON y el ROLLBACK deja la cita intacta

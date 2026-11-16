@@ -5,7 +5,11 @@ from apps.barberos.models import Barbero
 from apps.catalogo.models import Servicio
 
 from .models import BloqueoAgenda, Cita
-from .services import ZONA_HORARIA_BARBERIA
+from .services import (
+    ANTICIPACION_MINIMA,
+    ANTICIPACION_MINIMA_HORAS,
+    ZONA_HORARIA_BARBERIA,
+)
 
 
 class CrearCitaSerializer(serializers.Serializer):
@@ -85,21 +89,44 @@ class BarberoDeCitaSerializer(serializers.ModelSerializer):
 
 
 class CitaPerfilSerializer(serializers.ModelSerializer):
-    """Cita tal como la ve el cliente en su perfil: con servicio y barbero."""
+    """Cita tal como la ve el cliente en su perfil: con servicio y barbero.
+
+    Lleva la regla de antelacion ya calculada para que el frontend no la
+    duplique: `reschedule_deadline` es el ultimo instante (exclusivo) en que
+    aun se puede reprogramar y `min_notice_hours` la antelacion que la define.
+    """
 
     service = ServicioDeCitaSerializer(read_only=True)
     barber = BarberoDeCitaSerializer(read_only=True)
+    reschedule_deadline = serializers.SerializerMethodField()
+    min_notice_hours = serializers.SerializerMethodField()
 
     class Meta:
         model = Cita
-        fields = ["id", "status", "start_at", "end_at", "price", "service", "barber"]
+        fields = [
+            "id",
+            "status",
+            "start_at",
+            "end_at",
+            "price",
+            "service",
+            "barber",
+            "reschedule_deadline",
+            "min_notice_hours",
+        ]
         read_only_fields = fields
+
+    def get_reschedule_deadline(self, cita):
+        return cita.start_at - ANTICIPACION_MINIMA
+
+    def get_min_notice_hours(self, cita) -> int:
+        return ANTICIPACION_MINIMA_HORAS
 
 
 class ReprogramarCitaSerializer(serializers.Serializer):
     """Payload de entrada de POST /api/v1/appointments/{id}/reschedule.
 
-    Solo valida forma y tipo. Las reglas (propietario, 12 h, disponibilidad)
+    Solo valida forma y tipo. Las reglas (propietario, antelacion, disponibilidad)
     se deciden en services.reprogramar_cita, con los bloqueos adquiridos.
     """
 

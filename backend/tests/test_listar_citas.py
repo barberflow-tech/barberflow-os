@@ -15,6 +15,7 @@ from rest_framework.test import APIClient
 from apps.barberias.models import Barberia
 from apps.barberos.models import Barbero
 from apps.catalogo.models import Servicio
+from apps.citas import services
 from apps.citas.models import Cita
 
 URL = "/api/v1/appointments"
@@ -154,3 +155,37 @@ def test_listar_citas_de_la_mas_proxima_a_la_mas_lejana(cliente, barbero, servic
     response = api_de(cliente).get(URL)
 
     assert [c["id"] for c in response.data] == [proxima.pk, media.pk, lejana.pk]
+
+
+@pytest.mark.django_db
+def test_incluye_la_hora_limite_para_reprogramar(cliente, barbero, servicio):
+    cita = cita_de(cliente, barbero, servicio, en=timedelta(days=2))
+
+    dato = api_de(cliente).get(URL).data[0]
+
+    # El ultimo instante en que aun se puede reprogramar: la antelacion antes del inicio
+    assert dato["reschedule_deadline"] == cita.start_at - services.ANTICIPACION_MINIMA
+    assert dato["min_notice_hours"] == services.ANTICIPACION_MINIMA_HORAS
+
+
+@pytest.mark.django_db
+def test_la_hora_limite_ya_paso_para_una_cita_dentro_de_la_antelacion(
+    cliente, barbero, servicio
+):
+    # Una cita mas cercana que la antelacion minima: su limite ya quedo atras
+    cita_de(cliente, barbero, servicio, en=services.ANTICIPACION_MINIMA / 2)
+
+    dato = api_de(cliente).get(URL).data[0]
+
+    assert dato["reschedule_deadline"] < timezone.now()
+
+
+def test_la_antelacion_minima_viene_de_la_configuracion():
+    from django.conf import settings
+
+    assert services.ANTICIPACION_MINIMA == timedelta(
+        hours=settings.CITAS_ANTICIPACION_MINIMA_HORAS
+    )
+    assert str(settings.CITAS_ANTICIPACION_MINIMA_HORAS) in (
+        services.MENSAJE_REPROGRAMACION_TARDIA
+    )

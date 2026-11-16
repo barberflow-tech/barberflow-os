@@ -5,8 +5,8 @@ POST /api/v1/appointments/{id}/reschedule. La concurrencia vive en
 test_concurrencia_reprogramar_cita.py porque exige transaction=True.
 
 Las horas se construyen en la hora local de la barberia (America/Bogota) con
-dias de margen, para que la regla de 12 h no dependa de la hora en que corre
-la prueba. Los bordes exactos de 12 h se prueban inyectando `ahora`.
+dias de margen, para que la regla de antelacion no dependa de la hora en que corre
+la prueba. Los bordes exactos de la antelacion minima se prueban inyectando `ahora`.
 """
 
 from datetime import datetime, time, timedelta
@@ -24,7 +24,7 @@ from apps.catalogo.models import Servicio
 from apps.citas import services
 from apps.citas.models import BloqueoAgenda, Cita
 
-DOCE_HORAS = timedelta(hours=12)
+ANTICIPACION = services.ANTICIPACION_MINIMA
 
 
 def url_reprogramar(cita_id) -> str:
@@ -130,19 +130,19 @@ def reprogramar(cita, usuario, nuevo_inicio, **extra) -> Cita:
     )
 
 
-# --- Regla de las 12 horas (sin base de datos) --------------------------------
+# --- Regla de la antelacion minima (sin base de datos) --------------------------------
 
 
-def test_validar_anticipacion_minima_rechaza_exactamente_12_horas():
+def test_validar_anticipacion_minima_rechaza_exactamente_la_antelacion_minima():
     ahora = datetime(2026, 11, 20, 8, 0, tzinfo=zona_utc.utc)
 
     with pytest.raises(services.ReprogramacionTardiaError):
-        services.validar_anticipacion_minima(ahora + DOCE_HORAS, ahora)
+        services.validar_anticipacion_minima(ahora + ANTICIPACION, ahora)
 
 
-def test_validar_anticipacion_minima_acepta_mas_de_12_horas():
+def test_validar_anticipacion_minima_acepta_mas_de_la_antelacion_minima():
     ahora = datetime(2026, 11, 20, 8, 0, tzinfo=zona_utc.utc)
-    inicio = ahora + DOCE_HORAS + timedelta(seconds=1)
+    inicio = ahora + ANTICIPACION + timedelta(seconds=1)
 
     services.validar_anticipacion_minima(inicio, ahora)  # no lanza
 
@@ -152,7 +152,7 @@ def test_validar_anticipacion_minima_acepta_mas_de_12_horas():
 
 @pytest.mark.django_db
 def test_reprogramar_cita_propietario(propietario, cita, nuevo_inicio):
-    # Dado una cita activa con mas de 12 h de antelacion
+    # Dado una cita activa con mas de la antelacion minima
     duracion = cita.end_at - cita.start_at
 
     # Cuando su propietario la mueve a otra hora
@@ -254,14 +254,16 @@ def test_permitir_franja_pegada_a_los_bordes_de_la_jornada(
     assert cita.start_at == nuevo
 
 
-# --- Servicio reprogramar_cita: regla de las 12 horas ----------------------------
+# --- Servicio reprogramar_cita: regla de la antelacion minima ----------------------------
 
 
 @pytest.mark.django_db
-def test_rechazar_reprogramacion_menos_de_12_horas(propietario, cita, nuevo_inicio):
+def test_rechazar_reprogramacion_menos_de_la_antelacion_minima(
+    propietario, cita, nuevo_inicio
+):
     # Dado una cita que empieza en 6 horas, aunque la nueva hora sea lejana
     # (la regla se mide contra la hora ORIGINAL)
-    ahora = cita.start_at - timedelta(hours=6)
+    ahora = cita.start_at - ANTICIPACION / 2
     original = (cita.start_at, cita.end_at)
 
     with pytest.raises(services.ReprogramacionTardiaError):
@@ -273,16 +275,18 @@ def test_rechazar_reprogramacion_menos_de_12_horas(propietario, cita, nuevo_inic
 
 
 @pytest.mark.django_db
-def test_rechazar_reprogramacion_exactamente_a_12_horas(
+def test_rechazar_reprogramacion_exactamente_a_la_antelacion_minima(
     propietario, cita, nuevo_inicio
 ):
     with pytest.raises(services.ReprogramacionTardiaError):
-        reprogramar(cita, propietario, nuevo_inicio, ahora=cita.start_at - DOCE_HORAS)
+        reprogramar(cita, propietario, nuevo_inicio, ahora=cita.start_at - ANTICIPACION)
 
 
 @pytest.mark.django_db
-def test_permitir_reprogramacion_con_mas_de_12_horas(propietario, cita, nuevo_inicio):
-    ahora = cita.start_at - DOCE_HORAS - timedelta(seconds=1)
+def test_permitir_reprogramacion_con_mas_de_la_antelacion_minima(
+    propietario, cita, nuevo_inicio
+):
+    ahora = cita.start_at - ANTICIPACION - timedelta(seconds=1)
 
     reprogramar(cita, propietario, nuevo_inicio, ahora=ahora)
 
@@ -502,13 +506,16 @@ def test_acepta_barra_final_al_reprogramar(propietario, cita, nuevo_inicio):
 
 
 @pytest.mark.django_db
-def test_retornar_400_si_faltan_menos_de_12_horas(
+def test_retornar_400_si_faltan_menos_de_la_antelacion_minima(
     propietario, barbero, servicio, horarios, nuevo_inicio
 ):
     # Dado una cita que empieza en 6 horas
-    en_seis_horas = timezone.now() + timedelta(hours=6)
+    dentro_del_margen = timezone.now() + ANTICIPACION / 2
     cita = crear_cita_en_bd(
-        cliente=propietario, barbero=barbero, servicio=servicio, inicio=en_seis_horas
+        cliente=propietario,
+        barbero=barbero,
+        servicio=servicio,
+        inicio=dentro_del_margen,
     )
 
     response = api_de(propietario).post(
@@ -519,7 +526,7 @@ def test_retornar_400_si_faltan_menos_de_12_horas(
     assert response.status_code == 400
     assert response.data["detail"].code == "reprogramacion_tardia"
     cita.refresh_from_db()
-    assert cita.start_at == en_seis_horas
+    assert cita.start_at == dentro_del_margen
 
 
 @pytest.mark.django_db

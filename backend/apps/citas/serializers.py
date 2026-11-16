@@ -70,6 +70,32 @@ class CitaSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class ServicioDeCitaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Servicio
+        fields = ["id", "name", "price", "duration_minutes", "description"]
+        read_only_fields = fields
+
+
+class BarberoDeCitaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Barbero
+        fields = ["id", "name"]
+        read_only_fields = fields
+
+
+class CitaPerfilSerializer(serializers.ModelSerializer):
+    """Cita tal como la ve el cliente en su perfil: con servicio y barbero."""
+
+    service = ServicioDeCitaSerializer(read_only=True)
+    barber = BarberoDeCitaSerializer(read_only=True)
+
+    class Meta:
+        model = Cita
+        fields = ["id", "status", "start_at", "end_at", "price", "service", "barber"]
+        read_only_fields = fields
+
+
 class ReprogramarCitaSerializer(serializers.Serializer):
     """Payload de entrada de POST /api/v1/appointments/{id}/reschedule.
 

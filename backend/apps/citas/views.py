@@ -2,6 +2,7 @@ import logging
 
 from django.db import DatabaseError
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import (
     APIException,
@@ -21,10 +22,11 @@ from apps.usuarios.models import Rol, rol_de
 from apps.usuarios.permissions import HasRole
 
 from . import services
-from .models import BloqueoAgenda
+from .models import BloqueoAgenda, Cita
 from .serializers import (
     BloqueoAgendaSerializer,
     CitaCanceladaSerializer,
+    CitaPerfilSerializer,
     CitaSerializer,
     CrearCitaSerializer,
     DisponibilidadQuerySerializer,
@@ -94,9 +96,13 @@ class ErrorAlReprogramarCita(APIException):
 
 
 class CrearCitaView(APIView):
-    """POST /api/v1/appointments: crea una cita PENDING.
+    """/api/v1/appointments: crea una cita (POST) o lista las del cliente (GET).
 
-    Es publica: con sesion la cita queda a nombre del usuario (acotada a su
+    GET exige sesion y devuelve las citas activas (PENDING o CONFIRMED) del
+    usuario que aun no terminaron, de la mas proxima a la mas lejana: es lo que
+    el perfil muestra para cancelar o reprogramar (HU-03).
+
+    POST crea una cita PENDING. Es publica: con sesion la cita queda a nombre del usuario (acotada a su
     barberia, 403 si no tiene); sin sesion exige nombre y celular de contacto
     y se limita por IP. Los errores usan el formato estandar de DRF
     ({"detail": ...} o errores por campo).
@@ -104,6 +110,23 @@ class CrearCitaView(APIView):
 
     permission_classes = [AllowAny]
     throttle_classes = [ReservaVisitanteThrottle]
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
+    def get(self, request):
+        citas = (
+            Cita.objects.filter(
+                client=request.user,
+                status__in=[Cita.Estado.PENDING, Cita.Estado.CONFIRMED],
+                end_at__gt=timezone.now(),
+            )
+            .select_related("service", "barber")
+            .order_by("start_at", "pk")
+        )
+        return Response(CitaPerfilSerializer(citas, many=True).data)
 
     def post(self, request):
         barberia = barberia_para_reservar(request.user)

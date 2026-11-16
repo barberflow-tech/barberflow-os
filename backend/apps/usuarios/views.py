@@ -17,7 +17,7 @@ from apps.barberias.models import Membresia, barberia_de
 
 from .cookies import borrar_cookie_refresh, nombre_cookie_refresh, poner_cookie_refresh
 from .models import PerfilUsuario, Rol, rol_de
-from .permissions import HasRole, OrigenPermitido
+from .permissions import HasRole, OrigenPermitido, SoloAdministrador
 from .serializers import (
     CambioDeRolSerializer,
     LoginSerializer,
@@ -173,7 +173,7 @@ class ProtectedTestView(APIView):
     autenticacion (JWT) viene de REST_FRAMEWORK en settings.
     """
 
-    permission_classes = [HasRole("admin")]
+    permission_classes = [SoloAdministrador]
 
     def get(self, request):
         return Response(

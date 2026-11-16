@@ -69,6 +69,24 @@ class CitaSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class ReprogramarCitaSerializer(serializers.Serializer):
+    """Payload de entrada de POST /api/v1/appointments/{id}/reschedule.
+
+    Solo valida forma y tipo. Las reglas (propietario, 12 h, disponibilidad)
+    se deciden en services.reprogramar_cita, con los bloqueos adquiridos.
+    """
+
+    start_at = serializers.DateTimeField()
+
+
+class CitaCanceladaSerializer(CitaSerializer):
+    """Salida de POST /appointments/{id}/cancel: la cita y cómo se canceló."""
+
+    class Meta(CitaSerializer.Meta):
+        fields = [*CitaSerializer.Meta.fields, "cancelled_at", "late_cancellation"]
+        read_only_fields = fields
+
+
 class DisponibilidadQuerySerializer(serializers.Serializer):
     """Valida los parámetros de consulta de disponibilidad."""
 

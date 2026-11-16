@@ -85,7 +85,7 @@ class ErrorAlCancelarCita(APIException):
 
 class ReprogramacionTardia(APIException):
     status_code = status.HTTP_400_BAD_REQUEST
-    default_detail = "Solo puedes reprogramar con más de 12 horas de anticipación."
+    default_detail = services.MENSAJE_REPROGRAMACION_TARDIA
     default_code = "reprogramacion_tardia"
 
 
@@ -124,6 +124,7 @@ class CrearCitaView(APIView):
                 end_at__gt=timezone.now(),
             )
             .select_related("service", "barber")
+            .prefetch_related("barber__horarios")
             .order_by("start_at", "pk")
         )
         return Response(CitaPerfilSerializer(citas, many=True).data)
@@ -167,7 +168,7 @@ class CancelarCitaView(APIView):
     """POST /api/v1/appointments/{id}/cancel: el propietario cancela su cita.
 
     Sin cuerpo. Exige sesión (401) y ser el propietario (403); la cita
-    inexistente da 404 y la que ya no se puede modificar, 409. Si faltan 12 h o
+    inexistente da 404 y la que ya no se puede modificar, 409. Si falta la antelación mínima o
     menos se cancela igual y la respuesta marca `late_cancellation`.
     """
 
@@ -195,7 +196,7 @@ class ReprogramarCitaView(APIView):
 
     Body: {"start_at": "<ISO 8601 con zona>"}. Mantiene barbero y servicio.
     401 sin sesión, 403 si no es el propietario, 404 si no existe, 400 si
-    faltan 12 h o menos (`reprogramacion_tardia`) o la hora no es válida, y
+    falta la antelación mínima o menos (`reprogramacion_tardia`) o la hora no es válida, y
     409 si la franja ya está ocupada o la cita ya no se puede modificar.
     """
 

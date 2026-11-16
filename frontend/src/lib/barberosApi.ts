@@ -13,6 +13,8 @@ export interface BarberoApi {
   name: string
   /** Ids de los servicios activos que realiza. */
   servicios: number[]
+  /** Días que atiende según su horario (0 lunes … 6 domingo). */
+  working_days?: number[]
 }
 
 export interface FotoPublicaApi {

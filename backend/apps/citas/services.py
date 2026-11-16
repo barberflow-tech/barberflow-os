@@ -6,6 +6,7 @@ de HU-02) solo traduce HTTP <-> llamadas a este modulo.
 
 from datetime import date, datetime, timedelta
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
 from django.db import IntegrityError, transaction
 from django.utils import timezone
@@ -24,9 +25,18 @@ from .models import BloqueoAgenda, Cita
 
 RESTRICCION_SOLAPAMIENTO = "cita_sin_solapamiento_por_barbero"
 
-# HU-03: con 12 h o menos de antelacion una cancelacion es tardia (HU-19) y la
-# reprogramacion no se permite. "Mas de 12 h" es estricto: 12 h justas no basta.
-ANTICIPACION_MINIMA = timedelta(hours=12)
+# HU-03: con la antelacion minima o menos una cancelacion es tardia (HU-19) y la
+# reprogramacion no se permite. "Mas de N h" es estricto: N h justas no basta.
+# El valor sale de settings (CITAS_ANTICIPACION_MINIMA_HORAS) para cambiarlo en
+# un solo lugar.
+ANTICIPACION_MINIMA_HORAS = settings.CITAS_ANTICIPACION_MINIMA_HORAS
+ANTICIPACION_MINIMA = timedelta(hours=ANTICIPACION_MINIMA_HORAS)
+_TEXTO_ANTICIPACION = (
+    "1 hora" if ANTICIPACION_MINIMA_HORAS == 1 else f"{ANTICIPACION_MINIMA_HORAS} horas"
+)
+MENSAJE_REPROGRAMACION_TARDIA = (
+    f"Solo puedes reprogramar con más de {_TEXTO_ANTICIPACION} de anticipación."
+)
 # Solo estas citas se pueden cancelar o reprogramar; el resto ya cerro su ciclo.
 ESTADOS_MODIFICABLES = (Cita.Estado.PENDING, Cita.Estado.CONFIRMED)
 
@@ -60,7 +70,7 @@ class EstadoCitaInvalidoError(CitaError):
 
 
 class ReprogramacionTardiaError(CitaError):
-    """Faltan 12 h o menos para la cita: ya no se puede reprogramar."""
+    """Falta la antelacion minima o menos: ya no se puede reprogramar."""
 
 
 def crear_cita(
@@ -182,7 +192,7 @@ def validar_cita_no_iniciada(cita: Cita, ahora: datetime) -> None:
 
 
 def tiene_anticipacion_minima(inicio: datetime, ahora: datetime) -> bool:
-    """True si faltan MÁS de 12 h para `inicio` (con 12 h justas es False)."""
+    """True si faltan MÁS de la antelacion minima para `inicio` (justa es False)."""
     return inicio - ahora > ANTICIPACION_MINIMA
 
 
@@ -252,7 +262,7 @@ def cancelar_cita(
     en una y cada una decida sobre el estado real. No se bloquea al barbero:
     cancelar solo libera la franja, nunca la ocupa.
 
-    Cancelar siempre se permite al propietario; con 12 h o menos de antelación
+    Cancelar siempre se permite al propietario; con la antelación mínima o menos
     se registra como cancelación tardía. `ahora` se toma ya con el bloqueo
     adquirido (o lo inyecta el llamador, para probar el borde exacto).
     """
@@ -276,17 +286,15 @@ def cancelar_cita(
 
 
 def validar_anticipacion_minima(inicio: datetime, ahora: datetime) -> None:
-    """Reprogramar exige MÁS de 12 h de antelación sobre la hora original."""
+    """Reprogramar exige MÁS de la antelación mínima sobre la hora original."""
     if not tiene_anticipacion_minima(inicio, ahora):
-        raise ReprogramacionTardiaError(
-            "Solo puedes reprogramar con más de 12 horas de anticipación."
-        )
+        raise ReprogramacionTardiaError(MENSAJE_REPROGRAMACION_TARDIA)
 
 
 def validar_reprogramacion(cita: Cita, nuevo_inicio: datetime, ahora: datetime) -> None:
     """Reglas de la cita y de la hora pedida, con la cita ya bloqueada.
 
-    El orden importa: primero el estado, luego las 12 h (medidas contra la
+    El orden importa: primero el estado, luego la antelación mínima (medida contra la
     hora ORIGINAL, no la nueva) y al final la validez de la nueva hora.
     """
     validar_estado_modificable(cita)

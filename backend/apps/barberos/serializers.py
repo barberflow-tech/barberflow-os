@@ -171,9 +171,14 @@ class BarberoPublicoSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
     servicios = serializers.SerializerMethodField()
+    working_days = serializers.SerializerMethodField()
 
     def get_servicios(self, barbero):
         return [s.pk for s in barbero.servicios.all() if s.is_active]
+
+    def get_working_days(self, barbero) -> list[int]:
+        """Dias de la semana que atiende (0 lunes a 6 domingo), segun su horario."""
+        return sorted({h.weekday for h in barbero.horarios.all() if h.is_active})
 
 
 class AsignarServiciosSerializer(serializers.Serializer):

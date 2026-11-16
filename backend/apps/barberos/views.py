@@ -289,7 +289,7 @@ class MisServiciosView(APIView):
 def _barberos_visibles():
     return (
         Barbero.objects.filter(barberia=obtener_barberia_catalogo(), is_active=True)
-        .prefetch_related("servicios")
+        .prefetch_related("servicios", "horarios")
         .order_by("name")
     )
 

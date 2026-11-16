@@ -222,6 +222,13 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
 PASSWORD_RESET_MINUTES = int(os.getenv("PASSWORD_RESET_MINUTES", "30"))
 PASSWORD_RESET_TIMEOUT = PASSWORD_RESET_MINUTES * 60
 
+# HU-03: horas de antelacion minima para reprogramar una cita. Con esa antelacion
+# o menos, reprogramar se rechaza y cancelar queda registrado como cancelacion
+# tardia (lo cuenta HU-19). Es la unica fuente: el frontend la recibe en cada cita.
+CITAS_ANTICIPACION_MINIMA_HORAS = int(os.getenv("CITAS_ANTICIPACION_MINIMA_HORAS", "2"))
+if CITAS_ANTICIPACION_MINIMA_HORAS < 1:
+    raise ImproperlyConfigured("CITAS_ANTICIPACION_MINIMA_HORAS debe ser al menos 1.")
+
 # CORS
 # https://github.com/adamchainz/django-cors-headers
 

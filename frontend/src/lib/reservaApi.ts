@@ -20,6 +20,8 @@ export interface Barbero {
   nombre: string
   rol: string
   calificacion: number
+  /** Días que atiende (0 lunes … 6 domingo), del horario que configuró el admin. */
+  diasLaborales?: number[]
 }
 
 export interface FranjaHoraria {
@@ -34,6 +36,10 @@ export interface CitaConfirmada {
   barbero: Barbero
   inicio: string
   total: number
+  /** Último instante (ISO) en que aún se puede reprogramar; lo calcula el backend. */
+  reprogramarAntes?: string
+  /** Horas de antelación mínima que exige el backend para reprogramar. */
+  horasAntelacion?: number
 }
 
 export interface NuevaCita {
@@ -122,6 +128,7 @@ export async function listarBarberos(servicioId?: number): Promise<Barbero[]> {
   return barberos.map((b) => ({
     id: b.id,
     nombre: b.name,
+    diasLaborales: b.working_days,
     ...(EXTRAS_PROTOTIPO[b.name] ?? { rol: 'Barbero', calificacion: 0 }),
   }))
 }
@@ -263,7 +270,12 @@ export interface CitaPerfilApi {
     name: string
     rol?: string
     calificacion?: number
+    /** Días que atiende (0 lunes … 6 domingo). */
+    working_days?: number[]
   }
+  /** Último instante en que aún se puede reprogramar (calculado por el backend). */
+  reschedule_deadline?: string
+  min_notice_hours?: number
 }
 
 /** Mensaje del backend (`detail`) si viene en la respuesta; si no, el de respaldo. */
@@ -308,16 +320,19 @@ export async function listarMisCitasApi(): Promise<CitaConfirmada[]> {
       nombre: cita.barber.name,
       rol: cita.barber.rol ?? 'Barbero',
       calificacion: cita.barber.calificacion ?? 0,
+      diasLaborales: cita.barber.working_days,
     },
     inicio: aIsoColombia(cita.start_at),
     total: Number(cita.price),
+    reprogramarAntes: cita.reschedule_deadline,
+    horasAntelacion: cita.min_notice_hours,
   }))
 }
 
 /**
  * Cancela una cita (POST /api/v1/appointments/{id}/cancel).
  *
- * Cancelar siempre se permite al propietario. Con 12 h o menos de antelación
+ * Cancelar siempre se permite al propietario. Con la antelación mínima o menos
  * la cancelación se registra como tardía: `tardia` es true en ese caso.
  */
 export async function cancelarCitaApi(
@@ -347,7 +362,7 @@ export async function cancelarCitaApi(
 /**
  * Reprograma una cita (POST /api/v1/appointments/{id}/reschedule).
  *
- * Mantiene barbero y servicio. El backend exige MÁS de 12 h de antelación
+ * Mantiene barbero y servicio. El backend exige MÁS de la antelación mínima
  * sobre la hora original y una franja libre; `nuevoInicio` debe llevar zona.
  */
 export async function reprogramarCitaApi(
@@ -379,11 +394,18 @@ export async function reprogramarCitaApi(
   }
 
   const actualizada = (await response.json()) as CitaApi
+  // La nueva hora tiene su propio límite: la misma antelación antes de ella.
+  const reprogramarAntes = cita.horasAntelacion
+    ? new Date(
+        new Date(actualizada.start_at).getTime() - cita.horasAntelacion * 3_600_000,
+      ).toISOString()
+    : undefined
   return {
     ...cita,
     estado: actualizada.status,
     inicio: aIsoColombia(actualizada.start_at),
     total: Number(actualizada.price),
+    reprogramarAntes,
   }
 }
 

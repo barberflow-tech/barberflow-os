@@ -46,21 +46,16 @@ export function PerfilPage() {
     fetchMisCitas()
   }, [fetchMisCitas])
 
-  // Regla de negocio: mínimo 12 horas de antelación
+  // HU-03: reprogramar exige MÁS de 12 horas de antelación (12 justas no basta).
+  // Cancelar siempre se permite; con 12 h o menos queda registrada como tardía.
   const cumpleAntelacion = (fechaInicio: string): boolean => {
     const ahora = new Date().getTime()
     const tiempoCita = new Date(fechaInicio).getTime()
     const horasRestantes = (tiempoCita - ahora) / (1000 * 60 * 60)
-    return horasRestantes >= 12
+    return horasRestantes > 12
   }
 
   const handleSolicitarCancelar = (cita: CitaConfirmada) => {
-    if (!cumpleAntelacion(cita.inicio)) {
-      setMensajeAlerta(
-        'No se puede cancelar la cita con menos de 12 horas de antelación.',
-      )
-      return
-    }
     setCitaACancelar(cita)
   }
 
@@ -79,8 +74,13 @@ export function PerfilPage() {
   const confirmCancelar = async () => {
     if (!citaACancelar) return
     try {
-      await cancelarCita(citaACancelar.id)
+      const { tardia } = await cancelarCita(citaACancelar.id)
       setCitaACancelar(null)
+      if (tardia) {
+        setMensajeAlerta(
+          'Tu cita fue cancelada. Como faltaban 12 horas o menos, quedó registrada como cancelación tardía.',
+        )
+      }
     } catch (err: unknown) {
       const mensaje = err instanceof Error ? err.message : 'Error al cancelar la cita.'
       setMensajeAlerta(mensaje)
@@ -94,7 +94,8 @@ export function PerfilPage() {
       return
     }
 
-    const nuevoHorarioISO = `${fechaSeleccionada}T${horaSeleccionada}:00`
+    // El backend exige ISO 8601 con zona; las franjas son hora de Colombia.
+    const nuevoHorarioISO = `${fechaSeleccionada}T${horaSeleccionada}:00-05:00`
 
     if (!cumpleAntelacion(citaAReprogramar.inicio)) {
       setModalError(
@@ -124,7 +125,7 @@ export function PerfilPage() {
             Mi Perfil y Citas
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Bienvenido, {user?.nombre ?? 'Cliente'}. Gestiona tus citas activas.
+            Bienvenido, {user?.email ?? 'Cliente'}. Gestiona tus citas activas.
           </p>
         </div>
         <div className="bg-slate-100 dark:bg-gray-800 px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -271,6 +272,11 @@ export function PerfilPage() {
                 </span>{' '}
                 con {citaACancelar.barbero.nombre}. Esta acción no se puede deshacer.
               </p>
+              {!cumpleAntelacion(citaACancelar.inicio) && (
+                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mt-2">
+                  Faltan 12 horas o menos: la cancelación se registrará como tardía.
+                </p>
+              )}
             </div>
 
             <div className="flex gap-3 pt-2">

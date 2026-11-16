@@ -11,11 +11,12 @@ interface CitasState {
   isLoading: boolean
   error: string | null
   fetchMisCitas: () => Promise<void>
-  cancelarCita: (citaId: number | string) => Promise<void>
+  /** Devuelve si la cancelación quedó registrada como tardía (12 h o menos). */
+  cancelarCita: (citaId: number | string) => Promise<{ tardia: boolean }>
   reprogramarCita: (citaId: number | string, nuevoInicio: string) => Promise<void>
 }
 
-export const useCitasStore = create<CitasState>((set) => ({
+export const useCitasStore = create<CitasState>((set, get) => ({
   citas: [],
   isLoading: false,
   error: null,
@@ -34,14 +35,17 @@ export const useCitasStore = create<CitasState>((set) => ({
   },
 
   cancelarCita: async (citaId) => {
-    await cancelarCitaApi(citaId)
+    const resultado = await cancelarCitaApi(citaId)
     set((state) => ({
       citas: state.citas.filter((c) => c.id !== citaId),
     }))
+    return resultado
   },
 
   reprogramarCita: async (citaId, nuevoInicio) => {
-    const citaActualizada = await reprogramarCitaApi(citaId, nuevoInicio)
+    const actual = get().citas.find((c) => c.id === citaId)
+    if (!actual) throw new Error('No encontramos esa cita en tu lista.')
+    const citaActualizada = await reprogramarCitaApi(actual, nuevoInicio)
     set((state) => ({
       citas: state.citas.map((c) => (c.id === citaId ? citaActualizada : c)),
     }))

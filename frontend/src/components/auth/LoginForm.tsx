@@ -3,7 +3,13 @@ import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { AuthError, iniciarSesion, registrarCuenta } from '@/lib/authApi'
+import {
+  AuthError,
+  iniciarSesion,
+  registrarCuenta,
+  restablecerContrasena,
+  solicitarRecuperacion,
+} from '@/lib/authApi'
 import { useAuthStore } from '@/stores/useAuthStore'
 
 // 1. Esquema para Login
@@ -35,6 +41,18 @@ const forgotSchema = z.object({
     .email('Ingrese un correo electrónico válido'),
 })
 
+// 4. Esquema para elegir la nueva contraseña (pantalla del enlace del correo)
+const resetSchema = z
+  .object({
+    password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+    confirm: z.string().min(1, 'Confirma tu contraseña'),
+  })
+  .refine((datos) => datos.password === datos.confirm, {
+    path: ['confirm'],
+    message: 'Las contraseñas no coinciden',
+  })
+
+type ResetFormData = z.infer<typeof resetSchema>
 type LoginFormData = z.infer<typeof loginSchema>
 type RegisterFormData = z.infer<typeof registerSchema>
 type ForgotFormData = z.infer<typeof forgotSchema>
@@ -46,11 +64,14 @@ interface LoginFormProps {
   pasoInicial?: PasoAuth
   /** Avisa al cambiar entre «Iniciar sesión» y «Registrarme» para reflejarlo en la URL. */
   onPasoChange?: (paso: PasoAuth) => void
+  /** Credenciales del enlace del correo (/restablecer?uid=…&token=…): abre «nueva contraseña». */
+  restablecer?: { uid: string; token: string }
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
   pasoInicial = 'login',
   onPasoChange,
+  restablecer,
 }) => {
   const setSession = useAuthStore((state) => state.setSession)
   const [isLoading, setIsLoading] = useState(false)
@@ -58,8 +79,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   // Estados de navegación entre vistas
   const [currentStep, setCurrentStep] = useState<
-    'login' | 'register' | 'forgot' | 'forgot-success'
-  >(pasoInicial)
+    'login' | 'register' | 'forgot' | 'forgot-success' | 'reset'
+  >(restablecer ? 'reset' : pasoInicial)
   // Si la URL cambia (botón «atrás» del navegador), la pestaña la sigue.
   const [pasoPrevio, setPasoPrevio] = useState(pasoInicial)
   if (pasoInicial !== pasoPrevio) {
@@ -91,6 +112,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   const forgotForm = useForm<ForgotFormData>({
     resolver: zodResolver(forgotSchema),
+    mode: 'onTouched',
+  })
+
+  const resetForm = useForm<ResetFormData>({
+    resolver: zodResolver(resetSchema),
     mode: 'onTouched',
   })
 
@@ -131,23 +157,56 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     }
   }
 
-  // Submit Olvidé Contraseña
+  const mensajeDe = (err: unknown) =>
+    err instanceof AuthError
+      ? err.message
+      : 'Ocurrió un error inesperado. Inténtalo de nuevo.'
+
+  // Submit Olvidé Contraseña: el backend envía el correo con Resend.
   const onForgotSubmit = async (data: ForgotFormData) => {
-    setSentEmail(data.email)
+    setIsLoading(true)
+    setAuthError(null)
     setResendNotification(null)
-    setCurrentStep('forgot-success')
+    try {
+      await solicitarRecuperacion(data.email)
+      setSentEmail(data.email)
+      setCurrentStep('forgot-success')
+    } catch (err) {
+      setAuthError(mensajeDe(err))
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Accion Reenviar Correo (UX optimizada sin alert del navegador)
-  const handleResendCode = () => {
+  const handleResendCode = async () => {
     setIsResending(true)
     setResendNotification(null)
-
-    // Simula envío rápido de 1 segundo
-    setTimeout(() => {
-      setIsResending(false)
+    setAuthError(null)
+    try {
+      await solicitarRecuperacion(sentEmail)
       setResendNotification('Enlace de recuperación reenviado con éxito a tu correo.')
-    }, 1000)
+    } catch (err) {
+      setAuthError(mensajeDe(err))
+    } finally {
+      setIsResending(false)
+    }
+  }
+
+  // Submit nueva contraseña: con el uid y el token del enlace del correo.
+  const onResetSubmit = async (data: ResetFormData) => {
+    if (!restablecer) return
+    setIsLoading(true)
+    setAuthError(null)
+    try {
+      await restablecerContrasena(restablecer.uid, restablecer.token, data.password)
+      setSuccessMessage('Contraseña actualizada. Ya puedes iniciar sesión.')
+      irA('login')
+    } catch (err) {
+      setAuthError(mensajeDe(err))
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -379,6 +438,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       type="button"
                       onClick={() => {
                         setSuccessMessage(null)
+                        setAuthError(null)
                         setCurrentStep('forgot')
                       }}
                       className="text-red-600 hover:text-red-700 dark:hover:text-[#e5c77f] dark:text-[#d7b36a] font-medium"
@@ -538,7 +598,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             <div className="space-y-6">
               <button
                 type="button"
-                onClick={() => irA('login')}
+                onClick={() => {
+                  setAuthError(null)
+                  irA('login')
+                }}
                 className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center gap-1 transition-all"
               >
                 <span>‹</span> Volver a iniciar sesión
@@ -580,11 +643,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   )}
                 </div>
 
+                {authError && (
+                  <div className="p-3 bg-red-50 dark:bg-[#d7b36a]/10 border border-red-200 dark:border-[#d7b36a]/30 rounded-2xl text-xs text-red-600 dark:text-[#d7b36a] font-medium text-center">
+                    {authError}
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  className="w-full py-3.5 px-4 bg-red-600 dark:bg-[#d7b36a] hover:bg-red-700 dark:hover:bg-[#e5c77f] active:scale-95 text-white dark:text-[#111411] font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 dark:shadow-[#d7b36a]/20 transition-all flex items-center justify-center gap-2 mt-2"
+                  disabled={isLoading}
+                  className="w-full py-3.5 px-4 bg-red-600 dark:bg-[#d7b36a] hover:bg-red-700 dark:hover:bg-[#e5c77f] active:scale-95 text-white dark:text-[#111411] font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 dark:shadow-[#d7b36a]/20 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-60"
                 >
-                  <span>Enviar enlace de recuperación</span>
+                  <span>
+                    {isLoading ? 'Enviando...' : 'Enviar enlace de recuperación'}
+                  </span>
                   <span>→</span>
                 </button>
               </form>
@@ -592,6 +664,96 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               <div className="p-3 bg-slate-50 dark:bg-white/5 rounded-2xl text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 justify-center">
                 <span>🛡️</span> Por seguridad, el enlace será válido durante 30 minutos.
               </div>
+            </div>
+          )}
+
+          {/* VISTA 5: NUEVA CONTRASEÑA (llegas desde el enlace del correo) */}
+          {currentStep === 'reset' && (
+            <div className="space-y-6">
+              <div className="space-y-1">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                  NUEVA CONTRASEÑA
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Elige una contraseña nueva para tu cuenta.
+                </p>
+              </div>
+
+              <form
+                onSubmit={resetForm.handleSubmit(onResetSubmit)}
+                className="space-y-4"
+                noValidate
+              >
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Nueva contraseña
+                  </label>
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Mínimo 8 caracteres"
+                    {...resetForm.register('password')}
+                    className={`w-full px-4 py-3 rounded-2xl border text-sm transition-all outline-none ${
+                      resetForm.formState.errors.password
+                        ? 'border-red-500 bg-red-50/10'
+                        : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
+                    }`}
+                  />
+                  {resetForm.formState.errors.password && (
+                    <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
+                      {resetForm.formState.errors.password.message}
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Confirmar contraseña
+                  </label>
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Repite la contraseña"
+                    {...resetForm.register('confirm')}
+                    className={`w-full px-4 py-3 rounded-2xl border text-sm transition-all outline-none ${
+                      resetForm.formState.errors.confirm
+                        ? 'border-red-500 bg-red-50/10'
+                        : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
+                    }`}
+                  />
+                  {resetForm.formState.errors.confirm && (
+                    <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
+                      {resetForm.formState.errors.confirm.message}
+                    </span>
+                  )}
+                </div>
+
+                {authError && (
+                  <div className="p-3 bg-red-50 dark:bg-[#d7b36a]/10 border border-red-200 dark:border-[#d7b36a]/30 rounded-2xl text-xs text-red-600 dark:text-[#d7b36a] font-medium text-center">
+                    {authError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3.5 px-4 bg-red-600 dark:bg-[#d7b36a] hover:bg-red-700 dark:hover:bg-[#e5c77f] active:scale-95 text-white dark:text-[#111411] font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 dark:shadow-[#d7b36a]/20 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-60"
+                >
+                  <span>{isLoading ? 'Guardando...' : 'Cambiar contraseña'}</span>
+                  <span>→</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthError(null)
+                    setCurrentStep('forgot')
+                  }}
+                  className="text-xs text-red-600 hover:text-red-700 dark:hover:text-[#e5c77f] dark:text-[#d7b36a] font-semibold block mx-auto transition-all"
+                >
+                  ¿El enlace venció? Pide uno nuevo
+                </button>
+              </form>
             </div>
           )}
 
@@ -638,10 +800,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               </button>
 
               {/* Enlace de Reenviar Código Estilizado */}
+              {authError && (
+                <div className="p-3 bg-red-50 dark:bg-[#d7b36a]/10 border border-red-200 dark:border-[#d7b36a]/30 rounded-2xl text-xs text-red-600 dark:text-[#d7b36a] font-medium">
+                  {authError}
+                </div>
+              )}
+
               <button
                 type="button"
                 disabled={isResending}
-                onClick={handleResendCode}
+                onClick={() => void handleResendCode()}
                 className="text-xs text-red-600 hover:text-red-700 dark:hover:text-[#e5c77f] dark:text-[#d7b36a] font-semibold block mx-auto transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isResending ? 'Reenviando enlace...' : 'No recibí el correo, reenviar'}

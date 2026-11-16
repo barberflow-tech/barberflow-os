@@ -80,3 +80,7 @@ def HasRole(*roles):  # noqa: N802 - se usa como una clase de permiso: HasRole("
     autenticacion JWT, y 403 si el rol no coincide.
     """
     return _clase_para(_normalizar(roles))
+
+
+SoloAdministrador = HasRole(Rol.ADMIN)
+SoloBarbero = HasRole(Rol.BARBERO)

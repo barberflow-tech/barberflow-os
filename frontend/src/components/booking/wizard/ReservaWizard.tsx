@@ -67,6 +67,7 @@ export function ReservaWizard() {
       const nueva = await crearCita({
         servicioId: servicio.id,
         barberoId: barbero.id,
+        barbero,
         inicio: construirInicio(fecha, hora),
         contactoNombre: cliente.nombre,
         contactoCelular: cliente.celular,

@@ -239,3 +239,57 @@ Esta característica no es un requerimiento típico de un cliente convencional (
 6. **Migrar y crear el superusuario:** `docker compose exec backend python manage.py migrate` y `docker compose exec backend python manage.py createsuperuser`. El panel de Django queda en `http://localhost:5000/admin/`.
 7. **Ver la base de datos:** Supabase Studio en `http://127.0.0.1:54323`, o pgAdmin/DBeaver con host `localhost`, puerto **54322**, usuario `postgres`, contraseña `postgres`, base `postgres`.
 8. **Nunca desarrolles contra la nube:** las llaves de Supabase Cloud (Staging) no van en el `.env`; solo se configuran en Vercel/Render.
+
+### Correo transaccional (SCRUM-64)
+
+Configura el host, el puerto, el usuario SMTP, la contraseña y un remitente
+verificado en el entorno del backend. Los nombres de las variables están en
+`.env.example`. Usa `EMAIL_USE_TLS=True` para STARTTLS o `EMAIL_USE_SSL=True`
+para TLS implícito, según el puerto de tu proveedor. Activa una sola opción.
+En Render Free, selecciona un proveedor con un puerto alternativo como 2525,
+ya que Render bloquea 25, 465 y 587 en ese plan.
+
+Aplica la migración con `docker compose exec backend python manage.py migrate`
+en local o con `python manage.py migrate` en el entorno del backend desplegado.
+Para enviar un aviso desde el backend:
+
+```python
+from apps.notificaciones.services import send_notification_email
+
+delivery = send_notification_email(
+    recipient="cliente@example.com",
+    subject="Recordatorio de tu cita",
+    body="Tu cita es mañana a las 10:00.",
+)
+```
+
+Cada llamada crea un registro. `sent` indica que el backend de correo aceptó
+el envío, `failed` registra el tipo de error y `pending` indica un intento
+aún sin resultado registrado. Si el aviso depende de una operación con
+`transaction.atomic()`, programa la llamada con `transaction.on_commit()`.
+
+## Matriz de acceso por rol (HU-09 / SCRUM-67)
+
+| Ruta y acción de API | Sin sesión | Cliente | Barbero | Administrador |
+| --- | --- | --- | --- | --- |
+| `GET /api/v1/services`, `GET /api/v1/services/{id}` | Servicios activos | Servicios activos | Servicios activos | Servicios activos e inactivos |
+| `POST /api/v1/services`, `PUT /api/v1/services/{id}`, `DELETE /api/v1/services/{id}` | 401 | 403 | 403 | Permitido |
+| `GET /api/v1/availability` | Público | Permitido según contexto | Permitido con membresía | Permitido con membresía |
+| `POST /api/v1/appointments` | Público, requiere datos de contacto | Permitido según contexto | Permitido con membresía | Permitido con membresía |
+| `GET` y `POST /api/v1/barbers/me/portfolio` | 401 | 403 | Portafolio propio, con barbero activo vinculado | 403 |
+| `GET /api/v1/auth/protected-test` | 401 | 403 | 403 | Permitido |
+| Finanzas (`/admin/finanzas` en el criterio de la HU), POS y asignación de roles, al incorporar sus APIs | 401 | 403 | 403 | Permitido |
+
+Importa `SoloAdministrador` o `SoloBarbero` desde `apps.usuarios.permissions`
+y decláralo en `permission_classes` de la vista. Cuando una acción admita
+varios roles, usa `HasRole` con los valores de `Rol`. La autenticación JWT de
+HU-06 devuelve 401 cuando falta un token válido en una ruta protegida. El
+permiso consulta el rol vigente en el perfil y devuelve 403 a un usuario
+autenticado con un rol distinto del requerido. Las rutas de agenda mantienen
+su acceso público y resuelven el contexto de barbería por separado.
+
+En `develop`, el catálogo usa `is_staff` para decidir quién puede modificar
+servicios y ver los inactivos. SCRUM-68 aplica la política de catálogo de esta
+matriz. Las APIs de finanzas, POS y asignación de roles están pendientes de
+incorporar. El 403 para un barbero en una ruta exclusiva de administrador se
+verifica con JWT en `GET /api/v1/auth/protected-test`.

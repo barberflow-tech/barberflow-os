@@ -80,6 +80,8 @@ class Command(BaseCommand):
                 barberia=barberia, name=nombre, defaults={"is_active": True}
             )
             barberos[nombre] = barbero
+            # En la demo todos hacen todos los servicios; el admin lo ajusta luego.
+            barbero.servicios.add(*Servicio.objects.filter(barberia=barberia))
             for dia in DIAS_LABORALES:
                 HorarioBarbero.objects.update_or_create(
                     barbero=barbero,

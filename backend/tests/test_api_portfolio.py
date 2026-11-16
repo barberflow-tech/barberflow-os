@@ -44,8 +44,25 @@ def cliente_api(usuario):
 
 
 @pytest.fixture
-def api_autenticada(usuario_barbero, barbero):
-    return cliente_api(usuario_barbero)
+def servicio(barberia, barbero):
+    from apps.catalogo.models import Servicio
+
+    servicio = Servicio.objects.create(
+        barberia=barberia,
+        name="Fade clasico",
+        price="35000.00",
+        duration_minutes=45,
+        description="Degradado con navaja.",
+    )
+    barbero.servicios.add(servicio)
+    return servicio
+
+
+@pytest.fixture
+def api_autenticada(usuario_barbero, barbero, servicio):
+    api = cliente_api(usuario_barbero)
+    api.servicio_id = servicio.pk
+    return api
 
 
 @pytest.fixture
@@ -98,7 +115,7 @@ def test_barbero_subir_imagen_4mb_y_guardar_portafolio(
     ) as storage_mock:
         response = api_autenticada.post(
             URL,
-            {"image": imagen},
+            {"image": imagen, "servicio": api_autenticada.servicio_id},
             format="multipart",
         )
 
@@ -182,7 +199,11 @@ def test_la_imagen_se_guarda_en_el_portafolio_de_su_propio_barbero(
     # Cuando el barbero autenticado sube una imagen
     imagen = SimpleUploadedFile("t.png", imagen_4mb, content_type="image/png")
     with patch("urllib.request.urlopen", return_value=crear_respuesta_storage()):
-        response = api_autenticada.post(URL, {"image": imagen}, format="multipart")
+        response = api_autenticada.post(
+            URL,
+            {"image": imagen, "servicio": api_autenticada.servicio_id},
+            format="multipart",
+        )
 
     # Entonces queda en su portafolio y no en el del otro
     assert response.status_code == 201
@@ -203,7 +224,7 @@ def test_rechaza_imagen_mayor_a_5mb(api_autenticada):
     # Cuando intenta cargarlo
     response = api_autenticada.post(
         URL,
-        {"image": imagen},
+        {"image": imagen, "servicio": api_autenticada.servicio_id},
         format="multipart",
     )
 
@@ -227,7 +248,7 @@ def test_rechaza_archivo_que_no_es_una_imagen(api_autenticada):
     # Cuando intenta cargarlo
     response = api_autenticada.post(
         URL,
-        {"image": archivo},
+        {"image": archivo, "servicio": api_autenticada.servicio_id},
         format="multipart",
     )
 
@@ -270,3 +291,92 @@ def test_listar_exige_rol_barbero(make_user):
     response = cliente_api(make_user("cliente")).get(URL)
 
     assert response.status_code == 403
+
+
+def png_pequeno(nombre="corte.png"):
+    buffer = BytesIO()
+    Image.new("RGB", (60, 60), color=(200, 160, 60)).save(buffer, format="PNG")
+    return SimpleUploadedFile(nombre, buffer.getvalue(), content_type="image/png")
+
+
+def subir(api, **campos):
+    with patch("urllib.request.urlopen", return_value=crear_respuesta_storage()):
+        return api.post(URL, {"image": png_pequeno(), **campos}, format="multipart")
+
+
+@pytest.mark.django_db
+def test_la_foto_se_vincula_al_servicio_y_guarda_la_nota(api_autenticada, servicio):
+    response = subir(api_autenticada, servicio=servicio.pk, nota="Degradado bajo")
+
+    assert response.status_code == 201
+    assert response.data["servicio"]["name"] == "Fade clasico"
+    assert response.data["servicio"]["description"] == "Degradado con navaja."
+    assert response.data["nota"] == "Degradado bajo"
+    assert PortfolioBarbero.objects.get(pk=response.data["id"]).servicio == servicio
+
+    listado = api_autenticada.get(URL)
+    assert listado.data[0]["servicio"]["price"] == "35000.00"
+
+
+@pytest.mark.django_db
+def test_el_servicio_es_obligatorio(api_autenticada):
+    response = subir(api_autenticada)
+
+    assert response.status_code == 400
+    assert "servicio" in response.data
+
+
+@pytest.mark.django_db
+def test_rechaza_un_servicio_inactivo_o_inexistente(api_autenticada, servicio):
+    servicio.is_active = False
+    servicio.save()
+
+    for pk in (servicio.pk, 99999):
+        assert subir(api_autenticada, servicio=pk).status_code == 400
+
+
+@pytest.mark.django_db
+def test_rechaza_un_servicio_que_el_admin_no_le_asigno(api_autenticada, barberia):
+    from apps.catalogo.models import Servicio
+
+    ajeno = Servicio.objects.create(
+        barberia=barberia, name="Tinte", price="80000.00", duration_minutes=90
+    )
+
+    response = subir(api_autenticada, servicio=ajeno.pk)
+
+    assert response.status_code == 400
+    assert "asignado" in str(response.data["servicio"])
+    assert PortfolioBarbero.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_la_url_publica_usa_la_url_alcanzable_por_el_navegador(
+    api_autenticada, servicio, monkeypatch
+):
+    # El backend habla con Storage por host.docker.internal, pero el navegador
+    # no puede abrir esa direccion: la URL guardada usa SUPABASE_URL.
+    monkeypatch.setenv("SUPABASE_STORAGE_URL", "http://host.docker.internal:54321")
+    monkeypatch.setenv("SUPABASE_URL", "http://127.0.0.1:54321")
+
+    response = subir(api_autenticada, servicio=servicio.pk)
+
+    assert response.data["image_url"].startswith(
+        "http://127.0.0.1:54321/storage/v1/object/public/barber-portfolios/"
+    )
+
+
+@pytest.mark.django_db
+def test_mis_servicios_lista_solo_los_activos_asignados(
+    api_autenticada, barberia, servicio
+):
+    from apps.catalogo.models import Servicio
+
+    Servicio.objects.create(
+        barberia=barberia, name="Tinte", price="80000.00", duration_minutes=90
+    )
+
+    response = api_autenticada.get("/api/v1/barbers/me/services")
+
+    assert response.status_code == 200
+    assert [s["name"] for s in response.data] == ["Fade clasico"]

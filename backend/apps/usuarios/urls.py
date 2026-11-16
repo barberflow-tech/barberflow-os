@@ -1,6 +1,16 @@
 from django.urls import re_path
 
-from .views import LoginView, LogoutView, ProtectedTestView, RefreshView, RegistroView
+from .views import (
+    LoginView,
+    LogoutView,
+    ProtectedTestView,
+    RecuperarContrasenaView,
+    RefreshView,
+    RegistroView,
+    RestablecerContrasenaView,
+    RolDeUsuarioView,
+    UsuariosView,
+)
 
 app_name = "usuarios"
 
@@ -12,6 +22,22 @@ urlpatterns = [
     re_path(r"^auth/logout/?$", LogoutView.as_view(), name="logout"),
     re_path(r"^auth/refresh/?$", RefreshView.as_view(), name="refresh"),
     re_path(
+        r"^auth/password-reset/?$",
+        RecuperarContrasenaView.as_view(),
+        name="password-reset",
+    ),
+    re_path(
+        r"^auth/password-reset/confirm/?$",
+        RestablecerContrasenaView.as_view(),
+        name="password-reset-confirm",
+    ),
+    re_path(
         r"^auth/protected-test/?$", ProtectedTestView.as_view(), name="protected-test"
+    ),
+    re_path(r"^users/?$", UsuariosView.as_view(), name="users"),
+    re_path(
+        r"^users/(?P<usuario_id>\d+)/role/?$",
+        RolDeUsuarioView.as_view(),
+        name="user-role",
     ),
 ]

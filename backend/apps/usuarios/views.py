@@ -1,25 +1,36 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.db import transaction
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import status
-from rest_framework.exceptions import AuthenticationFailed, ValidationError
+from rest_framework.exceptions import (
+    APIException,
+    AuthenticationFailed,
+    ValidationError,
+)
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 
+from apps.barberias.models import Membresia, barberia_de
+
 from .cookies import borrar_cookie_refresh, nombre_cookie_refresh, poner_cookie_refresh
 from .correo import enviar_recuperacion_contrasena
-from .models import rol_de
-from .permissions import HasRole, OrigenPermitido
+from .models import PerfilUsuario, Rol, rol_de
+from .permissions import HasRole, OrigenPermitido, SoloAdministrador
 from .serializers import (
+    CambioDeRolSerializer,
     LoginSerializer,
     RecuperarContrasenaSerializer,
     RegistroSerializer,
     RestablecerContrasenaSerializer,
+    UsuarioConRolSerializer,
 )
 from .tokens import LoginTokenSerializer, RefreshTokenSerializer
 
@@ -239,7 +250,7 @@ class ProtectedTestView(APIView):
     autenticacion (JWT) viene de REST_FRAMEWORK en settings.
     """
 
-    permission_classes = [HasRole("admin")]
+    permission_classes = [SoloAdministrador]
 
     def get(self, request):
         return Response(
@@ -252,3 +263,98 @@ class ProtectedTestView(APIView):
                 },
             }
         )
+
+
+# --- Asignacion de roles por el administrador (SCRUM-70 / HU-09) ------------
+
+User = get_user_model()
+
+# Roles que necesitan pertenecer a una barberia: al asignarlos a un usuario
+# sin barberia, queda vinculado a la del administrador.
+ROLES_DEL_PERSONAL = {Rol.ADMIN, Rol.BARBERO}
+
+
+class AdminSinBarberia(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = "Tu cuenta de administrador no pertenece a ninguna barberia."
+    default_code = "admin_sin_barberia"
+
+
+def _barberia_del_admin(request):
+    barberia = barberia_de(request.user)
+    if barberia is None:
+        raise AdminSinBarberia()
+    return barberia
+
+
+def _usuarios_alcanzables(barberia):
+    """Usuarios que el admin puede ver: los de su barberia y los que no tienen barberia.
+
+    Los de otra barberia nunca aparecen: para este admin no existen (404).
+    """
+    return User.objects.select_related("perfil", "membresia").filter(
+        Q(membresia__barberia=barberia) | Q(membresia__isnull=True)
+    )
+
+
+class UsuariosView(APIView):
+    """GET /api/v1/users: usuarios de la barberia del admin, con su rol.
+
+    Con ?email=<correo> busca por correo exacto (sin distinguir mayusculas)
+    entre los de su barberia y los que aun no tienen barberia, para poder
+    ascender a un cliente registrado. Una coincidencia parcial no devuelve nada,
+    para no exponer el directorio de clientes.
+    """
+
+    permission_classes = [HasRole("admin")]
+
+    def get(self, request):
+        barberia = _barberia_del_admin(request)
+        email = request.query_params.get("email", "").strip()
+        if email:
+            usuarios = _usuarios_alcanzables(barberia).filter(email__iexact=email)
+        else:
+            usuarios = User.objects.select_related("perfil", "membresia").filter(
+                membresia__barberia=barberia
+            )
+        salida = UsuarioConRolSerializer(
+            usuarios.order_by("email"), many=True, context={"barberia": barberia}
+        )
+        return Response(salida.data)
+
+
+class RolDeUsuarioView(APIView):
+    """PATCH /api/v1/users/<id>/role: el admin cambia el rol de un usuario.
+
+    El rol se lee de la base en cada peticion (RolRequerido), asi que el cambio
+    rige desde la siguiente peticion del usuario. El admin no puede cambiar su
+    propio rol: asi la barberia nunca se queda sin administrador.
+    """
+
+    permission_classes = [HasRole("admin")]
+
+    def patch(self, request, usuario_id: int):
+        barberia = _barberia_del_admin(request)
+        usuario = get_object_or_404(_usuarios_alcanzables(barberia), pk=usuario_id)
+        if usuario.pk == request.user.pk:
+            return Response(
+                {"detail": "No puedes cambiar tu propio rol."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        entrada = CambioDeRolSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        rol = entrada.validated_data["role"]
+
+        with transaction.atomic():
+            perfil, _ = PerfilUsuario.objects.get_or_create(user=usuario)
+            perfil.role = rol
+            perfil.save()
+            if rol in ROLES_DEL_PERSONAL and not hasattr(usuario, "membresia"):
+                usuario.membresia = Membresia.objects.create(
+                    user=usuario, barberia=barberia
+                )
+        usuario.perfil = perfil
+
+        salida = UsuarioConRolSerializer(usuario, context={"barberia": barberia})
+        return Response(salida.data)

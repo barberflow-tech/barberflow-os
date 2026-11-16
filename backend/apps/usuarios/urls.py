@@ -8,6 +8,8 @@ from .views import (
     RefreshView,
     RegistroView,
     RestablecerContrasenaView,
+    RolDeUsuarioView,
+    UsuariosView,
 )
 
 app_name = "usuarios"
@@ -31,5 +33,11 @@ urlpatterns = [
     ),
     re_path(
         r"^auth/protected-test/?$", ProtectedTestView.as_view(), name="protected-test"
+    ),
+    re_path(r"^users/?$", UsuariosView.as_view(), name="users"),
+    re_path(
+        r"^users/(?P<usuario_id>\d+)/role/?$",
+        RolDeUsuarioView.as_view(),
+        name="user-role",
     ),
 ]

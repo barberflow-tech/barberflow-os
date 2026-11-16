@@ -11,7 +11,7 @@ from apps.barberos.context import barbero_de
 from apps.barberos.models import Barbero, PortfolioBarbero
 from apps.catalogo.context import obtener_barberia_catalogo
 from apps.catalogo.models import Servicio
-from apps.usuarios.permissions import HasRole
+from apps.usuarios.permissions import HasRole, SoloBarbero
 
 from .serializers import (
     AsignarServiciosSerializer,
@@ -34,7 +34,7 @@ from .services import (
 class PortfolioBarberoUploadView(APIView):
     """Carga una imagen optimizada al portafolio del barbero autenticado."""
 
-    permission_classes = [IsAuthenticated, HasRole("barbero")]
+    permission_classes = [IsAuthenticated, SoloBarbero]
     parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request):

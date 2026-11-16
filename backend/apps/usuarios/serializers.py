@@ -10,7 +10,7 @@ from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers, status
 from rest_framework.exceptions import APIException
 
-from .models import Rol
+from .models import Rol, rol_de
 
 User = get_user_model()
 
@@ -165,3 +165,35 @@ class RestablecerContrasenaSerializer(serializers.Serializer):
             raise serializers.ValidationError({"password": list(exc.messages)})
         attrs["user"] = usuario
         return attrs
+
+
+class UsuarioConRolSerializer(serializers.Serializer):
+    """Usuario tal como lo ve el administrador en la pantalla de roles (SCRUM-70).
+
+    `en_barberia` dice si el usuario ya pertenece a la barberia del admin; uno
+    encontrado por correo que aun no tiene barberia llega con False.
+    """
+
+    id = serializers.IntegerField(source="pk")
+    email = serializers.EmailField()
+    full_name = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+    en_barberia = serializers.SerializerMethodField()
+
+    def get_full_name(self, usuario) -> str:
+        perfil = getattr(usuario, "perfil", None)
+        return perfil.full_name if perfil else ""
+
+    def get_role(self, usuario) -> str:
+        return rol_de(usuario)
+
+    def get_en_barberia(self, usuario) -> bool:
+        barberia = self.context["barberia"]
+        membresia = getattr(usuario, "membresia", None)
+        return membresia is not None and membresia.barberia_id == barberia.pk
+
+
+class CambioDeRolSerializer(serializers.Serializer):
+    """Payload de PATCH /api/v1/users/<id>/role: {"role": "admin|barbero|cliente"}."""
+
+    role = serializers.ChoiceField(choices=Rol.choices)

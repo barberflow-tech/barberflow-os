@@ -1,30 +1,51 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useCitasStore } from '@/stores/useCitasStore'
 import { useAuthStore } from '@/stores/useAuthStore'
-import type { CitaConfirmada } from '@/lib/reservaApi'
+import {
+  listarFranjas,
+  type CitaConfirmada,
+  type FranjaHoraria,
+} from '@/lib/reservaApi'
 
-// Días de prueba para el selector rápido del modal
-const DIAS_DISPONIBLES = [
-  { label: 'Hoy', fecha: '2026-11-09', diaNombre: 'Lun 09' },
-  { label: 'Mañana', fecha: '2026-11-10', diaNombre: 'Mar 10' },
-  { label: 'Miércoles', fecha: '2026-11-11', diaNombre: 'Mié 11' },
-  { label: 'Jueves', fecha: '2026-11-12', diaNombre: 'Jue 12' },
-  { label: 'Viernes', fecha: '2026-11-13', diaNombre: 'Vie 13' },
-]
+const ZONA_BARBERIA = 'America/Bogota'
+const DIAS_A_OFRECER = 7
 
-// Horarios disponibles (Mañana / Tarde)
-const FRANJAS_HORARIAS = {
-  manana: [
-    { id: 'h1', hora: '09:00', label: '09:00 AM' },
-    { id: 'h2', hora: '10:00', label: '10:00 AM' },
-    { id: 'h3', hora: '11:00', label: '11:00 AM' },
-  ],
-  tarde: [
-    { id: 'h4', hora: '14:00', label: '02:00 PM' },
-    { id: 'h5', hora: '15:00', label: '03:00 PM' },
-    { id: 'h6', hora: '16:00', label: '04:00 PM' },
-    { id: 'h7', hora: '17:00', label: '05:00 PM' },
-  ],
+const fechaEnBarberia = new Intl.DateTimeFormat('en-CA', {
+  timeZone: ZONA_BARBERIA,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+interface DiaOfrecido {
+  fecha: string
+  label: string
+  diaNombre: string
+}
+
+/** Hoy y los próximos días en la hora de la barbería (Colombia no tiene horario de verano). */
+function diasProximos(cantidad = DIAS_A_OFRECER): DiaOfrecido[] {
+  const hoy = fechaEnBarberia.format(new Date())
+  const base = Date.parse(`${hoy}T12:00:00Z`)
+  return Array.from({ length: cantidad }, (_, i) => {
+    const d = new Date(base + i * 24 * 60 * 60 * 1000)
+    const diaSemana = d
+      .toLocaleDateString('es-CO', { weekday: 'short', timeZone: 'UTC' })
+      .replace('.', '')
+    const numero = String(d.getUTCDate()).padStart(2, '0')
+    return {
+      fecha: d.toISOString().slice(0, 10),
+      label: i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : diaSemana,
+      diaNombre: `${diaSemana} ${numero}`,
+    }
+  })
+}
+
+/** "14:30" -> "02:30 PM" */
+function aHora12(hora: string): string {
+  const [h, m] = hora.split(':').map(Number)
+  const sufijo = h < 12 ? 'AM' : 'PM'
+  return `${String(h % 12 || 12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${sufijo}`
 }
 
 export function PerfilPage() {
@@ -36,11 +57,16 @@ export function PerfilPage() {
   const [citaACancelar, setCitaACancelar] = useState<CitaConfirmada | null>(null)
   const [mensajeAlerta, setMensajeAlerta] = useState<string | null>(null)
 
-  const [fechaSeleccionada, setFechaSeleccionada] = useState<string>(
-    DIAS_DISPONIBLES[1].fecha,
-  )
+  const dias = useMemo(() => diasProximos(), [])
+  const [fechaSeleccionada, setFechaSeleccionada] = useState<string>(dias[0].fecha)
   const [horaSeleccionada, setHoraSeleccionada] = useState<string>('')
   const [modalError, setModalError] = useState<string | null>(null)
+  const [franjas, setFranjas] = useState<FranjaHoraria[]>([])
+  const [cargandoFranjas, setCargandoFranjas] = useState(false)
+  const [errorFranjas, setErrorFranjas] = useState<string | null>(null)
+  // Cada consulta lleva un número: si el cliente cambia de día antes de que
+  // responda la anterior, esa respuesta tardía se descarta.
+  const consultaActual = useRef(0)
 
   useEffect(() => {
     fetchMisCitas()
@@ -53,6 +79,32 @@ export function PerfilPage() {
     const tiempoCita = new Date(fechaInicio).getTime()
     const horasRestantes = (tiempoCita - ahora) / (1000 * 60 * 60)
     return horasRestantes > 12
+  }
+
+  /** Pide al backend los horarios libres del barbero de la cita para ese día. */
+  const cargarFranjas = async (cita: CitaConfirmada, fecha: string) => {
+    const consulta = ++consultaActual.current
+    setCargandoFranjas(true)
+    setErrorFranjas(null)
+    setFranjas([])
+    try {
+      const libres = await listarFranjas(
+        cita.barbero.id,
+        fecha,
+        cita.servicio.duracionMin,
+      )
+      if (consulta === consultaActual.current) {
+        setFranjas(libres.filter((f) => f.disponible))
+      }
+    } catch (err: unknown) {
+      if (consulta === consultaActual.current) {
+        setErrorFranjas(
+          err instanceof Error ? err.message : 'No se pudieron cargar los horarios.',
+        )
+      }
+    } finally {
+      if (consulta === consultaActual.current) setCargandoFranjas(false)
+    }
   }
 
   const handleSolicitarCancelar = (cita: CitaConfirmada) => {
@@ -69,6 +121,8 @@ export function PerfilPage() {
     setCitaAReprogramar(cita)
     setHoraSeleccionada('')
     setModalError(null)
+    setFechaSeleccionada(dias[0].fecha)
+    void cargarFranjas(cita, dias[0].fecha)
   }
 
   const confirmCancelar = async () => {
@@ -354,14 +408,18 @@ export function PerfilPage() {
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
                   1. Selecciona el día
                 </label>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {DIAS_DISPONIBLES.map((d) => {
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+                  {dias.map((d) => {
                     const esSeleccionado = fechaSeleccionada === d.fecha
                     return (
                       <button
                         key={d.fecha}
                         type="button"
-                        onClick={() => setFechaSeleccionada(d.fecha)}
+                        onClick={() => {
+                          setFechaSeleccionada(d.fecha)
+                          setHoraSeleccionada('')
+                          void cargarFranjas(citaAReprogramar, d.fecha)
+                        }}
                         className={`p-2 rounded-xl text-center border text-xs transition-all cursor-pointer ${
                           esSeleccionado
                             ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-extrabold border-slate-900 dark:border-white shadow-sm'
@@ -384,59 +442,40 @@ export function PerfilPage() {
                   2. Selecciona la hora disponible
                 </label>
 
-                <div className="space-y-3">
-                  {/* Mañana */}
-                  <div>
-                    <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
-                      Mañana
-                    </span>
-                    <div className="grid grid-cols-3 gap-2">
-                      {FRANJAS_HORARIAS.manana.map((h) => {
-                        const esHoraSeleccionada = horaSeleccionada === h.hora
-                        return (
-                          <button
-                            key={h.id}
-                            type="button"
-                            onClick={() => setHoraSeleccionada(h.hora)}
-                            className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
-                              esHoraSeleccionada
-                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                                : 'bg-slate-50 dark:bg-gray-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-gray-700 hover:border-emerald-500'
-                            }`}
-                          >
-                            {h.label}
-                          </button>
-                        )
-                      })}
-                    </div>
+                {cargandoFranjas && (
+                  <p className="text-xs text-slate-500">Cargando horarios…</p>
+                )}
+                {errorFranjas && (
+                  <p className="text-xs font-semibold text-red-600 dark:text-red-400">
+                    {errorFranjas}
+                  </p>
+                )}
+                {!cargandoFranjas && !errorFranjas && franjas.length === 0 && (
+                  <p className="text-xs text-slate-500">
+                    No hay horarios disponibles este día. Prueba con otro.
+                  </p>
+                )}
+                {franjas.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {franjas.map((f) => {
+                      const esHoraSeleccionada = horaSeleccionada === f.hora
+                      return (
+                        <button
+                          key={f.hora}
+                          type="button"
+                          onClick={() => setHoraSeleccionada(f.hora)}
+                          className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
+                            esHoraSeleccionada
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                              : 'bg-slate-50 dark:bg-gray-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-gray-700 hover:border-emerald-500'
+                          }`}
+                        >
+                          {aHora12(f.hora)}
+                        </button>
+                      )
+                    })}
                   </div>
-
-                  {/* Tarde */}
-                  <div>
-                    <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
-                      Tarde
-                    </span>
-                    <div className="grid grid-cols-4 gap-2">
-                      {FRANJAS_HORARIAS.tarde.map((h) => {
-                        const esHoraSeleccionada = horaSeleccionada === h.hora
-                        return (
-                          <button
-                            key={h.id}
-                            type="button"
-                            onClick={() => setHoraSeleccionada(h.hora)}
-                            className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
-                              esHoraSeleccionada
-                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                                : 'bg-slate-50 dark:bg-gray-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-gray-700 hover:border-emerald-500'
-                            }`}
-                          >
-                            {h.label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Confirmación visual previa */}
@@ -448,12 +487,7 @@ export function PerfilPage() {
                       Nuevo horario seleccionado:
                     </span>
                     <span className="font-bold">
-                      {fechaSeleccionada} —{' '}
-                      {
-                        [...FRANJAS_HORARIAS.manana, ...FRANJAS_HORARIAS.tarde].find(
-                          (h) => h.hora === horaSeleccionada,
-                        )?.label
-                      }
+                      {fechaSeleccionada} — {aHora12(horaSeleccionada)}
                     </span>
                   </div>
                 </div>

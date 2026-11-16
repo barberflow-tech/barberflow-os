@@ -10,6 +10,7 @@ import DevCalendarioPage from '@/pages/DevCalendarioPage'
 import InicioPage from '@/pages/InicioPage'
 import LoginPage from '@/pages/LoginPage'
 import NoAutorizadoPage from '@/pages/NoAutorizadoPage'
+import { PerfilPage } from '@/pages/PerfilPage'
 import PortafolioPage from '@/pages/PortafolioPage'
 import ReservarPage from '@/pages/ReservarPage'
 
@@ -26,6 +27,10 @@ export function App() {
 
         <Route element={<RoleGuard allowedRoles={['admin', 'barbero', 'cliente']} />}>
           <Route path="/bienvenida" element={<BienvenidaPage />} />
+        </Route>
+
+        <Route element={<RoleGuard allowedRoles={['cliente']} />}>
+          <Route path="/perfil" element={<PerfilPage />} />
         </Route>
 
         <Route element={<RoleGuard allowedRoles={['barbero']} />}>

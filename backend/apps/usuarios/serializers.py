@@ -2,12 +2,15 @@ from collections.abc import Mapping
 
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers, status
 from rest_framework.exceptions import APIException
 
-from .models import Rol
+from .models import Rol, rol_de
 
 User = get_user_model()
 
@@ -125,3 +128,72 @@ class LoginSerializer(serializers.Serializer):
             username=candidatos[0].get_username(),
             password=password,
         )
+
+
+ENLACE_INVALIDO = "El enlace no es válido o ya venció. Solicita uno nuevo."
+
+
+class RecuperarContrasenaSerializer(serializers.Serializer):
+    """Payload de POST /api/v1/auth/password-reset: solo el correo."""
+
+    email = serializers.EmailField(max_length=LONGITUD_MAX_EMAIL)
+
+
+class RestablecerContrasenaSerializer(serializers.Serializer):
+    """Payload de POST /api/v1/auth/password-reset/confirm.
+
+    Valida el par uid/token del correo y la nueva contrasena.
+    """
+
+    uid = serializers.CharField(max_length=64)
+    token = serializers.CharField(max_length=128)
+    password = serializers.CharField(
+        write_only=True, trim_whitespace=False, max_length=128
+    )
+
+    def validate(self, attrs):
+        try:
+            pk = force_str(urlsafe_base64_decode(attrs["uid"]))
+            usuario = User.objects.get(pk=pk, is_active=True)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise serializers.ValidationError({"detail": ENLACE_INVALIDO})
+        if not default_token_generator.check_token(usuario, attrs["token"]):
+            raise serializers.ValidationError({"detail": ENLACE_INVALIDO})
+        try:
+            validate_password(attrs["password"], user=usuario)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({"password": list(exc.messages)})
+        attrs["user"] = usuario
+        return attrs
+
+
+class UsuarioConRolSerializer(serializers.Serializer):
+    """Usuario tal como lo ve el administrador en la pantalla de roles (SCRUM-70).
+
+    `en_barberia` dice si el usuario ya pertenece a la barberia del admin; uno
+    encontrado por correo que aun no tiene barberia llega con False.
+    """
+
+    id = serializers.IntegerField(source="pk")
+    email = serializers.EmailField()
+    full_name = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+    en_barberia = serializers.SerializerMethodField()
+
+    def get_full_name(self, usuario) -> str:
+        perfil = getattr(usuario, "perfil", None)
+        return perfil.full_name if perfil else ""
+
+    def get_role(self, usuario) -> str:
+        return rol_de(usuario)
+
+    def get_en_barberia(self, usuario) -> bool:
+        barberia = self.context["barberia"]
+        membresia = getattr(usuario, "membresia", None)
+        return membresia is not None and membresia.barberia_id == barberia.pk
+
+
+class CambioDeRolSerializer(serializers.Serializer):
+    """Payload de PATCH /api/v1/users/<id>/role: {"role": "admin|barbero|cliente"}."""
+
+    role = serializers.ChoiceField(choices=Rol.choices)

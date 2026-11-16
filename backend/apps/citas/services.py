@@ -20,7 +20,7 @@ from apps.barberos.jornada import (
 from apps.barberos.models import Barbero
 from apps.catalogo.models import Servicio
 
-from .models import Cita
+from .models import BloqueoAgenda, Cita
 
 RESTRICCION_SOLAPAMIENTO = "cita_sin_solapamiento_por_barbero"
 
@@ -44,7 +44,7 @@ class RecursoInactivoError(CitaError):
 
 
 class FranjaNoDisponibleError(CitaError):
-    """La franja se solapa con otra cita activa del mismo barbero."""
+    """La franja se solapa con una cita activa o un bloqueo del barbero."""
 
 
 class CitaNoEncontradaError(CitaError):
@@ -112,9 +112,12 @@ def crear_cita(
 
             fin = inicio + timedelta(minutes=servicio.duration_minutes)
 
-            # Con el bloqueo adquirido, esta consulta ya ve las citas que
-            # confirmaron las transacciones que esperaban antes que esta.
-            if Cita.objects.solapadas(barbero, inicio, fin).exists():
+            # Con la fila bloqueada, se ven las citas y bloqueos confirmados
+            # por las transacciones anteriores para el mismo barbero.
+            if (
+                Cita.objects.solapadas(barbero, inicio, fin).exists()
+                or BloqueoAgenda.objects.solapados(barbero, inicio, fin).exists()
+            ):
                 raise FranjaNoDisponibleError(
                     "La franja seleccionada ya no esta disponible."
                 )
@@ -316,7 +319,7 @@ def validar_franja_en_jornada(
 def reservar_franja_horaria(
     cita: Cita, barbero: Barbero, nuevo_inicio: datetime
 ) -> None:
-    """Mueve la cita a la nueva franja, que debe estar libre y dentro de jornada.
+    """Mueve la cita a la nueva franja, libre de citas y bloqueos y dentro de jornada.
 
     La duración sale de la propia cita (no del servicio actual), así que un
     cambio posterior de duración del servicio no altera lo ya reservado. La
@@ -326,9 +329,12 @@ def reservar_franja_horaria(
     """
     nuevo_fin = nuevo_inicio + (cita.end_at - cita.start_at)
     validar_franja_en_jornada(barbero, nuevo_inicio, nuevo_fin)
-    if Cita.objects.solapadas(
-        barbero, nuevo_inicio, nuevo_fin, excluyendo=cita.pk
-    ).exists():
+    if (
+        Cita.objects.solapadas(
+            barbero, nuevo_inicio, nuevo_fin, excluyendo=cita.pk
+        ).exists()
+        or BloqueoAgenda.objects.solapados(barbero, nuevo_inicio, nuevo_fin).exists()
+    ):
         raise FranjaNoDisponibleError("La franja seleccionada ya no esta disponible.")
     cita.start_at = nuevo_inicio
     cita.end_at = nuevo_fin
@@ -391,9 +397,9 @@ def obtener_slots_libres(
     """Calcula los slots libres de un barbero para una fecha determinada.
 
     Los slots se generan dentro de su horario laboral y se descartan los
-    que se solapan con su descanso o con citas activas.
+    que se solapan con su descanso, citas activas o bloqueos.
 
-    La consulta de citas se realiza una sola vez para toda la jornada.
+    Las citas y bloqueos se consultan para toda la jornada.
     """
     if duracion_minutos not in (30, 60):
         raise ValueError("La duración del slot debe ser de 30 o 60 minutos.")
@@ -427,15 +433,14 @@ def obtener_slots_libres(
             minutes=horario.break_duration_minutes
         )
 
-    # Una sola consulta obtiene todas las citas activas que se cruzan
-    # con la jornada laboral.
-    citas_ocupadas = list(
-        Cita.objects.activas()
-        .filter(
-            barber=barbero,
-            start_at__lt=fin_jornada,
-            end_at__gt=inicio_jornada,
+    intervalos_ocupados = list(
+        Cita.objects.solapadas(barbero, inicio_jornada, fin_jornada).values_list(
+            "start_at", "end_at"
         )
+    )
+    intervalos_ocupados.extend(
+        BloqueoAgenda.objects.solapados(barbero, inicio_jornada, fin_jornada)
+        .order_by()
         .values_list("start_at", "end_at")
     )
 
@@ -452,12 +457,12 @@ def obtener_slots_libres(
             and fin_slot > inicio_descanso
         )
 
-        se_solapa_con_cita = any(
-            inicio_slot < fin_cita and fin_slot > inicio_cita
-            for inicio_cita, fin_cita in citas_ocupadas
+        se_solapa_con_intervalo = any(
+            inicio_slot < fin and fin_slot > inicio
+            for inicio, fin in intervalos_ocupados
         )
 
-        if not se_solapa_con_descanso and not se_solapa_con_cita:
+        if not se_solapa_con_descanso and not se_solapa_con_intervalo:
             slots.append(
                 {
                     "start_at": inicio_slot,
@@ -468,3 +473,20 @@ def obtener_slots_libres(
         inicio_slot += duracion
 
     return slots
+
+
+@transaction.atomic
+def crear_bloqueo(
+    *, barberia: Barberia, barbero_id: int, inicio: datetime, fin: datetime, motivo: str
+) -> BloqueoAgenda:
+    """Serializa el bloqueo con las reservas usando la misma fila del barbero."""
+    try:
+        barbero = Barbero.objects.select_for_update().get(
+            pk=barbero_id, barberia=barberia, is_active=True
+        )
+    except Barbero.DoesNotExist as exc:
+        raise RecursoInactivoError("El barbero no está disponible.") from exc
+
+    return BloqueoAgenda.objects.create(
+        barber=barbero, start_at=inicio, end_at=fin, reason=motivo
+    )

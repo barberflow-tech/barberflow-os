@@ -11,7 +11,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("citas", "0002_cita_visitante"),
+        ("citas", "0003_bloqueoagenda"),
     ]
 
     operations = [

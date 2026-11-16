@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { crearCita, listarFranjas } from './reservaApi'
+import {
+  cancelarCitaApi,
+  crearCita,
+  listarFranjas,
+  reprogramarCitaApi,
+  type CitaConfirmada,
+} from './reservaApi'
 
 vi.mock('./catalogoApi', () => ({
   listarServiciosApi: vi.fn().mockResolvedValue([
@@ -163,5 +169,111 @@ describe('reservaApi con el backend', () => {
     await expect(
       crearCita({ servicioId: 2, barberoId: 1, inicio: '2099-11-04T09:00:00-05:00' }),
     ).rejects.toThrow(/Demasiados intentos/)
+  })
+})
+
+describe('reservaApi: cancelar y reprogramar (HU-03, contrato de SCRUM-52)', () => {
+  const cita: CitaConfirmada = {
+    id: 7,
+    estado: 'PENDING',
+    servicio: { id: 2, nombre: 'Corte', precio: 35000, duracionMin: 40 },
+    barbero: { id: 1, nombre: 'Thiago', rol: 'Master barber', calificacion: 4.9 },
+    inicio: '2099-11-04T09:00:00-05:00',
+    total: 35000,
+  }
+
+  beforeEach(() => {
+    useAuthStore.setState({
+      accessToken: 'tok-cliente',
+      user: { id: 5, email: 'c@b.test', role: 'cliente' },
+      isHydrating: false,
+    })
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('Dado una cita, Cuando se cancela, Entonces envía POST a /cancel con el token', async () => {
+    const fetchMock = vi.fn(() => json({ id: 7, late_cancellation: false }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const resultado = await cancelarCitaApi(7)
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toMatch(/\/api\/v1\/appointments\/7\/cancel$/)
+    expect(init.method).toBe('POST')
+    expect(init.headers).toMatchObject({ Authorization: 'Bearer tok-cliente' })
+    expect(resultado).toEqual({ tardia: false })
+  })
+
+  it('Dado que faltan 12 h o menos, Cuando se cancela, Entonces la respuesta marca la cancelación como tardía', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => json({ id: 7, late_cancellation: true })),
+    )
+
+    await expect(cancelarCitaApi(7)).resolves.toEqual({ tardia: true })
+  })
+
+  it('Dado que la cita ya no se puede modificar, Cuando se cancela, Entonces muestra el motivo del backend', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => json({ detail: 'La cita ya no se puede modificar.' }, 409)),
+    )
+
+    await expect(cancelarCitaApi(7)).rejects.toThrow(
+      'La cita ya no se puede modificar.',
+    )
+  })
+
+  it('Dado un nuevo horario, Cuando se reprograma, Entonces envía POST a /reschedule con start_at y conserva barbero y servicio', async () => {
+    const fetchMock = vi.fn(() =>
+      json({
+        id: 7,
+        status: 'PENDING',
+        start_at: '2099-11-05T15:00:00Z', // 10:00 en Bogotá
+        price: '35000.00',
+        barber: 1,
+        service: 2,
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const nueva = await reprogramarCitaApi(cita, '2099-11-05T10:00:00-05:00')
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toMatch(/\/api\/v1\/appointments\/7\/reschedule$/)
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(init.body as string)).toEqual({
+      start_at: '2099-11-05T10:00:00-05:00',
+    })
+    expect(nueva.inicio).toBe('2099-11-05T10:00:00-05:00')
+    expect(nueva.barbero).toEqual(cita.barbero)
+    expect(nueva.servicio).toEqual(cita.servicio)
+  })
+
+  it('Dado que faltan 12 h o menos, Cuando se reprograma, Entonces muestra el rechazo del backend', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        json(
+          { detail: 'Solo puedes reprogramar con más de 12 horas de anticipación.' },
+          400,
+        ),
+      ),
+    )
+
+    await expect(reprogramarCitaApi(cita, '2099-11-05T10:00:00-05:00')).rejects.toThrow(
+      /más de 12 horas/,
+    )
+  })
+
+  it('Dado que la franja se ocupó, Cuando se reprograma, Entonces avisa que el horario no está disponible', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response('', { status: 409 }))),
+    )
+
+    await expect(reprogramarCitaApi(cita, '2099-11-05T10:00:00-05:00')).rejects.toThrow(
+      'Ese horario ya no está disponible. Elige otro.',
+    )
   })
 })

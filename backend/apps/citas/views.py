@@ -1,6 +1,7 @@
 import logging
 
 from django.db import DatabaseError
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.exceptions import (
     APIException,
@@ -17,9 +18,12 @@ from apps.barberias.models import barberia_de
 from apps.barberos.models import Barbero
 from apps.catalogo.context import obtener_barberia_catalogo
 from apps.usuarios.models import Rol, rol_de
+from apps.usuarios.permissions import HasRole
 
 from . import services
+from .models import BloqueoAgenda
 from .serializers import (
+    BloqueoAgendaSerializer,
     CitaCanceladaSerializer,
     CitaSerializer,
     CrearCitaSerializer,
@@ -247,3 +251,49 @@ class DisponibilidadView(APIView):
         )
 
         return Response(resultado.data, status=status.HTTP_200_OK)
+
+
+class GestionBloqueosView(APIView):
+    permission_classes = [HasRole(Rol.ADMIN)]
+
+    def barberia_administrada(self, request):
+        barberia = barberia_de(request.user)
+        if barberia is None:
+            raise PermissionDenied("El administrador no pertenece a ninguna barbería.")
+        return barberia
+
+
+class BloqueosAgendaView(GestionBloqueosView):
+    def get(self, request):
+        barberia = self.barberia_administrada(request)
+        bloqueos = BloqueoAgenda.objects.filter(barber__barberia=barberia)
+        return Response(BloqueoAgendaSerializer(bloqueos, many=True).data)
+
+    def post(self, request):
+        barberia = self.barberia_administrada(request)
+        entrada = BloqueoAgendaSerializer(data=request.data, barberia=barberia)
+        entrada.is_valid(raise_exception=True)
+        datos = entrada.validated_data
+
+        try:
+            bloqueo = services.crear_bloqueo(
+                barberia=barberia,
+                barbero_id=datos["barber"].pk,
+                inicio=datos["start_at"],
+                fin=datos["end_at"],
+                motivo=datos["reason"],
+            )
+        except services.RecursoInactivoError as exc:
+            raise ValidationError({"barber": str(exc)}) from exc
+
+        return Response(
+            BloqueoAgendaSerializer(bloqueo).data, status=status.HTTP_201_CREATED
+        )
+
+
+class BloqueoAgendaDetalleView(GestionBloqueosView):
+    def delete(self, request, pk):
+        barberia = self.barberia_administrada(request)
+        bloqueo = get_object_or_404(BloqueoAgenda, pk=pk, barber__barberia=barberia)
+        bloqueo.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

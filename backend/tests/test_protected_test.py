@@ -66,7 +66,8 @@ def test_cliente_recibe_403(api, django_user_model):
 
 def test_admin_recibe_200(api, django_user_model):
     # Dado un admin con sesion iniciada
-    admin = _crear(django_user_model, "admin")
+    admin = _crear(django_user_model, Rol.ADMIN)
+    assert admin.is_staff is False
     token = _iniciar_sesion(api, admin)
 
     # Cuando llama al endpoint protegido
@@ -83,10 +84,16 @@ def test_admin_recibe_200(api, django_user_model):
 # --- Autenticacion JWT ---------------------------------------------------
 
 
-def test_barbero_recibe_403(api, django_user_model):
-    barbero = _crear(django_user_model, "barbero")
+@pytest.mark.parametrize("es_staff", [False, True])
+def test_barbero_recibe_403(api, django_user_model, es_staff):
+    # Dado un barbero con JWT válido y con o sin is_staff.
+    barbero = _crear(django_user_model, Rol.BARBERO)
+    barbero.is_staff = es_staff
+    barbero.save(update_fields=["is_staff"])
+    token = _iniciar_sesion(api, barbero)
 
-    assert _get(api, _iniciar_sesion(api, barbero)).status_code == 403
+    # Cuando llama al recurso administrativo, entonces recibe 403.
+    assert _get(api, token).status_code == 403
 
 
 def test_sin_token_recibe_401(api):

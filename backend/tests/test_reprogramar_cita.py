@@ -22,7 +22,7 @@ from apps.barberias.models import Barberia
 from apps.barberos.models import Barbero, HorarioBarbero
 from apps.catalogo.models import Servicio
 from apps.citas import services
-from apps.citas.models import Cita
+from apps.citas.models import BloqueoAgenda, Cita
 
 DOCE_HORAS = timedelta(hours=12)
 
@@ -670,3 +670,62 @@ def test_fallo_al_guardar_hace_rollback_y_retorna_500(
     assert response.data["detail"].code == "error_al_reprogramar_cita"
     cita.refresh_from_db()
     assert (cita.start_at, cita.end_at) == original
+
+
+@pytest.mark.django_db
+def test_rechazar_reprogramacion_a_franja_con_bloqueo_de_agenda(
+    propietario, cita, barbero, nuevo_inicio
+):
+    # Dado que el administrador bloqueó esa franja (HU-04)
+    BloqueoAgenda.objects.create(
+        barber=barbero,
+        start_at=nuevo_inicio,
+        end_at=nuevo_inicio + timedelta(hours=1),
+        reason="Capacitación",
+    )
+    original = (cita.start_at, cita.end_at)
+
+    # Cuando el propietario intenta moverse ahí
+    with pytest.raises(services.FranjaNoDisponibleError):
+        reprogramar(cita, propietario, nuevo_inicio)
+
+    # Entonces conserva su franja actual
+    cita.refresh_from_db()
+    assert (cita.start_at, cita.end_at) == original
+
+
+@pytest.mark.django_db
+def test_rechazar_reprogramacion_a_franja_que_toca_un_bloqueo_parcialmente(
+    propietario, cita, barbero, nuevo_inicio
+):
+    BloqueoAgenda.objects.create(
+        barber=barbero,
+        start_at=nuevo_inicio + timedelta(minutes=15),
+        end_at=nuevo_inicio + timedelta(hours=1),
+        reason="Almuerzo",
+    )
+
+    with pytest.raises(services.FranjaNoDisponibleError):
+        reprogramar(cita, propietario, nuevo_inicio)
+
+
+@pytest.mark.django_db
+def test_retornar_409_si_la_franja_esta_bloqueada(
+    propietario, cita, barbero, nuevo_inicio
+):
+    BloqueoAgenda.objects.create(
+        barber=barbero,
+        start_at=nuevo_inicio,
+        end_at=nuevo_inicio + timedelta(hours=1),
+        reason="Capacitación",
+    )
+    original = cita.start_at
+
+    response = api_de(propietario).post(
+        url_reprogramar(cita.pk), {"start_at": nuevo_inicio.isoformat()}, format="json"
+    )
+
+    assert response.status_code == 409
+    assert response.data["detail"].code == "franja_no_disponible"
+    cita.refresh_from_db()
+    assert cita.start_at == original

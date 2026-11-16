@@ -17,9 +17,11 @@ interface Foto {
 export interface DropzoneProps {
   /** Sube una foto y reporta el avance (0-100). Debe rechazar la promesa si falla. */
   onUpload: (archivo: File, onProgress: (pct: number) => void) => Promise<void>
+  /** Se llama cuando todas las fotos pendientes se subieron sin errores. */
+  onTerminado?: () => void
 }
 
-export function Dropzone({ onUpload }: DropzoneProps) {
+export function Dropzone({ onUpload, onTerminado }: DropzoneProps) {
   const [fotos, setFotos] = useState<Foto[]>([])
   const [avisos, setAvisos] = useState<string[]>([])
   const [arrastrando, setArrastrando] = useState(false)
@@ -71,19 +73,26 @@ export function Dropzone({ onUpload }: DropzoneProps) {
   const actualizar = (id: number, cambios: Partial<Foto>) =>
     setFotos((prev) => prev.map((f) => (f.id === id ? { ...f, ...cambios } : f)))
 
-  async function subirUna(foto: Foto) {
+  async function subirUna(foto: Foto): Promise<boolean> {
     actualizar(foto.id, { estado: 'subiendo', progreso: 0, error: undefined })
     try {
       await onUpload(foto.archivo, (pct) =>
         actualizar(foto.id, { progreso: Math.min(100, Math.max(0, Math.round(pct))) }),
       )
       actualizar(foto.id, { estado: 'subida', progreso: 100 })
+      return true
     } catch (e) {
       actualizar(foto.id, {
         estado: 'error',
         error: e instanceof Error ? e.message : 'No se pudo subir la foto.',
       })
+      return false
     }
+  }
+
+  async function subirTodas() {
+    const resultados = await Promise.all(pendientes.map(subirUna))
+    if (resultados.every(Boolean)) onTerminado?.()
   }
 
   const pendientes = fotos.filter((f) => f.estado === 'lista' || f.estado === 'error')
@@ -213,7 +222,7 @@ export function Dropzone({ onUpload }: DropzoneProps) {
         <button
           type="button"
           disabled={subiendo}
-          onClick={() => void Promise.all(pendientes.map(subirUna))}
+          onClick={() => void subirTodas()}
           className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#d7b36a] px-5 text-sm font-semibold text-[#0f1210] transition-colors hover:bg-[#e5c77f] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Upload className="size-4" aria-hidden="true" />

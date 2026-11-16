@@ -35,7 +35,7 @@ QUITAR_RESTRICCION = f"ALTER TABLE {TABLA} DROP CONSTRAINT IF EXISTS {RESTRICCIO
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("barberos", "0004_barbero_user"),
+        ("barberos", "0006_servicios_por_barbero_y_nota"),
     ]
 
     operations = [

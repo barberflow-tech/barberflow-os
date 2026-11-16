@@ -10,7 +10,9 @@ export function useAgendaRealtime() {
   const addCita = useAgendaStore((state) => state.addCita)
 
   useEffect(() => {
-    const canal = supabase
+    if (!supabase) return
+    const cliente = supabase
+    const canal = cliente
       .channel('agenda-citas')
       .on(
         'postgres_changes',
@@ -20,7 +22,7 @@ export function useAgendaRealtime() {
       .subscribe()
 
     return () => {
-      void supabase.removeChannel(canal)
+      void cliente.removeChannel(canal)
     }
   }, [addCita])
 }

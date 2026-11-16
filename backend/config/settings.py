@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "apps.barberos",
     "apps.catalogo",
     "apps.citas",
+    "apps.notificaciones",
 ]
 
 MIDDLEWARE = [
@@ -198,6 +199,17 @@ CORS_ALLOWED_ORIGINS = [
 # El frontend usa fetch con credentials: 'include'; sin esto el navegador
 # descarta la cookie del refresh token.
 CORS_ALLOW_CREDENTIALS = True
+
+
+# Correo transaccional. Las credenciales se configuran en el entorno del backend.
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() == "true"
+EMAIL_TIMEOUT = float(os.getenv("EMAIL_TIMEOUT", "5"))
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@barberflow.test")
 
 
 # Internationalization

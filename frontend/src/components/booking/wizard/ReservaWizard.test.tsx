@@ -1,7 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { useReservaWizardStore } from '@/stores/useReservaWizardStore'
 import { ReservaWizard } from './ReservaWizard'
 
@@ -160,5 +161,59 @@ describe('ReservaWizard', () => {
     expect(
       screen.queryByRole('heading', { name: /reserva confirmada/i }),
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('ReservaWizard: datos de contacto según la sesión', () => {
+  beforeEach(() => {
+    useReservaWizardStore.getState().reiniciar()
+    vi.clearAllMocks()
+  })
+  afterEach(() => {
+    useAuthStore.setState({ accessToken: null, user: null })
+  })
+
+  it('Dado un visitante sin cuenta, Cuando llega a confirmar, Entonces se le piden nombre y celular', async () => {
+    const user = userEvent.setup()
+    renderWizard()
+    await llegarAlPaso4(user)
+
+    expect(screen.getByLabelText(/nombre completo/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/celular/i)).toBeInTheDocument()
+  })
+
+  it('Dado un cliente con sesión, Cuando llega a confirmar, Entonces no se le piden los datos que ya dio al registrarse', async () => {
+    useAuthStore.setState({
+      accessToken: 'tok',
+      user: { id: 5, email: 'cliente@barberflow.test', role: 'cliente' },
+    })
+    const user = userEvent.setup()
+    renderWizard()
+    await llegarAlPaso4(user)
+
+    expect(screen.queryByLabelText(/nombre completo/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/celular/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/cliente@barberflow\.test/)).toBeInTheDocument()
+  })
+
+  it('Dado un cliente con sesión, Cuando confirma, Entonces reserva sin datos de contacto', async () => {
+    useAuthStore.setState({
+      accessToken: 'tok',
+      user: { id: 5, email: 'cliente@barberflow.test', role: 'cliente' },
+    })
+    const user = userEvent.setup()
+    renderWizard()
+    await llegarAlPaso4(user)
+
+    await user.click(screen.getByRole('button', { name: /confirmar reserva/i }))
+
+    expect(
+      await screen.findByRole('heading', { name: /reserva confirmada/i }),
+    ).toBeInTheDocument()
+    expect(crearCita).toHaveBeenCalledTimes(1)
+    const enviado = vi.mocked(crearCita).mock.calls[0][0]
+    expect(enviado).not.toHaveProperty('contactoNombre')
+    expect(enviado).not.toHaveProperty('contactoCelular')
+    expect(enviado).toMatchObject({ servicioId: 1, barberoId: 1 })
   })
 })

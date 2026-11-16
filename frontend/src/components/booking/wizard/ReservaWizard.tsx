@@ -59,7 +59,7 @@ export function ReservaWizard() {
     (paso === 2 && !!barbero) ||
     (paso === 3 && !!fecha && !!hora)
 
-  async function confirmar(cliente: ClienteData) {
+  async function confirmar(cliente: ClienteData | null) {
     if (!servicio || !barbero || !fecha || !hora) return
     setEnviando(true)
     setError(null)
@@ -69,8 +69,11 @@ export function ReservaWizard() {
         barberoId: barbero.id,
         barbero,
         inicio: construirInicio(fecha, hora),
-        contactoNombre: cliente.nombre,
-        contactoCelular: cliente.celular,
+        // Con sesión no hay contacto: la cita queda a nombre de la cuenta.
+        ...(cliente && {
+          contactoNombre: cliente.nombre,
+          contactoCelular: cliente.celular,
+        }),
       })
       registrarCita(nueva)
     } catch (e) {

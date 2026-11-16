@@ -4,6 +4,7 @@ import {
   type ClienteData,
   type ClienteFormValues,
 } from '@/lib/reservaSchema'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { useReservaWizardStore } from '@/stores/useReservaWizardStore'
 import { campo } from './estilos'
 import { fechaLarga, formatearPrecio } from './formato'
@@ -22,7 +23,8 @@ const zodResolver: Resolver<ClienteFormValues> = (values) => {
 
 interface Props {
   error: string | null
-  onConfirmar: (cliente: ClienteData) => void
+  /** `null` cuando reserva con su cuenta: no hay datos de contacto que pedir. */
+  onConfirmar: (cliente: ClienteData | null) => void
 }
 
 export function PasoConfirmar({ error, onConfirmar }: Props) {
@@ -30,6 +32,7 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
   const barbero = useReservaWizardStore((s) => s.barbero)
   const fecha = useReservaWizardStore((s) => s.fecha)
   const hora = useReservaWizardStore((s) => s.hora)
+  const correoSesion = useAuthStore((s) => s.user?.email)
   const {
     register,
     handleSubmit,
@@ -39,56 +42,79 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
     defaultValues: { nombre: '', celular: '' },
   })
 
+  // Con sesión el cliente ya dio sus datos al registrarse: no se le piden de nuevo.
+  // Solo quien reserva sin cuenta debe dejar su nombre y celular de contacto.
+  const conSesion = !!correoSesion
+
   return (
     <form
       id="form-confirmar"
       noValidate
-      onSubmit={handleSubmit((v) => onConfirmar(v as unknown as ClienteData))}
+      onSubmit={
+        conSesion
+          ? (e) => {
+              e.preventDefault()
+              onConfirmar(null)
+            }
+          : handleSubmit((v) => onConfirmar(v as unknown as ClienteData))
+      }
       className="grid gap-6 md:grid-cols-[1fr_minmax(0,320px)]"
     >
       <div className="space-y-4">
-        <div className="space-y-1.5">
-          <label
-            htmlFor="nombre"
-            className="text-xs font-semibold text-slate-600 dark:text-white/65"
-          >
-            Nombre completo
-          </label>
-          <input
-            id="nombre"
-            autoComplete="name"
-            aria-invalid={!!errors.nombre}
-            className={campo}
-            {...register('nombre')}
-          />
-          {errors.nombre && (
-            <p className="text-xs text-[#E5283C] dark:text-[#d7b36a]">
-              {errors.nombre.message}
-            </p>
-          )}
-        </div>
-        <div className="space-y-1.5">
-          <label
-            htmlFor="celular"
-            className="text-xs font-semibold text-slate-600 dark:text-white/65"
-          >
-            Celular
-          </label>
-          <input
-            id="celular"
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel-national"
-            aria-invalid={!!errors.celular}
-            className={campo}
-            {...register('celular')}
-          />
-          {errors.celular && (
-            <p className="text-xs text-[#E5283C] dark:text-[#d7b36a]">
-              {errors.celular.message}
-            </p>
-          )}
-        </div>
+        {conSesion ? (
+          <p className="rounded-xl bg-slate-50 dark:bg-white/5 p-4 text-sm text-slate-600 dark:text-white/65">
+            Reservarás con tu cuenta{' '}
+            <strong className="text-[#0B1B3A] dark:text-[#f4f1e9]">
+              {correoSesion}
+            </strong>
+            . No necesitas volver a escribir tus datos.
+          </p>
+        ) : (
+          <>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="nombre"
+                className="text-xs font-semibold text-slate-600 dark:text-white/65"
+              >
+                Nombre completo
+              </label>
+              <input
+                id="nombre"
+                autoComplete="name"
+                aria-invalid={!!errors.nombre}
+                className={campo}
+                {...register('nombre')}
+              />
+              {errors.nombre && (
+                <p className="text-xs text-[#E5283C] dark:text-[#d7b36a]">
+                  {errors.nombre.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="celular"
+                className="text-xs font-semibold text-slate-600 dark:text-white/65"
+              >
+                Celular
+              </label>
+              <input
+                id="celular"
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                aria-invalid={!!errors.celular}
+                className={campo}
+                {...register('celular')}
+              />
+              {errors.celular && (
+                <p className="text-xs text-[#E5283C] dark:text-[#d7b36a]">
+                  {errors.celular.message}
+                </p>
+              )}
+            </div>
+          </>
+        )}
         {error && (
           <p
             role="alert"

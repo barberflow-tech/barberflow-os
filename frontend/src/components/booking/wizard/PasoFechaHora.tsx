@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { atiendeEl, primerDiaLaboral } from '@/lib/diasLaborales'
 import { listarFranjas, ReservaError, type FranjaHoraria } from '@/lib/reservaApi'
 import { useReservaWizardStore } from '@/stores/useReservaWizardStore'
 import { cn } from '@/lib/utils'
@@ -34,12 +35,19 @@ export function PasoFechaHora() {
     return new Date(base.getFullYear(), base.getMonth(), 1)
   })
 
+  // Días que atiende el barbero según el horario que configuró el administrador.
+  const diasLaborales = barbero?.diasLaborales
+  const sinHorario = diasLaborales !== undefined && diasLaborales.length === 0
+
+  // Empieza en el primer día en que sí atiende (hoy puede ser su día libre).
   useEffect(() => {
-    if (!fecha) seleccionarFecha(hoy)
-  }, [fecha, hoy, seleccionarFecha])
+    if (fecha) return
+    const primero = primerDiaLaboral(hoy, diasLaborales)
+    if (primero) seleccionarFecha(primero)
+  }, [fecha, hoy, diasLaborales, seleccionarFecha])
 
   useEffect(() => {
-    if (!barbero || !fecha) return
+    if (!barbero || !fecha || !atiendeEl(barbero.diasLaborales, fecha)) return
     let activo = true
     const clave = `${barbero.id}|${fecha}`
     listarFranjas(barbero.id, fecha, servicio?.duracionMin)
@@ -62,6 +70,7 @@ export function PasoFechaHora() {
   const vigente =
     cargado && cargado.clave === `${barbero?.id}|${fecha}` ? cargado : null
   const franjas = vigente ? vigente.franjas : null
+  const diaCerrado = !!fecha && !atiendeEl(diasLaborales, fecha)
   const celdas = celdasDelMes(mesVisto.getFullYear(), mesVisto.getMonth())
   const mesActual = hoy.slice(0, 7) === aIso(mesVisto).slice(0, 7)
   const mesTexto = mesVisto.toLocaleDateString('es-CO', {
@@ -112,6 +121,7 @@ export function PasoFechaHora() {
             const iso = aIso(d)
             const delMes = d.getMonth() === mesVisto.getMonth()
             const pasado = iso < hoy
+            const cerrado = !atiendeEl(diasLaborales, iso)
             const activo = fecha === iso
             return (
               <button
@@ -123,11 +133,12 @@ export function PasoFechaHora() {
                   month: 'long',
                 })}
                 aria-pressed={activo}
-                disabled={pasado || !delMes}
+                disabled={pasado || !delMes || cerrado}
                 onClick={() => seleccionarFecha(iso)}
                 className={cn(
                   'aspect-square rounded-lg text-xs font-medium text-[#0B1B3A] dark:text-[#f4f1e9] transition-colors hover:bg-slate-100 dark:hover:bg-white/10 disabled:hover:bg-transparent',
-                  (pasado || !delMes) && 'text-slate-300 dark:text-white/30',
+                  (pasado || !delMes || cerrado) && 'text-slate-300 dark:text-white/30',
+                  cerrado && delMes && !pasado && 'line-through',
                   activo &&
                     'bg-[#E5283C] dark:bg-[#d7b36a] font-bold text-white dark:text-[#111411] hover:bg-[#E5283C] dark:hover:bg-[#d7b36a]',
                 )}
@@ -137,6 +148,11 @@ export function PasoFechaHora() {
             )
           })}
         </div>
+        {diasLaborales && diasLaborales.length > 0 && diasLaborales.length < 7 && (
+          <p className="mt-3 text-[11px] text-slate-400 dark:text-white/40">
+            Los días tachados {barbero?.nombre} no atiende.
+          </p>
+        )}
         {fecha && (
           <p className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-white/55">
             <span className="size-1.5 rounded-full bg-[#E5283C] dark:bg-[#d7b36a]" />
@@ -154,7 +170,15 @@ export function PasoFechaHora() {
         <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-white/40">
           Horarios para el {fecha ? diaMes(fecha) : '…'}
         </h3>
-        {!franjas ? (
+        {sinHorario ? (
+          <p role="status" className="text-sm text-slate-500 dark:text-white/55">
+            {barbero?.nombre} aún no tiene un horario configurado. Elige otro barbero.
+          </p>
+        ) : diaCerrado ? (
+          <p className="text-sm text-slate-500 dark:text-white/55">
+            {barbero?.nombre} no atiende este día. Elige otra fecha.
+          </p>
+        ) : !franjas ? (
           <p className="text-sm text-slate-500 dark:text-white/55">
             Cargando horarios…
           </p>

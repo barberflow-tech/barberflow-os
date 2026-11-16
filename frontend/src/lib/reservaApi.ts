@@ -175,6 +175,8 @@ interface CitaApi {
   status: string
   start_at: string
   price: string
+  barber?: number
+  service?: number
 }
 
 export async function crearCita(datos: NuevaCita): Promise<CitaConfirmada> {
@@ -237,6 +239,151 @@ export async function crearCita(datos: NuevaCita): Promise<CitaConfirmada> {
     barbero,
     inicio: aIsoColombia(cita.start_at),
     total: Number(cita.price),
+  }
+}
+
+// ======================================================================
+// HU-03: listar, cancelar y reprogramar citas del cliente
+// ======================================================================
+
+export interface CitaPerfilApi {
+  id: number
+  status: string
+  start_at: string
+  price: string
+  service: {
+    id: number
+    name: string
+    price: number
+    duration_minutes: number
+    description?: string
+  }
+  barber: {
+    id: number
+    name: string
+    rol?: string
+    calificacion?: number
+  }
+}
+
+/** Mensaje del backend (`detail`) si viene en la respuesta; si no, el de respaldo. */
+async function mensajeDe(response: Response, respaldo: string): Promise<string> {
+  try {
+    const cuerpo = (await response.json()) as { detail?: unknown }
+    return typeof cuerpo.detail === 'string' ? cuerpo.detail : respaldo
+  } catch {
+    return respaldo
+  }
+}
+
+/**
+ * Lista las citas del usuario autenticado (GET /api/v1/appointments/).
+ *
+ * PENDIENTE de backend: ese listado aún no existe en develop (SCRUM-52 solo
+ * agrega cancelar y reprogramar). El contrato de `CitaPerfilApi` es el que
+ * este cliente espera; hay que acordarlo con quien implemente el endpoint.
+ */
+export async function listarMisCitasApi(): Promise<CitaConfirmada[]> {
+  let response: Response
+  try {
+    response = await pedir(`${API_URL}/api/v1/appointments/`)
+  } catch {
+    throw new ReservaError('No se pudo conectar con el servidor.')
+  }
+  if (!response.ok) throw new ReservaError('No se pudieron cargar tus citas.')
+
+  const data = (await response.json()) as CitaPerfilApi[]
+  return data.map((cita) => ({
+    id: cita.id,
+    estado: cita.status,
+    servicio: {
+      id: cita.service.id,
+      nombre: cita.service.name,
+      precio: Number(cita.service.price),
+      duracionMin: cita.service.duration_minutes,
+      descripcion: cita.service.description,
+    },
+    barbero: {
+      id: cita.barber.id,
+      nombre: cita.barber.name,
+      rol: cita.barber.rol ?? 'Barbero',
+      calificacion: cita.barber.calificacion ?? 0,
+    },
+    inicio: aIsoColombia(cita.start_at),
+    total: Number(cita.price),
+  }))
+}
+
+/**
+ * Cancela una cita (POST /api/v1/appointments/{id}/cancel).
+ *
+ * Cancelar siempre se permite al propietario. Con 12 h o menos de antelación
+ * la cancelación se registra como tardía: `tardia` es true en ese caso.
+ */
+export async function cancelarCitaApi(
+  citaId: number | string,
+): Promise<{ tardia: boolean }> {
+  let response: Response
+  try {
+    response = await pedir(`${API_URL}/api/v1/appointments/${citaId}/cancel`, {
+      method: 'POST',
+    })
+  } catch {
+    throw new ReservaError('No se pudo conectar con el servidor.')
+  }
+  if (response.status === 401) {
+    throw new ReservaError('Inicia sesión para cancelar tu cita.')
+  }
+  if (!response.ok) {
+    throw new ReservaError(
+      await mensajeDe(response, 'No se pudo cancelar la cita. Intenta de nuevo.'),
+    )
+  }
+
+  const cita = (await response.json()) as { late_cancellation?: boolean }
+  return { tardia: cita.late_cancellation === true }
+}
+
+/**
+ * Reprograma una cita (POST /api/v1/appointments/{id}/reschedule).
+ *
+ * Mantiene barbero y servicio. El backend exige MÁS de 12 h de antelación
+ * sobre la hora original y una franja libre; `nuevoInicio` debe llevar zona.
+ */
+export async function reprogramarCitaApi(
+  cita: CitaConfirmada,
+  nuevoInicio: string,
+): Promise<CitaConfirmada> {
+  let response: Response
+  try {
+    response = await pedir(`${API_URL}/api/v1/appointments/${cita.id}/reschedule`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ start_at: nuevoInicio }),
+    })
+  } catch {
+    throw new ReservaError('No se pudo conectar con el servidor.')
+  }
+  if (response.status === 401) {
+    throw new ReservaError('Inicia sesión para reprogramar tu cita.')
+  }
+  if (!response.ok) {
+    throw new ReservaError(
+      await mensajeDe(
+        response,
+        response.status === 409
+          ? 'Ese horario ya no está disponible. Elige otro.'
+          : 'No se pudo reprogramar la cita. Intenta de nuevo.',
+      ),
+    )
+  }
+
+  const actualizada = (await response.json()) as CitaApi
+  return {
+    ...cita,
+    estado: actualizada.status,
+    inicio: aIsoColombia(actualizada.start_at),
+    total: Number(actualizada.price),
   }
 }
 

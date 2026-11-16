@@ -9,7 +9,7 @@ from rest_framework.exceptions import (
     PermissionDenied,
     ValidationError,
 )
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
@@ -24,10 +24,12 @@ from . import services
 from .models import BloqueoAgenda
 from .serializers import (
     BloqueoAgendaSerializer,
+    CitaCanceladaSerializer,
     CitaSerializer,
     CrearCitaSerializer,
     DisponibilidadQuerySerializer,
     DisponibilidadResponseSerializer,
+    ReprogramarCitaSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -65,6 +67,30 @@ class ErrorAlGuardarCita(APIException):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     default_detail = "No se pudo registrar la cita. Intenta de nuevo."
     default_code = "error_al_guardar_cita"
+
+
+class CitaNoModificable(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = "La cita ya no se puede modificar."
+    default_code = "cita_no_modificable"
+
+
+class ErrorAlCancelarCita(APIException):
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    default_detail = "No se pudo cancelar la cita. Intenta de nuevo."
+    default_code = "error_al_cancelar_cita"
+
+
+class ReprogramacionTardia(APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_detail = "Solo puedes reprogramar con más de 12 horas de anticipación."
+    default_code = "reprogramacion_tardia"
+
+
+class ErrorAlReprogramarCita(APIException):
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    default_detail = "No se pudo reprogramar la cita. Intenta de nuevo."
+    default_code = "error_al_reprogramar_cita"
 
 
 class CrearCitaView(APIView):
@@ -112,6 +138,74 @@ class CrearCitaView(APIView):
             raise ErrorAlGuardarCita() from exc
 
         return Response(CitaSerializer(cita).data, status=status.HTTP_201_CREATED)
+
+
+class CancelarCitaView(APIView):
+    """POST /api/v1/appointments/{id}/cancel: el propietario cancela su cita.
+
+    Sin cuerpo. Exige sesión (401) y ser el propietario (403); la cita
+    inexistente da 404 y la que ya no se puede modificar, 409. Si faltan 12 h o
+    menos se cancela igual y la respuesta marca `late_cancellation`.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, cita_id: int):
+        try:
+            cita = services.cancelar_cita(cita_id=cita_id, usuario=request.user)
+        except services.CitaNoEncontradaError as exc:
+            raise NotFound(str(exc)) from exc
+        except services.NoEsPropietarioError as exc:
+            raise PermissionDenied(str(exc)) from exc
+        except services.EstadoCitaInvalidoError as exc:
+            raise CitaNoModificable(str(exc)) from exc
+        except DatabaseError as exc:
+            # cancelar_cita ya hizo ROLLBACK; se responde JSON en vez de un 500 HTML.
+            logger.exception("Fallo al cancelar la cita")
+            raise ErrorAlCancelarCita() from exc
+
+        return Response(CitaCanceladaSerializer(cita).data, status=status.HTTP_200_OK)
+
+
+class ReprogramarCitaView(APIView):
+    """POST /api/v1/appointments/{id}/reschedule: el propietario cambia la hora.
+
+    Body: {"start_at": "<ISO 8601 con zona>"}. Mantiene barbero y servicio.
+    401 sin sesión, 403 si no es el propietario, 404 si no existe, 400 si
+    faltan 12 h o menos (`reprogramacion_tardia`) o la hora no es válida, y
+    409 si la franja ya está ocupada o la cita ya no se puede modificar.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, cita_id: int):
+        entrada = ReprogramarCitaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+
+        try:
+            cita = services.reprogramar_cita(
+                cita_id=cita_id,
+                usuario=request.user,
+                nuevo_inicio=entrada.validated_data["start_at"],
+            )
+        except services.CitaNoEncontradaError as exc:
+            raise NotFound(str(exc)) from exc
+        except services.NoEsPropietarioError as exc:
+            raise PermissionDenied(str(exc)) from exc
+        except services.ReprogramacionTardiaError as exc:
+            raise ReprogramacionTardia(str(exc)) from exc
+        except services.FranjaNoDisponibleError as exc:
+            raise ReservaEnConflicto(str(exc)) from exc
+        except services.EstadoCitaInvalidoError as exc:
+            raise CitaNoModificable(str(exc)) from exc
+        except (services.HorarioInvalidoError, services.RecursoInactivoError) as exc:
+            raise ValidationError({"detail": str(exc)}) from exc
+        except DatabaseError as exc:
+            # reprogramar_cita ya hizo ROLLBACK; se responde JSON en vez de un 500 HTML.
+            logger.exception("Fallo al reprogramar la cita")
+            raise ErrorAlReprogramarCita() from exc
+
+        return Response(CitaSerializer(cita).data, status=status.HTTP_200_OK)
 
 
 class DisponibilidadView(APIView):

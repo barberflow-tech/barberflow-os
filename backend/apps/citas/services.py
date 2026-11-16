@@ -5,20 +5,24 @@ de HU-02) solo traduce HTTP <-> llamadas a este modulo.
 """
 
 from datetime import date, datetime, timedelta
-from zoneinfo import ZoneInfo
 
 from django.contrib.auth.models import AbstractBaseUser
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.barberias.models import Barberia
-from apps.barberos.models import Barbero, HorarioBarbero
+from apps.barberos.jornada import (
+    MOTIVO_EN_DESCANSO,
+    ZONA_HORARIA_BARBERIA,
+    motivo_franja_fuera_de_jornada,
+    obtener_jornada_barbero,
+)
+from apps.barberos.models import Barbero
 from apps.catalogo.models import Servicio
 
 from .models import BloqueoAgenda, Cita
 
 RESTRICCION_SOLAPAMIENTO = "cita_sin_solapamiento_por_barbero"
-ZONA_HORARIA_BARBERIA = ZoneInfo("America/Bogota")
 
 # HU-03: con 12 h o menos de antelacion una cancelacion es tardia (HU-19) y la
 # reprogramacion no se permite. "Mas de 12 h" es estricto: 12 h justas no basta.
@@ -298,32 +302,18 @@ def validar_franja_en_jornada(
 ) -> None:
     """La franja debe caber en la jornada del barbero y no cruzar su descanso.
 
-    Se evalúa en la hora local de la barbería (`ZONA_HORARIA_BARBERIA`), igual
-    que `obtener_slots_libres`.
+    Se evalúa en la hora local de la barbería (`ZONA_HORARIA_BARBERIA`), con la
+    misma decisión que usa la edición del horario (`apps.barberos.jornada`).
     """
     local_inicio = inicio.astimezone(ZONA_HORARIA_BARBERIA)
     local_fin = fin.astimezone(ZONA_HORARIA_BARBERIA)
-    if local_inicio.date() != local_fin.date():
-        raise HorarioInvalidoError("La franja está fuera del horario del barbero.")
+    jornada = obtener_jornada_barbero(barbero, local_inicio.date())
 
-    horario = HorarioBarbero.objects.filter(
-        barbero=barbero, weekday=local_inicio.weekday(), is_active=True
-    ).first()
-    if (
-        horario is None
-        or local_inicio.time() < horario.open_time
-        or local_fin.time() > horario.close_time
-    ):
-        raise HorarioInvalidoError("La franja está fuera del horario del barbero.")
-
-    if horario.break_start is None:
-        return
-    se_cruza_con_descanso = (
-        local_inicio.time() < horario.break_end
-        and local_fin.time() > horario.break_start
-    )
-    if se_cruza_con_descanso:
+    motivo = motivo_franja_fuera_de_jornada(jornada, local_inicio, local_fin)
+    if motivo == MOTIVO_EN_DESCANSO:
         raise HorarioInvalidoError("La franja cae en el descanso del barbero.")
+    if motivo is not None:
+        raise HorarioInvalidoError("La franja está fuera del horario del barbero.")
 
 
 def reservar_franja_horaria(
@@ -417,11 +407,7 @@ def obtener_slots_libres(
     if not barbero.is_active:
         return []
 
-    horario = HorarioBarbero.objects.filter(
-        barbero=barbero,
-        weekday=fecha.weekday(),
-        is_active=True,
-    ).first()
+    horario = obtener_jornada_barbero(barbero, fecha)
 
     if horario is None:
         return []

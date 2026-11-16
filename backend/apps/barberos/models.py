@@ -61,6 +61,7 @@ class HorarioBarbero(models.Model):
         blank=True,
     )
     is_active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["weekday", "open_time"]

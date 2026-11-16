@@ -1,17 +1,34 @@
-from django.db import transaction
+import logging
+from contextlib import contextmanager
+
+from django.db import DatabaseError, transaction
 from rest_framework import status
+from rest_framework.exceptions import (
+    APIException,
+    NotFound,
+    PermissionDenied,
+    ValidationError,
+)
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.barberias.models import barberia_de
 from apps.barberos.context import barbero_de
 from apps.barberos.models import PortfolioBarbero
 from apps.usuarios.permissions import HasRole
 
+from . import services_horarios
 from .serializers import (
+    ConflictoCitaSerializer,
+    HorarioDiaDetalleSerializer,
+    HorarioDiaEntradaSerializer,
+    HorarioSemanalEntradaSerializer,
+    HorarioSemanalSerializer,
     PortfolioBarberoSerializer,
     PortfolioUploadSerializer,
+    datos_horario_semanal,
 )
 from .services import (
     ImageValidationError,
@@ -21,6 +38,8 @@ from .services import (
     optimize_image,
     upload_to_storage,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class PortfolioBarberoUploadView(APIView):
@@ -96,3 +115,136 @@ class PortfolioBarberoUploadView(APIView):
             output_serializer.data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class HorarioConCitasFuturas(APIException):
+    """409: el cambio dejaría citas futuras fuera del horario del barbero.
+
+    El cuerpo lleva las citas afectadas. Se asigna `detail` ya armado para que
+    DRF no convierta los ID y fechas de `conflicts` en texto.
+    """
+
+    status_code = status.HTTP_409_CONFLICT
+    default_code = "horario_con_citas_futuras"
+    mensaje = "El cambio afecta citas futuras. Reprográmalas o cancélalas primero."
+
+    def __init__(self, conflictos):
+        super().__init__(self.mensaje)
+        self.detail = {
+            "detail": self.mensaje,
+            "code": self.default_code,
+            "conflicts": ConflictoCitaSerializer(conflictos, many=True).data,
+        }
+
+
+class ErrorAlGuardarHorario(APIException):
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    default_detail = "No se pudo guardar el horario. Intenta de nuevo."
+    default_code = "error_al_guardar_horario"
+
+
+@contextmanager
+def errores_de_horario_a_http():
+    """Traduce las excepciones de `services_horarios` a excepciones de DRF."""
+    try:
+        yield
+    except (
+        services_horarios.BarberoNoEncontradoError,
+        services_horarios.HorarioNoEncontradoError,
+    ) as exc:
+        raise NotFound(str(exc)) from exc
+    except services_horarios.BarberoInactivoError as exc:
+        raise ValidationError({"detail": str(exc)}) from exc
+    except services_horarios.HorarioInvalidoError as exc:
+        raise ValidationError(exc.errores) from exc
+    except services_horarios.SemanaInvalidaError as exc:
+        raise ValidationError({"days": exc.errores}) from exc
+    except services_horarios.CitasAfectadasError as exc:
+        raise HorarioConCitasFuturas(exc.conflictos) from exc
+    except DatabaseError as exc:
+        # El servicio ya hizo ROLLBACK; se responde JSON en vez de un 500 HTML.
+        logger.exception("Fallo al guardar el horario del barbero")
+        raise ErrorAlGuardarHorario() from exc
+
+
+class HorarioBarberoBaseView(APIView):
+    """Base de las vistas de horarios: solo el administrador de la barbería."""
+
+    permission_classes = [IsAuthenticated, HasRole("admin")]
+
+    @staticmethod
+    def barberia_del_admin(usuario):
+        barberia = barberia_de(usuario)
+        if barberia is None:
+            raise PermissionDenied("El usuario no pertenece a ninguna barberia.")
+        return barberia
+
+
+class HorarioSemanalView(HorarioBarberoBaseView):
+    """GET/PUT /api/v1/barbers/{id}/schedule: la semana completa del barbero.
+
+    PUT reemplaza la semana en una transacción (los días omitidos quedan sin
+    trabajo) y es idempotente. 401 sin sesión, 403 si no es admin, 404 si el
+    barbero no existe o es de otra barbería, 400 si algún día no es válido y
+    409 si el cambio deja citas futuras fuera del horario.
+    """
+
+    def get(self, request, barbero_id: int):
+        barberia = self.barberia_del_admin(request.user)
+        with errores_de_horario_a_http():
+            barbero, dias = services_horarios.obtener_horario_semanal(
+                barbero_id=barbero_id, barberia=barberia
+            )
+        return Response(
+            HorarioSemanalSerializer(datos_horario_semanal(barbero, dias)).data
+        )
+
+    def put(self, request, barbero_id: int):
+        barberia = self.barberia_del_admin(request.user)
+        entrada = HorarioSemanalEntradaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+
+        with errores_de_horario_a_http():
+            barbero, dias = services_horarios.reemplazar_horario_semanal(
+                barbero_id=barbero_id,
+                barberia=barberia,
+                dias=entrada.validated_data["days"],
+            )
+        return Response(
+            HorarioSemanalSerializer(datos_horario_semanal(barbero, dias)).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class HorarioDiaView(HorarioBarberoBaseView):
+    """PUT/DELETE /api/v1/barbers/{id}/schedule/{weekday}: un día de la semana.
+
+    `weekday` va de 0 (lunes) a 6 (domingo); otro valor no coincide con la
+    ruta (404). PUT crea (201) o reemplaza (200) el día sin tocar los demás.
+    DELETE lo quita (204).
+    """
+
+    def put(self, request, barbero_id: int, weekday: str):
+        barberia = self.barberia_del_admin(request.user)
+        entrada = HorarioDiaEntradaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+
+        with errores_de_horario_a_http():
+            horario, creado = services_horarios.definir_horario_dia(
+                barbero_id=barbero_id,
+                barberia=barberia,
+                weekday=int(weekday),
+                datos=entrada.validated_data,
+            )
+        return Response(
+            HorarioDiaDetalleSerializer(horario).data,
+            status=status.HTTP_201_CREATED if creado else status.HTTP_200_OK,
+        )
+
+    def delete(self, request, barbero_id: int, weekday: str):
+        barberia = self.barberia_del_admin(request.user)
+        with errores_de_horario_a_http():
+            services_horarios.eliminar_horario_dia(
+                barbero_id=barbero_id, barberia=barberia, weekday=int(weekday)
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -75,6 +75,23 @@ describe('Navbar · según la sesión', () => {
     expect(screen.queryByRole('link', { name: 'Panel' })).toBeNull()
   })
 
+  it('Dado un cliente con sesión, Cuando ve la barra, Entonces tiene el acceso a sus citas', () => {
+    entrar('cliente')
+    renderEn()
+
+    expect(screen.getByRole('link', { name: 'Mis citas' })).toHaveAttribute(
+      'href',
+      '/perfil',
+    )
+  })
+
+  it('Dado un visitante o un admin, Cuando ve la barra, Entonces no ve «Mis citas»', () => {
+    entrar('admin')
+    renderEn()
+
+    expect(screen.queryByRole('link', { name: 'Mis citas' })).toBeNull()
+  })
+
   it('Dado un admin con sesión, Cuando ve la barra, Entonces tiene el acceso a su panel', () => {
     entrar('admin')
     renderEn()

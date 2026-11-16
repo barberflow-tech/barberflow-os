@@ -14,10 +14,11 @@ interface NavbarProps {
   enlaces?: EnlaceNavbar[]
 }
 
-// Pantalla propia de cada rol (el cliente no tiene panel: su espacio es la reserva).
+// Pantalla propia de cada rol. El cliente gestiona sus citas desde su perfil.
 const ENLACE_POR_ROL: Partial<Record<Role, { to: string; etiqueta: string }>> = {
   admin: { to: '/admin', etiqueta: 'Panel' },
   barbero: { to: '/barbero/portafolio', etiqueta: 'Mi portafolio' },
+  cliente: { to: '/perfil', etiqueta: 'Mis citas' },
 }
 
 /** Accesos de la derecha: según haya sesión o no, y sin repetir la página actual. */

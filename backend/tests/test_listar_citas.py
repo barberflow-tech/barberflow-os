@@ -100,7 +100,7 @@ def test_listar_citas_activas_del_cliente_con_servicio_y_barbero(
         "duration_minutes": 30,
         "description": "Corte con tijera.",
     }
-    assert dato["barber"] == {"id": barbero.pk, "name": "Juan"}
+    assert dato["barber"] == {"id": barbero.pk, "name": "Juan", "working_days": []}
 
 
 @pytest.mark.django_db
@@ -189,3 +189,27 @@ def test_la_antelacion_minima_viene_de_la_configuracion():
     assert str(settings.CITAS_ANTICIPACION_MINIMA_HORAS) in (
         services.MENSAJE_REPROGRAMACION_TARDIA
     )
+
+
+@pytest.mark.django_db
+def test_el_barbero_de_la_cita_trae_los_dias_que_atiende(cliente, barbero, servicio):
+    from datetime import time
+
+    from apps.barberos.models import HorarioBarbero
+
+    for dia in (3, 0, 5):
+        HorarioBarbero.objects.create(
+            barbero=barbero, weekday=dia, open_time=time(9), close_time=time(18)
+        )
+    HorarioBarbero.objects.create(
+        barbero=barbero,
+        weekday=6,
+        open_time=time(9),
+        close_time=time(12),
+        is_active=False,
+    )
+    cita_de(cliente, barbero, servicio, en=timedelta(days=2))
+
+    dato = api_de(cliente).get(URL).data[0]
+
+    assert dato["barber"]["working_days"] == [0, 3, 5]

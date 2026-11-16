@@ -270,6 +270,8 @@ export interface CitaPerfilApi {
     name: string
     rol?: string
     calificacion?: number
+    /** Días que atiende (0 lunes … 6 domingo). */
+    working_days?: number[]
   }
   /** Último instante en que aún se puede reprogramar (calculado por el backend). */
   reschedule_deadline?: string
@@ -318,6 +320,7 @@ export async function listarMisCitasApi(): Promise<CitaConfirmada[]> {
       nombre: cita.barber.name,
       rol: cita.barber.rol ?? 'Barbero',
       calificacion: cita.barber.calificacion ?? 0,
+      diasLaborales: cita.barber.working_days,
     },
     inicio: aIsoColombia(cita.start_at),
     total: Number(cita.price),

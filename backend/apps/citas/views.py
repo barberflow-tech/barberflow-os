@@ -124,6 +124,7 @@ class CrearCitaView(APIView):
                 end_at__gt=timezone.now(),
             )
             .select_related("service", "barber")
+            .prefetch_related("barber__horarios")
             .order_by("start_at", "pk")
         )
         return Response(CitaPerfilSerializer(citas, many=True).data)

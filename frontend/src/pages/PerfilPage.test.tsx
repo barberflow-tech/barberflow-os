@@ -1,5 +1,6 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CitaConfirmada } from '@/lib/reservaApi'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -25,21 +26,40 @@ import {
 } from '@/lib/reservaApi'
 
 const HORA = 60 * 60 * 1000
+const ANTELACION = 2
 
-function citaEn(horas: number, id = 1): CitaConfirmada {
+/** Instante en hora de Colombia, con el formato que entrega el cliente de la API. */
+const enColombia = (ms: number) =>
+  new Date(ms - 5 * HORA).toISOString().replace('Z', '-05:00')
+
+/** Cita que empieza dentro de `horas`; el límite para reprogramar es ANTELACION h antes. */
+function citaEn(horas: number, id = 1, diasLaborales?: number[]): CitaConfirmada {
+  const inicio = Date.now() + horas * HORA
   return {
     id,
     estado: 'PENDING',
     servicio: { id: 2, nombre: 'Corte clásico', precio: 25000, duracionMin: 45 },
-    barbero: { id: 9, nombre: 'Thiago', rol: 'Master barber', calificacion: 4.9 },
-    inicio: new Date(Date.now() + horas * HORA).toISOString(),
+    barbero: {
+      id: 9,
+      nombre: 'Thiago',
+      rol: 'Master barber',
+      calificacion: 4.9,
+      diasLaborales,
+    },
+    inicio: enColombia(inicio),
     total: 25000,
+    reprogramarAntes: new Date(inicio - ANTELACION * HORA).toISOString(),
+    horasAntelacion: ANTELACION,
   }
 }
 
 function mostrar(citas: CitaConfirmada[]) {
   vi.mocked(listarMisCitasApi).mockResolvedValue(citas)
-  return render(<PerfilPage />)
+  return render(
+    <MemoryRouter>
+      <PerfilPage />
+    </MemoryRouter>,
+  )
 }
 
 describe('PerfilPage: gestionar mis citas (HU-03)', () => {
@@ -57,95 +77,111 @@ describe('PerfilPage: gestionar mis citas (HU-03)', () => {
     ])
   })
 
-  it('Dado un cliente con citas activas, Cuando abre su perfil, Entonces las ve listadas', async () => {
+  it('Dado un cliente con citas activas, Cuando abre su perfil, Entonces las ve con estado en español y precio', async () => {
     mostrar([citaEn(72)])
 
     expect(await screen.findByText(/Corte clásico/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Reprogramar' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
+    expect(screen.getByText('Pendiente')).toBeInTheDocument()
+    expect(screen.getByText(/25\.000/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /reprogramar/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /cancelar/i })).toBeInTheDocument()
   })
 
-  it('Dado que no tiene citas, Cuando abre su perfil, Entonces se le avisa', async () => {
+  it('Dado que no tiene citas, Cuando abre su perfil, Entonces se le avisa y se le invita a reservar', async () => {
     mostrar([])
 
     expect(await screen.findByText(/No tienes citas programadas/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /reservar ahora/i })).toHaveAttribute(
+      'href',
+      '/reservar',
+    )
   })
 
-  it('Dado una cita con más de 12 h, Cuando pulsa Reprogramar, Entonces ve los horarios reales del barbero y los reserva', async () => {
+  it('Dado una cita con antelación suficiente, Cuando reprograma, Entonces ve horarios reales del barbero y los reserva', async () => {
     const cita = citaEn(72)
-    vi.mocked(reprogramarCitaApi).mockResolvedValue({ ...cita, inicio: 'nuevo' })
+    vi.mocked(reprogramarCitaApi).mockResolvedValue(cita)
     const user = userEvent.setup()
     mostrar([cita])
-    await user.click(await screen.findByRole('button', { name: 'Reprogramar' }))
+    await user.click(await screen.findByRole('button', { name: /reprogramar/i }))
 
-    // Pide la disponibilidad del barbero de ESA cita, con la duración de su servicio
+    const dialogo = await screen.findByRole('dialog')
+    expect(dialogo).toHaveAccessibleName(/reprogramar cita/i)
+    await user.click(screen.getAllByRole('button', { pressed: false })[0])
+
     await waitFor(() => expect(listarFranjas).toHaveBeenCalled())
     const [barberoId, fecha, duracion] = vi.mocked(listarFranjas).mock.calls[0]
     expect(barberoId).toBe(9)
     expect(fecha).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     expect(duracion).toBe(45)
 
-    // Y solo ofrece los horarios que devolvió el backend
-    const modal = screen.getByText('Reprogramar Cita').closest('div')!.parentElement!
-    await user.click(await within(modal.parentElement!).findByText('02:30 PM'))
-    expect(within(modal.parentElement!).queryByText('10:00 AM')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Confirmar Cambio' }))
+    await user.click(await screen.findByRole('button', { name: 'Hora 14:30' }))
+    expect(screen.queryByRole('button', { name: 'Hora 10:00' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /confirmar cambio/i }))
 
-    // El nuevo horario viaja con la zona de Colombia, como exige el backend
     await waitFor(() => expect(reprogramarCitaApi).toHaveBeenCalled())
     const [citaEnviada, nuevoInicio] = vi.mocked(reprogramarCitaApi).mock.calls[0]
     expect(citaEnviada.id).toBe(cita.id)
     expect(nuevoInicio).toBe(`${fecha}T14:30:00-05:00`)
+    expect(await screen.findByText(/cita reprogramada/i)).toBeInTheDocument()
   })
 
-  it('Dado un día sin horarios libres, Cuando se consulta, Entonces se le avisa', async () => {
+  it('Dado un barbero que no atiende los domingos, Cuando reprograma, Entonces no se ofrece ningún domingo', async () => {
+    const user = userEvent.setup()
+    mostrar([citaEn(72, 1, [0, 1, 2, 3, 4, 5])])
+    await user.click(await screen.findByRole('button', { name: /reprogramar/i }))
+    await screen.findByRole('dialog')
+
+    expect(screen.getAllByRole('button', { pressed: false })).toHaveLength(7)
+    expect(screen.queryByText(/^dom$/i)).not.toBeInTheDocument()
+  })
+
+  it('Dado un día sin horarios libres, Cuando se consulta, Entonces se le avisa y no puede confirmar', async () => {
     vi.mocked(listarFranjas).mockResolvedValue([])
     const user = userEvent.setup()
     mostrar([citaEn(72)])
-    await user.click(await screen.findByRole('button', { name: 'Reprogramar' }))
+    await user.click(await screen.findByRole('button', { name: /reprogramar/i }))
+    await screen.findByRole('dialog')
+    await user.click(screen.getAllByRole('button', { pressed: false })[0])
 
     expect(await screen.findByText(/No hay horarios disponibles/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Confirmar Cambio' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /confirmar cambio/i })).toBeDisabled()
   })
 
-  it('Dado una cita con 12 h o menos, Cuando pulsa Reprogramar, Entonces no se permite y se explica por qué', async () => {
-    const user = userEvent.setup()
-    mostrar([citaEn(5)])
+  it('Dado que falta menos que la antelación mínima, Cuando ve su cita, Entonces Reprogramar está deshabilitado con la explicación dinámica', async () => {
+    mostrar([citaEn(1)])
 
-    await user.click(await screen.findByRole('button', { name: 'Reprogramar' }))
-
-    expect(
-      await screen.findByText(/No se puede reprogramar la cita con menos de 12 horas/),
-    ).toBeInTheDocument()
-    expect(listarFranjas).not.toHaveBeenCalled()
+    expect(await screen.findByRole('button', { name: /reprogramar/i })).toBeDisabled()
+    expect(screen.getByText(/Faltan menos de 2 horas/)).toBeInTheDocument()
+    expect(screen.queryByText(/12 horas/)).not.toBeInTheDocument()
   })
 
-  it('Dado una cita con 12 h o menos, Cuando pulsa Cancelar, Entonces se permite avisando que será tardía', async () => {
+  it('Dado que falta menos de la antelación, Cuando cancela, Entonces se avisa antes y queda un aviso de éxito con la nota de tardía', async () => {
     vi.mocked(cancelarCitaApi).mockResolvedValue({ tardia: true })
     const user = userEvent.setup()
-    mostrar([citaEn(5)])
+    mostrar([citaEn(1)])
 
-    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
-
-    expect(screen.getByText(/se registrará como tardía/)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Sí, cancelar' }))
+    await user.click(await screen.findByRole('button', { name: /^cancelar$/i }))
+    expect(screen.getByRole('dialog')).toHaveTextContent(/cancelación tardía/)
+    await user.click(screen.getByRole('button', { name: /sí, cancelar cita/i }))
 
     await waitFor(() => expect(cancelarCitaApi).toHaveBeenCalledWith(1))
-    expect(await screen.findByText(/cancelación tardía/)).toBeInTheDocument()
+    const aviso = await screen.findByRole('status')
+    expect(aviso).toHaveTextContent(/cita cancelada/i)
+    expect(aviso).toHaveTextContent(/cancelación tardía/i)
   })
 
-  it('Dado una cita con más de 12 h, Cuando la cancela, Entonces desaparece de la lista sin aviso de tardía', async () => {
+  it('Dado una cita con antelación suficiente, Cuando la cancela, Entonces el aviso es de éxito sin nota de tardía', async () => {
     vi.mocked(cancelarCitaApi).mockResolvedValue({ tardia: false })
     const user = userEvent.setup()
     mostrar([citaEn(72)])
 
-    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
-    expect(screen.queryByText(/se registrará como tardía/)).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Sí, cancelar' }))
+    await user.click(await screen.findByRole('button', { name: /^cancelar$/i }))
+    expect(screen.getByRole('dialog')).not.toHaveTextContent(/cancelación tardía/)
+    await user.click(screen.getByRole('button', { name: /sí, cancelar cita/i }))
 
-    await waitFor(() =>
-      expect(screen.getByText(/No tienes citas programadas/)).toBeInTheDocument(),
-    )
-    expect(screen.queryByText(/cancelación tardía/)).not.toBeInTheDocument()
+    const aviso = await screen.findByRole('status')
+    expect(aviso).toHaveTextContent(/cita cancelada/i)
+    expect(aviso).not.toHaveTextContent(/tardía/i)
+    expect(screen.getByText(/No tienes citas programadas/)).toBeInTheDocument()
   })
 })

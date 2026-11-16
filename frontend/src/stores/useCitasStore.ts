@@ -11,7 +11,7 @@ interface CitasState {
   isLoading: boolean
   error: string | null
   fetchMisCitas: () => Promise<void>
-  /** Devuelve si la cancelación quedó registrada como tardía (12 h o menos). */
+  /** Devuelve si la cancelación quedó registrada como tardía (la antelación mínima o menos). */
   cancelarCita: (citaId: number | string) => Promise<{ tardia: boolean }>
   reprogramarCita: (citaId: number | string, nuevoInicio: string) => Promise<void>
 }

@@ -82,10 +82,16 @@ class ServicioDeCitaSerializer(serializers.ModelSerializer):
 
 
 class BarberoDeCitaSerializer(serializers.ModelSerializer):
+    working_days = serializers.SerializerMethodField()
+
     class Meta:
         model = Barbero
-        fields = ["id", "name"]
+        fields = ["id", "name", "working_days"]
         read_only_fields = fields
+
+    def get_working_days(self, barbero) -> list[int]:
+        """Dias que atiende (0 lunes a 6 domingo): el modal de reprogramar solo ofrece esos."""
+        return sorted({h.weekday for h in barbero.horarios.all() if h.is_active})
 
 
 class CitaPerfilSerializer(serializers.ModelSerializer):

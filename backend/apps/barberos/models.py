@@ -24,6 +24,12 @@ class Barbero(models.Model):
         help_text="Cuenta con la que el barbero inicia sesion (HU-06).",
     )
     name = models.CharField(max_length=150)
+    servicios = models.ManyToManyField(
+        "catalogo.Servicio",
+        blank=True,
+        related_name="barberos",
+        help_text="Servicios que realiza este barbero (los asigna el admin).",
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -132,6 +138,20 @@ class PortfolioBarbero(models.Model):
         Barbero,
         on_delete=models.CASCADE,
         related_name="portfolio_images",
+    )
+    servicio = models.ForeignKey(
+        "catalogo.Servicio",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="fotos_portafolio",
+        help_text="Corte del catalogo (precio y descripcion los pone el admin).",
+    )
+    nota = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+        help_text="Comentario propio del barbero sobre este trabajo.",
     )
     image_url = models.URLField(max_length=500)
     storage_path = models.CharField(max_length=512, unique=True)

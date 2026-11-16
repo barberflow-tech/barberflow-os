@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { BarberosManager } from '@/components/admin/BarberosManager'
 import { RolesManager } from '@/components/admin/RolesManager'
 import { ServicesManager } from '@/components/admin/ServicesManager'
 import { RoleGuard } from '@/components/auth/RoleGuard'
@@ -19,6 +20,7 @@ export function App() {
         <Route path="/" element={<InicioPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/registro" element={<LoginPage />} />
+        <Route path="/restablecer" element={<LoginPage />} />
         <Route path="/reservar" element={<ReservarPage />} />
         <Route path="/no-autorizado" element={<NoAutorizadoPage />} />
 
@@ -34,6 +36,7 @@ export function App() {
         <Route element={<RoleGuard allowedRoles={['admin']} />}>
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin/servicios" element={<ServicesManager />} />
+          <Route path="/admin/barberos" element={<BarberosManager />} />
           <Route path="/admin/usuarios" element={<RolesManager />} />
         </Route>
 

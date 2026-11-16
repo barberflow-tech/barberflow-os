@@ -1,4 +1,4 @@
-import { CalendarPlus, Scissors, UserCog, type LucideIcon } from 'lucide-react'
+import { CalendarPlus, Scissors, UserCog, Users, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { AdminShell } from '@/components/admin/AdminShell'
 import { BloqueosManager } from '@/components/admin/BloqueosManager' // 1. Nuevo import
@@ -10,6 +10,12 @@ const secciones: { to: string; titulo: string; detalle: string; icono: LucideIco
       titulo: 'Catálogo de servicios',
       detalle: 'Define nombre, precio, duración y categoría de cada servicio.',
       icono: Scissors,
+    },
+    {
+      to: '/admin/barberos',
+      titulo: 'Servicios por barbero',
+      detalle: 'Elige qué servicios realiza cada barbero y qué puede publicar.',
+      icono: Users,
     },
     {
       to: '/admin/usuarios',

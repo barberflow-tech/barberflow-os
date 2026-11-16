@@ -4,8 +4,10 @@ from .views import (
     LoginView,
     LogoutView,
     ProtectedTestView,
+    RecuperarContrasenaView,
     RefreshView,
     RegistroView,
+    RestablecerContrasenaView,
     RolDeUsuarioView,
     UsuariosView,
 )
@@ -19,6 +21,16 @@ urlpatterns = [
     re_path(r"^auth/login/?$", LoginView.as_view(), name="login"),
     re_path(r"^auth/logout/?$", LogoutView.as_view(), name="logout"),
     re_path(r"^auth/refresh/?$", RefreshView.as_view(), name="refresh"),
+    re_path(
+        r"^auth/password-reset/?$",
+        RecuperarContrasenaView.as_view(),
+        name="password-reset",
+    ),
+    re_path(
+        r"^auth/password-reset/confirm/?$",
+        RestablecerContrasenaView.as_view(),
+        name="password-reset-confirm",
+    ),
     re_path(
         r"^auth/protected-test/?$", ProtectedTestView.as_view(), name="protected-test"
     ),

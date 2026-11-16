@@ -31,7 +31,11 @@ const inicial = {
 
 export const useReservaWizardStore = create<ReservaWizardState>((set, get) => ({
   ...inicial,
-  seleccionarServicio: (servicio) => set({ servicio }),
+  seleccionarServicio: (servicio) => {
+    if (get().servicio?.id === servicio.id) return
+    // Cada servicio tiene sus propios barberos: el elegido antes puede no aplicar.
+    set({ servicio, barbero: null, fecha: null, hora: null })
+  },
   seleccionarBarbero: (barbero) => {
     if (get().barbero?.id === barbero.id) return
     set({ barbero, fecha: null, hora: null })

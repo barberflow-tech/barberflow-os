@@ -19,6 +19,7 @@ from rest_framework.test import APIClient
 
 from apps.barberias.models import Barberia
 from apps.barberos.models import Barbero, PortfolioBarbero
+from apps.catalogo.models import Servicio
 
 URL = "/api/v1/barbers/me/portfolio"
 LIMITE = 5 * 1024 * 1024
@@ -37,15 +38,26 @@ def storage_env(monkeypatch):
 @pytest.fixture
 def barbero(make_user):
     barberia = Barberia.objects.create(name="Barberia Centro", is_active=True)
-    return Barbero.objects.create(
+    barbero = Barbero.objects.create(
         barberia=barberia, name="Juan", user=make_user("barbero")
     )
+    # Subir una foto exige un servicio asignado al barbero (SCRUM-70/HU-07).
+    barbero.servicios.add(
+        Servicio.objects.create(
+            barberia=barberia,
+            name="Fade clasico",
+            price="35000.00",
+            duration_minutes=45,
+        )
+    )
+    return barbero
 
 
 @pytest.fixture
 def api(barbero):
     api = APIClient()
     api.force_authenticate(user=barbero.user)
+    api.servicio_id = barbero.servicios.get().pk
     return api
 
 
@@ -69,7 +81,9 @@ def _archivo(contenido, nombre="foto.png", tipo="image/png"):
 
 
 def _subir(api, archivo):
-    return api.post(URL, {"image": archivo}, format="multipart")
+    return api.post(
+        URL, {"image": archivo, "servicio": api.servicio_id}, format="multipart"
+    )
 
 
 # --- FILE-01: formatos validos ------------------------------------------
@@ -234,10 +248,12 @@ def test_file06_cinco_subidas_simultaneas_crean_cinco_registros_distintos(barber
     barrera = threading.Barrier(5)
     codigos = [None] * 5
     contenido = _imagen()
+    servicio_id = barbero.servicios.get().pk
 
     def subir(indice):
         api = APIClient()
         api.force_authenticate(user=barbero.user)
+        api.servicio_id = servicio_id
         try:
             barrera.wait()
             codigos[indice] = _subir(

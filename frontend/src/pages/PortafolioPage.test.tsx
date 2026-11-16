@@ -16,13 +16,20 @@ function respuesta(cuerpo: unknown, status = 200) {
   return Promise.resolve(new Response(JSON.stringify(cuerpo), { status }))
 }
 
+/** Responde por URL: los servicios del barbero van aparte del portafolio. */
+function simular(portafolio: () => Promise<Response>) {
+  return vi.fn((url: string) =>
+    url.includes('/me/services') ? respuesta([]) : portafolio(),
+  )
+}
+
 describe('PortafolioPage', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('Dado un barbero con fotos, Cuando carga, Entonces muestra su portafolio real', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => respuesta([foto])),
+      simular(() => respuesta([{ ...foto, servicio: null, nota: '' }])),
     )
     render(<PortafolioPage />)
 
@@ -33,7 +40,7 @@ describe('PortafolioPage', () => {
   it('Dado un barbero sin fotos, Cuando carga, Entonces ofrece subir la primera', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => respuesta([])),
+      simular(() => respuesta([])),
     )
     render(<PortafolioPage />)
 
@@ -41,10 +48,11 @@ describe('PortafolioPage', () => {
   })
 
   it('Dado un fallo del servidor, Cuando carga, Entonces avisa y permite reintentar', async () => {
-    const fetchMock = vi
+    const portafolio = vi
       .fn()
       .mockImplementationOnce(() => respuesta({}, 403))
-      .mockImplementationOnce(() => respuesta([foto]))
+      .mockImplementationOnce(() => respuesta([{ ...foto, servicio: null, nota: '' }]))
+    const fetchMock = simular(portafolio)
     vi.stubGlobal('fetch', fetchMock)
     render(<PortafolioPage />)
 

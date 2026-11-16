@@ -1,7 +1,7 @@
 import '@fontsource-variable/inter'
 import '@fontsource/barlow-condensed/600.css'
 import '@fontsource/barlow-condensed/700.css'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { LoginForm } from '@/components/auth/LoginForm'
 import { Footer } from '@/components/layout/Footer'
 import { Navbar } from '@/components/layout/Navbar'
@@ -13,6 +13,14 @@ export function LoginPage() {
   const user = useAuthStore((state) => state.user)
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+
+  // /restablecer?uid=…&token=…: enlace del correo de recuperación. Sin ambos datos
+  // el enlace está incompleto y se muestra el login normal.
+  const uid = params.get('uid')
+  const token = params.get('token')
+  const restablecer =
+    pathname === '/restablecer' && uid && token ? { uid, token } : undefined
 
   // Con la sesión ya iniciada (o restaurada por la cookie) no se vuelve a mostrar el login.
   if (user) {
@@ -24,6 +32,7 @@ export function LoginPage() {
       <Navbar />
       <main className="flex flex-1 items-center justify-center p-4 sm:p-8">
         <LoginForm
+          restablecer={restablecer}
           pasoInicial={pathname === '/registro' ? 'register' : 'login'}
           onPasoChange={(paso) =>
             navigate(paso === 'register' ? '/registro' : '/login', { replace: true })

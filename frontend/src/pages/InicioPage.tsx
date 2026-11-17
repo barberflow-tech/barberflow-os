@@ -144,8 +144,15 @@ export function InicioPage() {
         <div className="bf-cinta" aria-hidden="true" />
 
         {/* Servicios */}
-        <section id="servicios" className="scroll-mt-16 py-16 sm:py-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <section
+          id="servicios"
+          className="relative scroll-mt-16 overflow-hidden py-16 sm:py-20"
+        >
+          <div
+            className="bf-patron-rayas pointer-events-none absolute inset-0 opacity-40"
+            aria-hidden="true"
+          />
+          <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
             <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest text-[#B3263B] uppercase dark:text-[#E5283C]">
               <Scissors className="size-4" aria-hidden="true" />
               El catálogo
@@ -163,9 +170,13 @@ export function InicioPage() {
         {/* Cómo funciona */}
         <section
           id="como-funciona"
-          className="scroll-mt-16 border-y border-[#101820]/10 bg-[#FAFAF8] py-16 sm:py-20 dark:border-[#F7F1E8]/10 dark:bg-[#16202B]"
+          className="relative scroll-mt-16 overflow-hidden border-y border-[#101820]/10 bg-[#FAFAF8] py-16 sm:py-20 dark:border-[#F7F1E8]/10 dark:bg-[#16202B]"
         >
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div
+            className="bf-patron-rayas pointer-events-none absolute inset-0 opacity-40"
+            aria-hidden="true"
+          />
+          <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
             <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest text-[#174A7E] uppercase dark:text-[#5FA3E0]">
               <SlidersHorizontal className="size-4" aria-hidden="true" />
               El método

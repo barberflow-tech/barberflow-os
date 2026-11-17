@@ -1,29 +1,37 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAdminUser
+from rest_framework.permissions import SAFE_METHODS, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from apps.usuarios.models import Rol, rol_de
+from apps.usuarios.permissions import SoloAdministrador
 
 from .context import obtener_barberia_catalogo
 from .models import Servicio
 from .serializers import ServicioSerializer
 
 
+def _es_administrador(usuario) -> bool:
+    """True si el rol de la aplicación es admin (no se mira is_staff, HU-09)."""
+    return rol_de(usuario) == Rol.ADMIN
+
+
 class ServicioListCreateView(APIView):
-    """GET público y POST administrativo para /api/v1/services."""
+    """GET público y POST solo del administrador para /api/v1/services."""
 
     def get_permissions(self):
         if self.request.method in SAFE_METHODS:
             return [AllowAny()]
-        return [IsAdminUser()]
+        return [SoloAdministrador()]
 
     def get(self, request):
         barberia = obtener_barberia_catalogo()
         servicios = Servicio.objects.filter(barberia=barberia)
         # El público solo ve los activos; el administrador ve también los
         # inactivos para poder reactivarlos (igual que en el detalle).
-        if not request.user.is_staff:
+        if not _es_administrador(request.user):
             servicios = servicios.filter(is_active=True)
         servicios = servicios.order_by("name")
         serializer = ServicioSerializer(servicios, many=True)
@@ -40,17 +48,17 @@ class ServicioListCreateView(APIView):
 
 
 class ServicioDetailView(APIView):
-    """GET público y PUT/DELETE administrativos para /api/v1/services/{id}."""
+    """GET público y PUT/DELETE solo del administrador para /api/v1/services/{id}."""
 
     def get_permissions(self):
         if self.request.method in SAFE_METHODS:
             return [AllowAny()]
-        return [IsAdminUser()]
+        return [SoloAdministrador()]
 
     def get_object(self, request, pk, *, lock=False):
         barberia = obtener_barberia_catalogo()
         queryset = Servicio.objects.filter(barberia=barberia)
-        if not request.user.is_staff:
+        if not _es_administrador(request.user):
             queryset = queryset.filter(is_active=True)
         if lock:
             queryset = queryset.select_for_update()

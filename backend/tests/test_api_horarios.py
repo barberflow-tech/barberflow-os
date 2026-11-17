@@ -519,11 +519,8 @@ def test_sin_sesion_devuelve_401_en_todas_las_operaciones(barbero):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("rol", ["cliente", "barbero"])
-def test_cliente_y_barbero_reciben_403_y_no_cambian_el_horario(
-    make_user, barbero, semana, rol
-):
-    usuario = make_user(rol, email=f"{rol}.prueba@barberflow.test")
+def test_cliente_recibe_403_y_no_cambia_el_horario(make_user, barbero, semana):
+    usuario = make_user("cliente", email="cliente.prueba@barberflow.test")
     Membresia.objects.create(user=usuario, barberia=barbero.barberia)
 
     for metodo, url, cuerpo in todas_las_operaciones(barbero.pk):
@@ -531,6 +528,52 @@ def test_cliente_y_barbero_reciben_403_y_no_cambian_el_horario(
         assert respuesta.status_code == 403, (metodo, url)
 
     assert HorarioBarbero.objects.filter(barbero=barbero).count() == 2
+
+
+@pytest.mark.django_db
+def test_barbero_recibe_403_al_escribir_y_no_cambia_el_horario(
+    make_user, barbero, semana
+):
+    # Escribir el horario sigue siendo solo del administrador (HU-09); el
+    # barbero unicamente puede VER el suyo (GET), que se prueba aparte.
+    usuario = make_user("barbero", email="barbero.prueba@barberflow.test")
+    Membresia.objects.create(user=usuario, barberia=barbero.barberia)
+    barbero.user = usuario
+    barbero.save()
+
+    for metodo, url, cuerpo in todas_las_operaciones(barbero.pk):
+        if metodo == "get":
+            continue
+        respuesta = ejecutar(autenticado(usuario), metodo, url, cuerpo)
+        assert respuesta.status_code == 403, (metodo, url)
+
+    assert HorarioBarbero.objects.filter(barbero=barbero).count() == 2
+
+
+@pytest.mark.django_db
+def test_barbero_ve_su_propio_horario(make_user, barbero, semana):
+    usuario = make_user("barbero", email="barbero.prueba@barberflow.test")
+    Membresia.objects.create(user=usuario, barberia=barbero.barberia)
+    barbero.user = usuario
+    barbero.save()
+
+    respuesta = autenticado(usuario).get(url_semana(barbero.pk))
+
+    assert respuesta.status_code == 200
+    assert [dia["weekday"] for dia in respuesta.json()["days"]] == [LUNES, VIERNES]
+
+
+@pytest.mark.django_db
+def test_barbero_no_ve_el_horario_de_otro_barbero(make_user, barbero, barberia):
+    usuario = make_user("barbero", email="barbero.prueba@barberflow.test")
+    Membresia.objects.create(user=usuario, barberia=barberia)
+    barbero.user = usuario
+    barbero.save()
+    otro_barbero = Barbero.objects.create(barberia=barberia, name="Otro")
+
+    respuesta = autenticado(usuario).get(url_semana(otro_barbero.pk))
+
+    assert respuesta.status_code == 403
 
 
 @pytest.mark.django_db

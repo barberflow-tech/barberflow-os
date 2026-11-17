@@ -12,7 +12,7 @@ from rest_framework.exceptions import (
     ValidationError,
 )
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -21,7 +21,7 @@ from apps.barberos.context import barbero_de
 from apps.barberos.models import Barbero, PortfolioBarbero
 from apps.catalogo.context import obtener_barberia_catalogo
 from apps.catalogo.models import Servicio
-from apps.usuarios.permissions import HasRole, SoloBarbero
+from apps.usuarios.permissions import AdminOBarbero, SoloAdministrador, SoloBarbero
 
 from . import services_horarios
 from .serializers import (
@@ -173,6 +173,8 @@ def errores_de_horario_a_http():
         services_horarios.HorarioNoEncontradoError,
     ) as exc:
         raise NotFound(str(exc)) from exc
+    except services_horarios.HorarioAjenoError as exc:
+        raise PermissionDenied(str(exc)) from exc
     except services_horarios.BarberoInactivoError as exc:
         raise ValidationError({"detail": str(exc)}) from exc
     except services_horarios.HorarioInvalidoError as exc:
@@ -188,9 +190,13 @@ def errores_de_horario_a_http():
 
 
 class HorarioBarberoBaseView(APIView):
-    """Base de las vistas de horarios: solo el administrador de la barbería."""
+    """Base de las vistas de horarios: por defecto, solo el administrador.
 
-    permission_classes = [IsAuthenticated, HasRole("admin")]
+    El barbero puede únicamente VER su propio horario (GET de la semana);
+    ver `HorarioSemanalView.get_permissions`.
+    """
+
+    permission_classes = [IsAuthenticated, SoloAdministrador]
 
     @staticmethod
     def barberia_del_admin(usuario):
@@ -207,9 +213,21 @@ class HorarioSemanalView(HorarioBarberoBaseView):
     trabajo) y es idempotente. 401 sin sesión, 403 si no es admin, 404 si el
     barbero no existe o es de otra barbería, 400 si algún día no es válido y
     409 si el cambio deja citas futuras fuera del horario.
+
+    GET también lo puede hacer un barbero, pero solo con su propio ID (403 con
+    el de otro); PUT sigue siendo solo del administrador.
     """
 
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [IsAuthenticated(), AdminOBarbero()]
+        return super().get_permissions()
+
     def get(self, request, barbero_id: int):
+        with errores_de_horario_a_http():
+            services_horarios.validar_horario_propio(
+                usuario=request.user, barbero_id=int(barbero_id)
+            )
         barberia = self.barberia_del_admin(request.user)
         with errores_de_horario_a_http():
             barbero, dias = services_horarios.obtener_horario_semanal(
@@ -273,7 +291,7 @@ class HorarioDiaView(HorarioBarberoBaseView):
 class MisServiciosView(APIView):
     """Servicios activos que el admin asignó al barbero autenticado."""
 
-    permission_classes = [IsAuthenticated, HasRole("barbero")]
+    permission_classes = [IsAuthenticated, SoloBarbero]
 
     def get(self, request):
         barbero = barbero_de(request.user)
@@ -317,7 +335,7 @@ class BarberoListView(APIView):
 class BarberoServiciosAdminView(APIView):
     """El administrador define qué servicios realiza cada barbero."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated, SoloAdministrador]
 
     def put(self, request, pk):
         barbero = get_object_or_404(_barberos_visibles(), pk=pk)

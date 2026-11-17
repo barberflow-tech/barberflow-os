@@ -21,7 +21,9 @@ from django.utils import timezone
 from apps.barberias.models import Barberia
 from apps.citas.models import Cita
 from apps.citas.services import ESTADOS_MODIFICABLES
+from apps.usuarios.models import Rol, rol_de
 
+from .context import barbero_de
 from .jornada import ZONA_HORARIA_BARBERIA, motivo_franja_fuera_de_jornada
 from .models import Barbero, HorarioBarbero
 
@@ -49,6 +51,10 @@ class BarberoInactivoError(HorarioError):
 
 class HorarioNoEncontradoError(HorarioError):
     """El barbero no tiene horario ese dia de la semana."""
+
+
+class HorarioAjenoError(HorarioError):
+    """Un barbero intento ver el horario de otro barbero (HU-09)."""
 
 
 class HorarioInvalidoError(HorarioError):
@@ -194,6 +200,20 @@ def _rechazar_si_hay_citas_afectadas(
     conflictos = buscar_citas_afectadas(barbero, jornadas, ahora)
     if conflictos:
         raise CitasAfectadasError(conflictos)
+
+
+def validar_horario_propio(*, usuario, barbero_id: int) -> None:
+    """Un barbero solo puede ver SU horario; el administrador, el de cualquiera.
+
+    Se decide antes de consultar la barberia: el mismo 403 responde si el
+    barbero pedido existe o no, asi que no sirve para sondear IDs ajenos. Una
+    cuenta de barbero sin barbero activo vinculado no ve ningun horario.
+    """
+    if rol_de(usuario) != Rol.BARBERO:
+        return
+    propio = barbero_de(usuario)
+    if propio is None or propio.pk != barbero_id:
+        raise HorarioAjenoError("Solo puedes ver tu propio horario.")
 
 
 def obtener_horario_semanal(

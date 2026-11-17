@@ -19,6 +19,7 @@ type Enlace = {
 const enlaces: Enlace[] = [
   { to: '/admin', etiqueta: 'Panel', fin: true, roles: ['admin'] },
   { to: '/admin/servicios', etiqueta: 'Servicios', fin: false, roles: ['admin'] },
+  { to: '/admin/horarios', etiqueta: 'Horarios', fin: false, roles: ['admin'] },
   { to: '/admin/usuarios', etiqueta: 'Usuarios', fin: false, roles: ['admin'] },
 ]
 

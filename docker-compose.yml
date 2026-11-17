@@ -18,6 +18,24 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  # Recordatorios de citas (HU-05): ejecuta `enviar_recordatorios` cada 10 minutos.
+  # Es opcional y solo para pruebas locales (no arranca con `docker compose up`):
+  #   docker compose --profile recordatorios up -d recordatorios
+  # En Staging/produccion lo hace un Cron Job de Render (ver README).
+  recordatorios:
+    profiles: ["recordatorios"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: barberflow_recordatorios
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: sh -c "while true; do python manage.py enviar_recordatorios; sleep 600; done"
+
   # Servicio Frontend (React 19 + Vite)
   frontend:
     build:

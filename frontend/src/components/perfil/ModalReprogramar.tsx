@@ -1,11 +1,8 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
+import { SelectorFranjas } from '@/components/booking/SelectorFranjas'
 import { cn } from '@/lib/utils'
 import { proximosDiasLaborales } from '@/lib/diasLaborales'
-import {
-  listarFranjas,
-  type CitaConfirmada,
-  type FranjaHoraria,
-} from '@/lib/reservaApi'
+import type { CitaConfirmada } from '@/lib/reservaApi'
 import { botonPrimario, botonSecundario } from '@/components/booking/wizard/estilos'
 import { fechaLocal } from '@/components/booking/wizard/formato'
 import { Modal } from './Modal'
@@ -37,40 +34,8 @@ export function ModalReprogramar({ cita, onConfirmar, onCerrar }: Props) {
   )
   const [fecha, setFecha] = useState<string | null>(null)
   const [hora, setHora] = useState<string | null>(null)
-  const [franjas, setFranjas] = useState<FranjaHoraria[]>([])
-  const [cargando, setCargando] = useState(false)
-  const [errorFranjas, setErrorFranjas] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
-  // Si el cliente cambia de día antes de que responda la consulta anterior,
-  // esa respuesta tardía se descarta.
-  const consultaActual = useRef(0)
-
-  async function elegirDia(dia: string) {
-    const consulta = ++consultaActual.current
-    setFecha(dia)
-    setHora(null)
-    setFranjas([])
-    setErrorFranjas(null)
-    setCargando(true)
-    try {
-      const libres = await listarFranjas(
-        cita.barbero.id,
-        dia,
-        cita.servicio.duracionMin,
-      )
-      if (consulta === consultaActual.current)
-        setFranjas(libres.filter((f) => f.disponible))
-    } catch (err) {
-      if (consulta === consultaActual.current) {
-        setErrorFranjas(
-          err instanceof Error ? err.message : 'No se pudieron cargar los horarios.',
-        )
-      }
-    } finally {
-      if (consulta === consultaActual.current) setCargando(false)
-    }
-  }
 
   async function confirmar() {
     if (!fecha || !hora) return
@@ -120,7 +85,10 @@ export function ModalReprogramar({ cita, onConfirmar, onCerrar }: Props) {
                 key={d}
                 type="button"
                 aria-pressed={activo}
-                onClick={() => void elegirDia(d)}
+                onClick={() => {
+                  setFecha(d)
+                  setHora(null)
+                }}
                 className={cn(
                   'rounded-xl border py-2 text-center transition-colors',
                   activo
@@ -146,40 +114,20 @@ export function ModalReprogramar({ cita, onConfirmar, onCerrar }: Props) {
       <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/55">
         2. Elige la hora
       </p>
-      {!fecha ? (
+      {fecha ? (
+        <SelectorFranjas
+          barberoId={cita.barbero.id}
+          fecha={fecha}
+          duracionMin={cita.servicio.duracionMin}
+          hora={hora}
+          onElegir={setHora}
+          ocultarOcupadas
+          className="grid grid-cols-3 gap-2 sm:grid-cols-4"
+        />
+      ) : (
         <p className="text-sm text-slate-500 dark:text-white/55">
           Primero elige un día.
         </p>
-      ) : cargando ? (
-        <p className="text-sm text-slate-500 dark:text-white/55">Cargando horarios…</p>
-      ) : errorFranjas ? (
-        <p role="alert" className="text-sm text-[#E5283C] dark:text-red-300">
-          {errorFranjas}
-        </p>
-      ) : franjas.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-white/55">
-          No hay horarios disponibles este día. Prueba con otro.
-        </p>
-      ) : (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {franjas.map((f) => (
-            <button
-              key={f.hora}
-              type="button"
-              aria-label={`Hora ${f.hora}`}
-              aria-pressed={hora === f.hora}
-              onClick={() => setHora(f.hora)}
-              className={cn(
-                'rounded-xl border py-2 text-sm font-semibold transition-colors',
-                hora === f.hora
-                  ? 'border-[#E5283C] bg-[#E5283C] text-white dark:border-[#d7b36a] dark:bg-[#d7b36a] dark:text-[#0f1210]'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-[#E5283C] dark:border-white/10 dark:bg-transparent dark:text-white/80 dark:hover:border-[#d7b36a]',
-              )}
-            >
-              {f.hora}
-            </button>
-          ))}
-        </div>
       )}
 
       {error && (

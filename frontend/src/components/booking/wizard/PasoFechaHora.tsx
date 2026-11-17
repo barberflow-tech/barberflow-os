@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { SelectorFranjas } from '@/components/booking/SelectorFranjas'
 import { atiendeEl, primerDiaLaboral } from '@/lib/diasLaborales'
-import { listarFranjas, ReservaError, type FranjaHoraria } from '@/lib/reservaApi'
 import { useReservaWizardStore } from '@/stores/useReservaWizardStore'
 import { cn } from '@/lib/utils'
 import { aIso, diaMes, fechaLocal } from './formato'
@@ -23,12 +23,6 @@ export function PasoFechaHora() {
   const hora = useReservaWizardStore((s) => s.hora)
   const seleccionarFecha = useReservaWizardStore((s) => s.seleccionarFecha)
   const seleccionarHora = useReservaWizardStore((s) => s.seleccionarHora)
-  const [cargado, setCargado] = useState<{
-    clave: string
-    franjas: FranjaHoraria[]
-    error?: ReservaError
-  } | null>(null)
-
   const hoy = useMemo(() => aIso(new Date()), [])
   const [mesVisto, setMesVisto] = useState(() => {
     const base = fechaLocal(fecha ?? hoy)
@@ -46,30 +40,6 @@ export function PasoFechaHora() {
     if (primero) seleccionarFecha(primero)
   }, [fecha, hoy, diasLaborales, seleccionarFecha])
 
-  useEffect(() => {
-    if (!barbero || !fecha || !atiendeEl(barbero.diasLaborales, fecha)) return
-    let activo = true
-    const clave = `${barbero.id}|${fecha}`
-    listarFranjas(barbero.id, fecha, servicio?.duracionMin)
-      .then((franjas) => {
-        if (activo) setCargado({ clave, franjas })
-      })
-      .catch((e: unknown) => {
-        if (!activo) return
-        const error =
-          e instanceof ReservaError
-            ? e
-            : new ReservaError('No se pudieron cargar los horarios.')
-        setCargado({ clave, franjas: [], error })
-      })
-    return () => {
-      activo = false
-    }
-  }, [barbero, fecha, servicio?.duracionMin])
-
-  const vigente =
-    cargado && cargado.clave === `${barbero?.id}|${fecha}` ? cargado : null
-  const franjas = vigente ? vigente.franjas : null
   const diaCerrado = !!fecha && !atiendeEl(diasLaborales, fecha)
   const celdas = celdasDelMes(mesVisto.getFullYear(), mesVisto.getMonth())
   const mesActual = hoy.slice(0, 7) === aIso(mesVisto).slice(0, 7)
@@ -178,44 +148,15 @@ export function PasoFechaHora() {
           <p className="text-sm text-slate-500 dark:text-white/55">
             {barbero?.nombre} no atiende este día. Elige otra fecha.
           </p>
-        ) : !franjas ? (
-          <p className="text-sm text-slate-500 dark:text-white/55">
-            Cargando horarios…
-          </p>
-        ) : vigente?.error ? (
-          <p
-            role="alert"
-            className="rounded-xl bg-[#FEF2F3] dark:bg-[#d7b36a]/10 p-3 text-sm text-[#E5283C] dark:text-[#d7b36a]"
-          >
-            {vigente.error.message}
-          </p>
-        ) : franjas.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-white/55">
-            No hay horarios disponibles este día. Prueba con otra fecha u otro barbero.
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {franjas.map((f) => (
-              <button
-                key={f.hora}
-                type="button"
-                aria-label={`Hora ${f.hora}${f.disponible ? '' : ' (ocupada)'}`}
-                aria-pressed={hora === f.hora}
-                disabled={!f.disponible}
-                onClick={() => seleccionarHora(f.hora)}
-                className={cn(
-                  'h-11 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#151915] text-sm font-medium text-[#0B1B3A] dark:text-[#f4f1e9] transition-colors hover:border-slate-300 dark:hover:border-white/20',
-                  hora === f.hora &&
-                    'border-[#E5283C] dark:border-[#d7b36a] bg-[#FEF2F3] dark:bg-[#d7b36a]/10 text-[#E5283C] dark:text-[#d7b36a] hover:border-[#E5283C] dark:hover:border-[#d7b36a]',
-                  !f.disponible &&
-                    'cursor-not-allowed border-transparent bg-slate-50 dark:bg-white/5 text-slate-300 dark:text-white/30 hover:border-transparent',
-                )}
-              >
-                {f.hora}
-              </button>
-            ))}
-          </div>
-        )}
+        ) : barbero && fecha ? (
+          <SelectorFranjas
+            barberoId={barbero.id}
+            fecha={fecha}
+            duracionMin={servicio?.duracionMin}
+            hora={hora}
+            onElegir={seleccionarHora}
+          />
+        ) : null}
         <p className="mt-4 text-xs text-slate-400 dark:text-white/40">
           Hora local de Popayán, Colombia
         </p>

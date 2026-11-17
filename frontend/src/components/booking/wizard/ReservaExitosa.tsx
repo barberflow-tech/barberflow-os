@@ -15,7 +15,7 @@ export function ReservaExitosa({
   const hora = cita.inicio.slice(11, 16)
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-[#101820]/12 bg-[#F7F1E8] px-6 py-12 text-center shadow-[0_18px_40px_-22px_rgb(16_24_32_/_45%)] dark:border-[#F7F1E8]/12 dark:bg-[#16202B]">
+    <section className="relative overflow-hidden rounded-2xl border border-[#101820]/12 bg-[#FAFAF8] px-6 py-12 text-center shadow-[0_18px_40px_-22px_rgb(16_24_32_/_45%)] dark:border-[#F7F1E8]/12 dark:bg-[#16202B]">
       <div
         className="bf-patron-rayas pointer-events-none absolute inset-0 opacity-40"
         aria-hidden="true"

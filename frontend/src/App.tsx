@@ -4,6 +4,7 @@ import { HorariosManager } from '@/components/admin/HorariosManager'
 import { RolesManager } from '@/components/admin/RolesManager'
 import { ServicesManager } from '@/components/admin/ServicesManager'
 import { RoleGuard } from '@/components/auth/RoleGuard'
+import { AvisoSesionCerrada } from '@/components/layout/AvisoSesionCerrada'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import AdminPage from '@/pages/AdminPage'
 import BienvenidaPage from '@/pages/BienvenidaPage'
@@ -12,6 +13,7 @@ import InicioPage from '@/pages/InicioPage'
 import LoginPage from '@/pages/LoginPage'
 import NoAutorizadoPage from '@/pages/NoAutorizadoPage'
 import { PerfilPage } from '@/pages/PerfilPage'
+import PerfilAdminPage from '@/pages/PerfilAdminPage'
 import PortafolioPage from '@/pages/PortafolioPage'
 import ReservarPage from '@/pages/ReservarPage'
 
@@ -45,6 +47,7 @@ export function App() {
           <Route path="/admin/barberos" element={<BarberosManager />} />
           <Route path="/admin/horarios" element={<HorariosManager />} />
           <Route path="/admin/usuarios" element={<RolesManager />} />
+          <Route path="/admin/perfil" element={<PerfilAdminPage />} />
         </Route>
 
         {import.meta.env.DEV && (
@@ -53,6 +56,7 @@ export function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <AvisoSesionCerrada />
       <ThemeToggle />
     </>
   )

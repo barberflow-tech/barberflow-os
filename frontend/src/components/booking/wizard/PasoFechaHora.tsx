@@ -55,7 +55,7 @@ export function PasoFechaHora() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,320px)_1fr]">
-      <div className="rounded-2xl border border-[#101820]/12 bg-[#F7F1E8] p-4 dark:border-[#F7F1E8]/12 dark:bg-[#101820]/40">
+      <div className="rounded-2xl border border-[#101820]/12 bg-[#FAFAF8] p-4 dark:border-[#F7F1E8]/12 dark:bg-[#101820]/40">
         <div className="mb-3 flex items-center justify-between">
           <button
             type="button"
@@ -106,7 +106,7 @@ export function PasoFechaHora() {
                 disabled={pasado || !delMes || cerrado}
                 onClick={() => seleccionarFecha(iso)}
                 className={cn(
-                  'aspect-square rounded-lg text-xs font-medium text-[#101820] transition-colors hover:bg-[#101820]/8 disabled:hover:bg-transparent dark:text-[#F7F1E8] dark:hover:bg-[#F7F1E8]/10',
+                  'aspect-square rounded-lg text-xs font-medium text-[#101820] transition-colors hover:bg-[#101820]/8 disabled:hover:bg-transparent dark:text-[#F7F1E8] dark:hover:bg-[#FAFAF8]/10',
                   (pasado || !delMes || cerrado) &&
                     'text-[#101820]/25 dark:text-[#F7F1E8]/25',
                   cerrado && delMes && !pasado && 'line-through',

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useBloqueosStore } from '@/stores/useBloqueosStore'
-import type { Bloqueo } from '@/lib/reservaApi'
+import { listarBarberos, type Barbero, type Bloqueo } from '@/lib/reservaApi'
 import {
   Plus,
   Trash2,
@@ -301,6 +301,46 @@ function SelectorHorarios({
   )
 }
 
+const plural = (n: number, uno: string, varios: string) =>
+  `${n} ${n === 1 ? uno : varios}`
+
+/** Qué pasó con las citas que el bloqueo afectó: a quién se avisó y a quién hay que llamar. */
+function ResumenCitasAfectadas({
+  id,
+  resumen,
+}: {
+  id: Bloqueo['id']
+  resumen: NonNullable<Bloqueo['citasAfectadas']>
+}) {
+  return (
+    <div
+      data-testid={`citas-afectadas-${id}`}
+      className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-900 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200"
+    >
+      <p className="font-bold">
+        {plural(resumen.total, 'cita afectada', 'citas afectadas')}
+      </p>
+      <p className="mt-0.5">
+        {plural(resumen.avisadas, 'avisada', 'avisadas')}
+        {resumen.pendientes > 0 &&
+          ` · ${plural(resumen.pendientes, 'pendiente', 'pendientes')} de aviso`}
+      </p>
+      {resumen.sinCanal.length > 0 && (
+        <div className="mt-1.5">
+          <p className="font-semibold">Sin correo: llámalos para avisarles</p>
+          <ul className="mt-0.5 space-y-0.5">
+            {resumen.sinCanal.map((c) => (
+              <li key={c.id}>
+                {c.nombre} · {c.celular}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function BloqueosManager() {
   const {
     bloqueos,
@@ -314,6 +354,8 @@ export function BloqueosManager() {
 
   const [modalAbierto, setModalAbierto] = useState(false)
   const [bloqueoEditando, setBloqueoEditando] = useState<Bloqueo['id'] | null>(null)
+  const [barberos, setBarberos] = useState<Barbero[]>([])
+  const [barberoId, setBarberoId] = useState('')
   const [fecha, setFecha] = useState('')
   const [horaInicio, setHoraInicio] = useState('')
   const [horaFin, setHoraFin] = useState('')
@@ -330,7 +372,24 @@ export function BloqueosManager() {
     fetchBloqueos().catch(() => undefined)
   }, [fetchBloqueos])
 
+  // Los bloqueos son de un barbero concreto: el admin lo elige de la lista real.
+  useEffect(() => {
+    let activo = true
+    listarBarberos()
+      .then((lista) => {
+        if (activo) setBarberos(lista)
+      })
+      .catch(() => undefined)
+    return () => {
+      activo = false
+    }
+  }, [])
+
+  const nombreDelBarbero = (id: Bloqueo['barberoId']) =>
+    barberos.find((b) => String(b.id) === String(id))?.nombre ?? `Barbero ${id}`
+
   const limpiarFormulario = () => {
+    setBarberoId('')
     setFecha('')
     setHoraInicio('')
     setHoraFin('')
@@ -347,6 +406,7 @@ export function BloqueosManager() {
   }
 
   const abrirEdicion = (bloqueo: Bloqueo) => {
+    setBarberoId(String(bloqueo.barberoId))
     setFecha(bloqueo.fecha)
     setHoraInicio(bloqueo.horaInicio)
     setHoraFin(bloqueo.horaFin)
@@ -390,9 +450,14 @@ export function BloqueosManager() {
       return
     }
 
+    if (!barberoId) {
+      setErrorLocal('Selecciona el barbero al que se le bloquea la agenda.')
+      return
+    }
+
     try {
       const datosBloqueo = {
-        barberoId: 1,
+        barberoId: Number(barberoId),
         fecha,
         horaInicio: inicio,
         horaFin: fin,
@@ -632,6 +697,9 @@ export function BloqueosManager() {
                           <h3 className="break-words text-sm font-extrabold text-slate-900 dark:text-white">
                             {b.motivo}
                           </h3>
+                          <p className="mt-0.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                            <span>{nombreDelBarbero(b.barberoId)}</span>
+                          </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-1">
                           <button
@@ -671,6 +739,9 @@ export function BloqueosManager() {
                           </span>
                         </div>
                       </div>
+                      {b.citasAfectadas && b.citasAfectadas.total > 0 && (
+                        <ResumenCitasAfectadas id={b.id} resumen={b.citasAfectadas} />
+                      )}
                     </div>
                   </div>
                 </article>
@@ -730,6 +801,28 @@ export function BloqueosManager() {
               onSubmit={handleSubmit}
               className="space-y-5 px-5 py-5 sm:px-7 sm:py-6"
             >
+              <div>
+                <label
+                  htmlFor="barbero-bloqueo"
+                  className="mb-2 block text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400"
+                >
+                  Barbero
+                </label>
+                <select
+                  id="barbero-bloqueo"
+                  value={barberoId}
+                  onChange={(e) => setBarberoId(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-800 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-400/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                >
+                  <option value="">Selecciona un barbero</option>
+                  {barberos.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <SelectorFecha fecha={fecha} onChange={setFecha} />
 
               <div>
@@ -902,6 +995,7 @@ export function BloqueosManager() {
                   disabled={
                     isLoading ||
                     guardado ||
+                    !barberoId ||
                     !fecha ||
                     !motivo.trim() ||
                     (!diaCompleto && (!horaInicio || !horaFin))

@@ -99,7 +99,7 @@ export function Dropzone({ onUpload, onTerminado }: DropzoneProps) {
   const subiendo = fotos.some((f) => f.estado === 'subiendo')
 
   return (
-    <div className="space-y-4 text-white">
+    <div className="space-y-4 text-[#101820] dark:text-white">
       <div
         data-testid="dropzone"
         onDragOver={(e) => {
@@ -113,24 +113,26 @@ export function Dropzone({ onUpload, onTerminado }: DropzoneProps) {
         }}
         onDrop={alSoltar}
         className={cn(
-          'flex flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-white/20 p-8 sm:p-12 hover:border-[#d7b36a]/60 bg-[#0f1210] text-center transition-colors',
-          arrastrando && 'border-[#d7b36a] bg-[#d7b36a]/5',
+          'flex flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-[#101820]/20 dark:border-white/20 p-8 sm:p-12 hover:border-[#E5283C]/60 bg-[#FAFAF8] dark:bg-[#101820] text-center transition-colors',
+          arrastrando && 'border-[#E5283C] bg-[#E5283C]/5',
         )}
       >
         <span
           aria-hidden="true"
-          className="mb-1 flex size-12 items-center justify-center rounded-full bg-white/[0.06] text-[#d7b36a]"
+          className="mb-1 flex size-12 items-center justify-center rounded-full bg-[#101820]/[0.06] dark:bg-white/[0.06] text-[#E5283C]"
         >
           <ImageUp className="size-5" />
         </span>
         <p className="text-sm font-semibold">
           Arrastra tus fotos aquí o selecciona archivos
         </p>
-        <p className="text-xs text-white/40">JPG, PNG o WebP · Tamaño máximo: 5 MB</p>
+        <p className="text-xs text-[#101820]/55 dark:text-white/40">
+          JPG, PNG o WebP · Tamaño máximo: 5 MB
+        </p>
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="mt-3 rounded-full border border-white/20 px-5 py-2 text-xs font-semibold transition-colors hover:border-[#d7b36a] hover:text-[#d7b36a]"
+          className="mt-3 rounded-full border border-[#101820]/20 dark:border-white/20 px-5 py-2 text-xs font-semibold transition-colors hover:border-[#E5283C] hover:text-[#E5283C]"
         >
           Seleccionar imagen
         </button>
@@ -152,7 +154,7 @@ export function Dropzone({ onUpload, onTerminado }: DropzoneProps) {
       {avisos.length > 0 && (
         <div
           role="alert"
-          className="flex gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300"
+          className="flex gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-700 dark:text-red-300"
         >
           <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <ul className="space-y-1">
@@ -168,7 +170,7 @@ export function Dropzone({ onUpload, onTerminado }: DropzoneProps) {
           {fotos.map((f) => (
             <li
               key={f.id}
-              className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#0f1210] p-2"
+              className="flex items-center gap-3 rounded-xl border border-[#101820]/10 dark:border-white/10 bg-[#FAFAF8] dark:bg-[#101820] p-2"
             >
               <img
                 src={f.url}
@@ -177,7 +179,7 @@ export function Dropzone({ onUpload, onTerminado }: DropzoneProps) {
               />
               <div className="min-w-0 flex-1 space-y-1">
                 <p className="truncate text-xs font-semibold">{f.archivo.name}</p>
-                <p className="text-[11px] text-white/50">
+                <p className="text-[11px] text-[#101820]/55 dark:text-white/50">
                   {formatearTamano(f.archivo.size)}
                 </p>
                 {f.estado === 'subiendo' && (
@@ -187,21 +189,23 @@ export function Dropzone({ onUpload, onTerminado }: DropzoneProps) {
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-valuenow={f.progreso}
-                    className="h-1.5 overflow-hidden rounded-full bg-white/10"
+                    className="h-1.5 overflow-hidden rounded-full bg-[#101820]/10 dark:bg-white/10"
                   >
                     <div
-                      className="h-full rounded-full bg-[#d7b36a] transition-[width]"
+                      className="h-full rounded-full bg-[#E5283C] transition-[width]"
                       style={{ width: `${f.progreso}%` }}
                     />
                   </div>
                 )}
                 {f.estado === 'subida' && (
-                  <p className="flex items-center gap-1 text-[11px] text-emerald-400">
+                  <p className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
                     <Check className="size-3" aria-hidden="true" /> Subida
                   </p>
                 )}
                 {f.estado === 'error' && (
-                  <p className="text-[11px] text-red-300">{f.error}</p>
+                  <p className="text-[11px] text-red-700 dark:text-red-300">
+                    {f.error}
+                  </p>
                 )}
               </div>
               <button
@@ -209,7 +213,7 @@ export function Dropzone({ onUpload, onTerminado }: DropzoneProps) {
                 aria-label={`Quitar ${f.archivo.name}`}
                 disabled={f.estado === 'subiendo'}
                 onClick={() => quitar(f)}
-                className="flex size-7 shrink-0 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-30"
+                className="flex size-7 shrink-0 items-center justify-center rounded-full text-[#101820]/55 dark:text-white/50 transition-colors hover:bg-[#101820]/10 dark:hover:bg-white/10 hover:text-[#101820] dark:hover:text-white disabled:opacity-30"
               >
                 <X className="size-4" aria-hidden="true" />
               </button>
@@ -223,7 +227,7 @@ export function Dropzone({ onUpload, onTerminado }: DropzoneProps) {
           type="button"
           disabled={subiendo}
           onClick={() => void subirTodas()}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#d7b36a] px-5 text-sm font-semibold text-[#0f1210] transition-colors hover:bg-[#e5c77f] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#E5283C] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C93A4F] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Upload className="size-4" aria-hidden="true" />
           Subir {pendientes.length} {pendientes.length === 1 ? 'foto' : 'fotos'}

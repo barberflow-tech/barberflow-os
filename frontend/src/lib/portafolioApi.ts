@@ -1,6 +1,7 @@
 // Portafolio del barbero contra el backend real (SCRUM-35).
 // GET/POST /api/v1/barbers/me/portfolio: solo el rol barbero; el access token
 // viaja en el encabezado Authorization (vive en memoria, ver useAuthStore).
+import { MENSAJE_SIN_CONEXION } from './mensajes'
 import { useAuthStore } from '@/stores/useAuthStore'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
@@ -55,7 +56,7 @@ export async function listarPortafolio(): Promise<FotoApi[]> {
   try {
     response = await fetch(URL_PORTAFOLIO, { headers: autorizacion() })
   } catch {
-    throw new PortafolioError('No se pudo conectar con el servidor.')
+    throw new PortafolioError(MENSAJE_SIN_CONEXION)
   }
   if (!response.ok) throw new PortafolioError(mensajePorEstado(response.status))
   return (await response.json()) as FotoApi[]
@@ -76,8 +77,7 @@ export function subirFoto(
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress((e.loaded / e.total) * 100)
     }
-    xhr.onerror = () =>
-      reject(new PortafolioError('No se pudo conectar con el servidor.'))
+    xhr.onerror = () => reject(new PortafolioError(MENSAJE_SIN_CONEXION))
     xhr.onload = () => {
       let cuerpo: unknown
       try {
@@ -109,7 +109,7 @@ export async function listarMisServicios(): Promise<ServicioFotoApi[]> {
       headers: autorizacion(),
     })
   } catch {
-    throw new PortafolioError('No se pudo conectar con el servidor.')
+    throw new PortafolioError(MENSAJE_SIN_CONEXION)
   }
   if (!response.ok) throw new PortafolioError(mensajePorEstado(response.status))
   return (await response.json()) as ServicioFotoApi[]

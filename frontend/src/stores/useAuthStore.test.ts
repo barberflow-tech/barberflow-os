@@ -123,7 +123,16 @@ describe('logout', () => {
     )
     expect(useAuthStore.getState().user).toBeNull()
     expect(useAuthStore.getState().accessToken).toBeNull()
+    expect(useAuthStore.getState().sesionCerrada).toBe(true)
     vi.unstubAllGlobals()
+  })
+
+  it('Dado que la sesión se limpia por un 401, Cuando no fue el usuario quien la cerró, Entonces no se marca como cierre voluntario', () => {
+    useAuthStore.setState({ sesionCerrada: false })
+
+    useAuthStore.getState().clearSession()
+
+    expect(useAuthStore.getState().sesionCerrada).toBe(false)
   })
 
   it('Dado que no hay red, Cuando cierra sesión, Entonces igual limpia el estado local', async () => {

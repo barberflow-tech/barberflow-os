@@ -18,9 +18,9 @@ type Enlace = {
 
 const enlaces: Enlace[] = [
   { to: '/admin', etiqueta: 'Panel', fin: true, roles: ['admin'] },
-  { to: '/admin/servicios', etiqueta: 'Servicios', fin: false, roles: ['admin'] },
   { to: '/admin/horarios', etiqueta: 'Horarios', fin: false, roles: ['admin'] },
   { to: '/admin/usuarios', etiqueta: 'Usuarios', fin: false, roles: ['admin'] },
+  { to: '/admin/perfil', etiqueta: 'Mi perfil', fin: false, roles: ['admin'] },
 ]
 
 /** Marco común del área de administración con menú dinámico basado en RBAC. */

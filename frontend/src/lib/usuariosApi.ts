@@ -1,6 +1,7 @@
 // Asignación de roles por el administrador (SCRUM-70 / HU-09).
 // GET /api/v1/users lista los usuarios de su barbería; con ?email= busca por correo
 // exacto (también clientes sin barbería). PATCH /api/v1/users/<id>/role cambia el rol.
+import { MENSAJE_SIN_CONEXION } from './mensajes'
 import type { Role } from '@/stores/useAuthStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 
@@ -31,7 +32,7 @@ async function pedir(ruta: string, init: RequestInit = {}): Promise<Response> {
       headers: { ...autorizacion(), ...(init.headers ?? {}) },
     })
   } catch {
-    throw new UsuariosError('No se pudo conectar con el servidor.')
+    throw new UsuariosError(MENSAJE_SIN_CONEXION)
   }
   if (response.ok) return response
 

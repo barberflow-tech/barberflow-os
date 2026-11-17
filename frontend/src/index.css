@@ -86,11 +86,11 @@
   .bf-patron-rayas {
     background-image: repeating-linear-gradient(
       -45deg,
-      rgb(179 38 59 / 8%) 0 10px,
-      rgb(179 38 59 / 8%) 10px,
+      rgb(179 38 59 / 5%) 0 10px,
+      rgb(179 38 59 / 5%) 10px,
       transparent 10px 20px,
-      rgb(23 74 126 / 8%) 20px 30px,
-      rgb(23 74 126 / 8%) 30px,
+      rgb(23 74 126 / 5%) 20px 30px,
+      rgb(23 74 126 / 5%) 30px,
       transparent 30px 40px,
       rgb(247 241 232 / 6%) 40px 50px,
       rgb(247 241 232 / 6%) 50px,
@@ -107,6 +107,131 @@
       var(--bf-azul) 12px 18px,
       transparent 18px 100%
     );
+  }
+
+  /* Edge dibuja su propio ojo en los campos de contraseña; donde ya hay un botón
+     propio para mostrarla, se oculta para no ver dos ojos. */
+  .bf-sin-ojo-nativo::-ms-reveal,
+  .bf-sin-ojo-nativo::-ms-clear {
+    display: none;
+  }
+
+  /* Saludo de bienvenida: entra suave al abrir la pantalla. */
+  .bf-bienvenida {
+    animation: bf-bienvenida-entra 0.6s ease-out both;
+  }
+
+  @keyframes bf-bienvenida-entra {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-bienvenida {
+      animation: none;
+    }
+  }
+
+  /* Cinta de barbero: franjas rojo, marfil y azul que avanzan en horizontal. */
+  .bf-cinta {
+    position: relative;
+    height: 10px;
+    overflow: hidden;
+    background: var(--bf-marfil);
+  }
+
+  .bf-cinta::before {
+    content: '';
+    position: absolute;
+    inset: 0 -120px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--bf-rojo) 0 20px,
+      var(--bf-marfil) 20px 40px,
+      var(--bf-azul) 40px 60px
+    );
+    transform: skewX(-40deg);
+    animation: bf-cinta-avanza 3s linear infinite;
+  }
+
+  /* Ilustración del hero: poste que gira y herramientas que flotan. */
+  .bf-poste-gira {
+    animation: bf-poste-desliza 2.4s linear infinite;
+  }
+
+  .bf-flota {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: bf-flota 6s ease-in-out infinite;
+  }
+
+  .bf-flota-b {
+    animation-delay: -2s;
+  }
+
+  .bf-flota-c {
+    animation-delay: -4s;
+  }
+
+  .bf-destello {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: bf-destello 3s ease-in-out infinite;
+  }
+
+  .bf-destello-b {
+    animation-delay: -1s;
+  }
+
+  .bf-destello-c {
+    animation-delay: -2s;
+  }
+
+  @keyframes bf-cinta-avanza {
+    to {
+      transform: skewX(-40deg) translateX(60px);
+    }
+  }
+
+  @keyframes bf-poste-desliza {
+    to {
+      transform: translateY(60px);
+    }
+  }
+
+  @keyframes bf-flota {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes bf-destello {
+    0%,
+    100% {
+      opacity: 0.25;
+      transform: scale(0.8);
+    }
+
+    50% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-cinta::before,
+    .bf-poste-gira,
+    .bf-flota,
+    .bf-destello {
+      animation: none;
+    }
   }
 
   /* Grano sutil tipo papel/letrero envejecido. */

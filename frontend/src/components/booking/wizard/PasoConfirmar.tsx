@@ -6,7 +6,8 @@ import {
 } from '@/lib/reservaSchema'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useReservaWizardStore } from '@/stores/useReservaWizardStore'
-import { campo } from './estilos'
+import { ArrowRight } from 'lucide-react'
+import { botonPrimario, campo } from './estilos'
 import { fechaLarga, formatearPrecio } from './formato'
 
 // Resolver mínimo para Zod (no se usa @hookform/resolvers: no está en el stack aprobado).
@@ -23,98 +24,85 @@ const zodResolver: Resolver<ClienteFormValues> = (values) => {
 
 interface Props {
   error: string | null
-  /** `null` cuando reserva con su cuenta: no hay datos de contacto que pedir. */
-  onConfirmar: (cliente: ClienteData | null) => void
+  enviando: boolean
+  onConfirmar: (cliente: ClienteData) => void
 }
 
-export function PasoConfirmar({ error, onConfirmar }: Props) {
+export function PasoConfirmar({ error, enviando, onConfirmar }: Props) {
   const servicio = useReservaWizardStore((s) => s.servicio)
   const barbero = useReservaWizardStore((s) => s.barbero)
   const fecha = useReservaWizardStore((s) => s.fecha)
   const hora = useReservaWizardStore((s) => s.hora)
-  const correoSesion = useAuthStore((s) => s.user?.email)
+  // Solo el cliente reserva a su propio nombre; el admin o el barbero agendan para
+  // otra persona, así que su nombre no se precarga.
+  const nombreCuenta = useAuthStore((s) =>
+    s.user?.role === 'cliente' ? s.user.fullName : undefined,
+  )
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<ClienteFormValues>({
     resolver: zodResolver,
-    defaultValues: { nombre: '', celular: '' },
+    // Quien tiene cuenta ya dio su nombre al registrarse: se precarga (editable).
+    // El celular lo escribe siempre el cliente.
+    defaultValues: { nombre: nombreCuenta ?? '', celular: '' },
   })
-
-  // Con sesión el cliente ya dio sus datos al registrarse: no se le piden de nuevo.
-  // Solo quien reserva sin cuenta debe dejar su nombre y celular de contacto.
-  const conSesion = !!correoSesion
 
   return (
     <form
       id="form-confirmar"
       noValidate
-      onSubmit={
-        conSesion
-          ? (e) => {
-              e.preventDefault()
-              onConfirmar(null)
-            }
-          : handleSubmit((v) => onConfirmar(v as unknown as ClienteData))
-      }
+      onSubmit={handleSubmit((v) => onConfirmar(v as unknown as ClienteData))}
       className="grid gap-6 md:grid-cols-[1fr_minmax(0,320px)]"
     >
       <div className="space-y-4">
-        {conSesion ? (
-          <p className="rounded-xl border border-[#174A7E]/25 bg-[#174A7E]/8 p-4 text-sm text-[#101820]/75 dark:border-[#5FA3E0]/25 dark:bg-[#5FA3E0]/10 dark:text-[#F7F1E8]/75">
-            Reservarás con tu cuenta{' '}
-            <strong className="text-[#101820] dark:text-[#F7F1E8]">
-              {correoSesion}
-            </strong>
-            . No necesitas volver a escribir tus datos.
-          </p>
-        ) : (
-          <>
-            <div className="space-y-1.5">
-              <label
-                htmlFor="nombre"
-                className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75"
-              >
-                Nombre completo
-              </label>
-              <input
-                id="nombre"
-                autoComplete="name"
-                aria-invalid={!!errors.nombre}
-                className={campo}
-                {...register('nombre')}
-              />
-              {errors.nombre && (
-                <p className="text-xs text-[#B3263B] dark:text-[#E5283C]">
-                  {errors.nombre.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <label
-                htmlFor="celular"
-                className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75"
-              >
-                Celular
-              </label>
-              <input
-                id="celular"
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                aria-invalid={!!errors.celular}
-                className={campo}
-                {...register('celular')}
-              />
-              {errors.celular && (
-                <p className="text-xs text-[#B3263B] dark:text-[#E5283C]">
-                  {errors.celular.message}
-                </p>
-              )}
-            </div>
-          </>
-        )}
+        <p className="rounded-xl border border-[#B3263B]/25 bg-[#FBEEF0] p-4 text-sm font-medium text-[#101820]/80 dark:border-[#E5283C]/30 dark:bg-[#E5283C]/10 dark:text-[#F7F1E8]/85">
+          Tu cita aún no está agendada: revisa el resumen y pulsa{' '}
+          <strong>Confirmar reserva</strong> para reservarla.
+        </p>
+        <div className="space-y-1.5">
+          <label
+            htmlFor="nombre"
+            className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75"
+          >
+            Nombre completo
+          </label>
+          <input
+            id="nombre"
+            autoComplete="name"
+            aria-invalid={!!errors.nombre}
+            className={campo}
+            {...register('nombre')}
+          />
+          {errors.nombre && (
+            <p className="text-xs text-[#B3263B] dark:text-[#E5283C]">
+              {errors.nombre.message}
+            </p>
+          )}
+        </div>
+        <div className="space-y-1.5">
+          <label
+            htmlFor="celular"
+            className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75"
+          >
+            Celular
+          </label>
+          <input
+            id="celular"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            aria-invalid={!!errors.celular}
+            className={campo}
+            {...register('celular')}
+          />
+          {errors.celular && (
+            <p className="text-xs text-[#B3263B] dark:text-[#E5283C]">
+              {errors.celular.message}
+            </p>
+          )}
+        </div>
         {error && (
           <p
             role="alert"
@@ -149,6 +137,13 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
           </dl>
         </div>
       </section>
+
+      <div className="md:col-span-2">
+        <button type="submit" className={`${botonPrimario} w-full`} disabled={enviando}>
+          {enviando ? 'Confirmando…' : 'Confirmar reserva'}
+          {!enviando && <ArrowRight className="size-4" />}
+        </button>
+      </div>
     </form>
   )
 }

@@ -1,6 +1,7 @@
 // Catálogo de servicios contra el backend real (GET /api/v1/services, SCRUM-37).
 // La lectura es pública: no necesita sesión. Crear, editar y borrar exigen un
 // administrador autenticado (is_staff): el access token viaja en Authorization.
+import { MENSAJE_SIN_CONEXION } from './mensajes'
 import { useAuthStore } from '@/stores/useAuthStore'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
@@ -59,7 +60,7 @@ export async function listarServiciosApi(
       ? await fetch(url, { headers: autorizacion() })
       : await fetch(url)
   } catch {
-    throw new CatalogoError('No se pudo conectar con el servidor.')
+    throw new CatalogoError(MENSAJE_SIN_CONEXION)
   }
   if (!response.ok) {
     throw new CatalogoError('No se pudieron cargar los servicios.')
@@ -94,7 +95,7 @@ async function enviar(
       body: cuerpo ? JSON.stringify(cuerpo) : undefined,
     })
   } catch {
-    throw new CatalogoError('No se pudo conectar con el servidor.')
+    throw new CatalogoError(MENSAJE_SIN_CONEXION)
   }
   if (response.ok) return response
 

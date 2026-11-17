@@ -1,3 +1,4 @@
+import { MENSAJE_SIN_CONEXION } from '@/lib/mensajes'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -106,9 +107,7 @@ describe('LoginForm', () => {
 
     await completarLogin('ana@barberflow.test', 'Clave-segura-1')
 
-    expect(
-      await screen.findByText(/No se pudo conectar con el servidor/i),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(MENSAJE_SIN_CONEXION)).toBeInTheDocument()
     expect(useAuthStore.getState().user).toBeNull()
   })
 
@@ -153,6 +152,57 @@ describe('LoginForm', () => {
     })
     // El registro no inicia sesión: el usuario debe ingresar con su cuenta.
     expect(useAuthStore.getState().user).toBeNull()
+  })
+
+  it('Dado el formulario de registro, Cuando escribe la contraseña, Entonces los requisitos se van marcando como cumplidos', async () => {
+    render(<LoginForm />)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Registrarme' }))
+
+    const requisito = (texto: string) =>
+      screen.getByText(texto).closest('li') as HTMLLIElement
+    expect(requisito('Un número')).toHaveAttribute('data-cumplido', 'false')
+
+    const campo = screen.getByPlaceholderText('Mínimo 8 caracteres')
+    await user.type(campo, 'clave')
+    expect(requisito('Una letra minúscula')).toHaveAttribute('data-cumplido', 'true')
+    expect(requisito('Una letra mayúscula')).toHaveAttribute('data-cumplido', 'false')
+
+    await user.type(campo, 'Segura1')
+    for (const item of screen.getAllByRole('listitem')) {
+      expect(item).toHaveAttribute('data-cumplido', 'true')
+    }
+  })
+
+  it('Dado una contraseña que no cumple los requisitos, Cuando intenta registrarse, Entonces no llama a la API', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    render(<LoginForm />)
+
+    await completarRegistro('Ana Pérez', 'nuevo@barberflow.test', 'clavesegura')
+
+    expect(
+      await screen.findByText('Completa todos los requisitos de la contraseña'),
+    ).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(screen.queryByText(/Cuenta creada con éxito/)).not.toBeInTheDocument()
+  })
+
+  it('Dado el campo de contraseña del login, Cuando se muestra, Entonces oculta el ojo nativo del navegador para no duplicar el botón', () => {
+    render(<LoginForm />)
+
+    expect(screen.getByPlaceholderText('Mínimo 8 caracteres')).toHaveClass(
+      'bf-sin-ojo-nativo',
+    )
+  })
+
+  it('Dado el campo de contraseña del registro, Cuando se muestra, Entonces oculta el ojo nativo del navegador para no duplicar el botón', async () => {
+    render(<LoginForm />)
+    await userEvent.click(screen.getByRole('button', { name: 'Registrarme' }))
+
+    expect(screen.getByPlaceholderText('Mínimo 8 caracteres')).toHaveClass(
+      'bf-sin-ojo-nativo',
+    )
   })
 
   it('Dado un correo ya registrado, Cuando se registra, Entonces muestra el mensaje del servidor y no cambia de vista', async () => {

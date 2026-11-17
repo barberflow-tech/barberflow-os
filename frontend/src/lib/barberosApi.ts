@@ -1,6 +1,7 @@
 // Barberos, sus servicios y el portafolio público contra el backend real.
 // GET /api/v1/barbers y /api/v1/portfolio son públicos (los usa la reserva);
 // asignar servicios a un barbero exige un administrador autenticado.
+import { MENSAJE_SIN_CONEXION } from './mensajes'
 import { useAuthStore } from '@/stores/useAuthStore'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
@@ -41,7 +42,7 @@ async function pedir(url: string, init?: RequestInit): Promise<Response> {
   try {
     return await fetch(url, init)
   } catch {
-    throw new BarberosError('No se pudo conectar con el servidor.')
+    throw new BarberosError(MENSAJE_SIN_CONEXION)
   }
 }
 

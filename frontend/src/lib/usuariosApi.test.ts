@@ -1,3 +1,4 @@
+import { MENSAJE_SIN_CONEXION } from '@/lib/mensajes'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { cambiarRolApi, listarUsuariosApi, UsuariosError } from './usuariosApi'
@@ -85,8 +86,6 @@ describe('usuariosApi', () => {
   it('Dado que el servidor no responde, Cuando lista, Entonces lanza un error de conexión', async () => {
     fetchMock.mockRejectedValue(new TypeError('Failed to fetch'))
 
-    await expect(listarUsuariosApi()).rejects.toThrow(
-      'No se pudo conectar con el servidor.',
-    )
+    await expect(listarUsuariosApi()).rejects.toThrow(MENSAJE_SIN_CONEXION)
   })
 })

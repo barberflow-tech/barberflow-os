@@ -110,6 +110,6 @@ describe('horariosApi', () => {
   it('Dado que el servidor no responde, Cuando se consulta, Entonces avisa que no hay conexión', async () => {
     fetchMock.mockRejectedValue(new TypeError('fallo de red'))
 
-    await expect(obtenerHorarioApi(3)).rejects.toThrow(/No se pudo conectar/)
+    await expect(obtenerHorarioApi(3)).rejects.toThrow(/No pudimos conectarnos/)
   })
 })

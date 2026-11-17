@@ -64,7 +64,9 @@ export const useBloqueosStore = create<BloqueosState>((set) => ({
       const actualizado = await actualizarBloqueoApi(id, cambios)
 
       set((state) => ({
-        bloqueos: state.bloqueos.map((b) => (b.id === id ? actualizado : b)),
+        bloqueos: state.bloqueos.map((b) =>
+          String(b.id) === String(id) ? actualizado : b,
+        ),
         isLoading: false,
       }))
     } catch (e: unknown) {
@@ -83,7 +85,7 @@ export const useBloqueosStore = create<BloqueosState>((set) => ({
       await eliminarBloqueoApi(id)
 
       set((state) => ({
-        bloqueos: state.bloqueos.filter((b) => b.id !== id),
+        bloqueos: state.bloqueos.filter((b) => String(b.id) !== String(id)),
         isLoading: false,
       }))
     } catch (e: unknown) {

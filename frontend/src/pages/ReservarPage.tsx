@@ -1,7 +1,7 @@
 import '@fontsource-variable/inter'
 import '@fontsource/barlow-condensed/600.css'
 import '@fontsource/barlow-condensed/700.css'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Scissors } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { ReservaWizard } from '@/components/booking/wizard/ReservaWizard'
 import { titulo } from '@/components/booking/wizard/estilos'
@@ -14,24 +14,36 @@ export function ReservarPage() {
   const reservaConfirmada = useReservaWizardStore((s) => !!s.cita)
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F1F5F9] font-[Inter_Variable] dark:bg-[#0f1210]">
+    <div className="flex min-h-screen flex-col bg-[#F7F1E8] font-[Inter_Variable] text-[#101820] dark:bg-[#101820] dark:text-[#F7F1E8]">
       <Navbar />
-      <main className="flex flex-1 justify-center p-4 sm:p-8">
-        <div className="w-full max-w-3xl">
+      <main className="relative flex flex-1 justify-center overflow-hidden p-4 sm:p-8">
+        <div
+          className="bf-patron-rayas pointer-events-none absolute inset-0 opacity-40"
+          aria-hidden="true"
+        />
+        <div className="relative w-full max-w-3xl">
           {!reservaConfirmada && (
             <Link
               to="/"
-              className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-[#0B1B3A] dark:text-white/55 dark:hover:text-[#f4f1e9]"
+              className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-[#101820]/60 transition-colors hover:text-[#B3263B] dark:text-[#F7F1E8]/60 dark:hover:text-[#E5283C]"
             >
               <ArrowLeft className="size-4" aria-hidden="true" />
               Volver al inicio
             </Link>
           )}
-          <header className="mb-6">
-            <h1 className={`${titulo} text-3xl`}>Nuevo agendamiento</h1>
-            <p className="text-sm text-slate-500 dark:text-white/55">
-              Crea una reserva en pocos pasos
-            </p>
+          <header className="mb-6 flex items-start gap-3">
+            <span
+              className="mt-1 grid size-10 shrink-0 place-items-center rounded-lg bg-[#101820] text-[#F7F1E8] dark:bg-[#F7F1E8] dark:text-[#101820]"
+              aria-hidden="true"
+            >
+              <Scissors className="size-5" />
+            </span>
+            <div>
+              <h1 className={`${titulo} text-3xl`}>Nuevo agendamiento</h1>
+              <p className="text-sm text-[#101820]/60 dark:text-[#F7F1E8]/60">
+                Crea una reserva en pocos pasos
+              </p>
+            </div>
           </header>
           <ReservaWizard />
         </div>

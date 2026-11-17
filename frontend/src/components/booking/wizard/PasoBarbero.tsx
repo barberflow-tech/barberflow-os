@@ -39,12 +39,14 @@ export function PasoBarbero() {
 
   if (!barberos)
     return (
-      <p className="text-sm text-slate-500 dark:text-white/55">Cargando barberos…</p>
+      <p className="text-sm text-[#101820]/60 dark:text-[#F7F1E8]/60">
+        Cargando barberos…
+      </p>
     )
 
   if (barberos.length === 0)
     return (
-      <p role="status" className="text-sm text-slate-500 dark:text-white/55">
+      <p role="status" className="text-sm text-[#101820]/60 dark:text-[#F7F1E8]/60">
         Por ahora ningún barbero realiza este servicio. Elige otro servicio.
       </p>
     )
@@ -68,19 +70,21 @@ export function PasoBarbero() {
             >
               <span
                 aria-hidden="true"
-                className="mb-2 flex size-14 items-center justify-center rounded-full bg-[#0B1B3A] dark:bg-[#171c17] text-sm font-bold text-white"
+                className="mb-2 flex size-14 items-center justify-center rounded-full border-2 border-[#174A7E]/40 bg-[#101820] text-sm font-bold text-[#F7F1E8] dark:border-[#5FA3E0]/40 dark:bg-[#F7F1E8] dark:text-[#101820]"
               >
                 {iniciales(b.nombre)}
               </span>
-              <span className="text-sm font-bold text-[#0B1B3A] dark:text-[#f4f1e9]">
+              <span className="text-sm font-bold text-[#101820] dark:text-[#F7F1E8]">
                 {b.nombre}
               </span>
-              <span className="text-xs text-slate-500 dark:text-white/55">{b.rol}</span>
-              <span className="mt-1 text-xs text-slate-500 dark:text-white/55">
+              <span className="text-xs text-[#101820]/55 dark:text-[#F7F1E8]/55">
+                {b.rol}
+              </span>
+              <span className="mt-1 text-xs text-[#101820]/55 dark:text-[#F7F1E8]/55">
                 {b.calificacion > 0 && (
                   <>
-                    <span className="text-amber-500">★</span>{' '}
-                    <span className="font-semibold text-amber-600">
+                    <span className="text-[#C9A227]">★</span>{' '}
+                    <span className="font-semibold text-[#C9A227]">
                       {b.calificacion.toFixed(1)}
                     </span>{' '}
                     ·{' '}

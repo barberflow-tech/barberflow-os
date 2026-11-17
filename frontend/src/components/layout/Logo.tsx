@@ -6,29 +6,38 @@ interface LogoProps {
   claro?: boolean
 }
 
+/**
+ * Marca BarberFlow: cuadrado grafito con borde marfil (como el letrero de la
+ * barbería) y el nombre en Barlow Condensed. Funciona sobre fondo claro y
+ * oscuro gracias a la prop `claro`.
+ */
 export function Logo({ claro = false }: LogoProps) {
   return (
     <Link
       to="/"
       aria-label="BarberFlow, ir al inicio"
-      className="flex items-center gap-3"
+      className="group flex items-center gap-3"
     >
-      <span className="grid size-10 place-items-center rounded-xl bg-[#E5283C] dark:bg-[#d7b36a] text-white dark:text-[#111411] shadow-md shadow-[#E5283C]/25 dark:shadow-[#d7b36a]/20">
+      <span
+        className={`grid size-10 place-items-center rounded-lg border shadow-md transition-transform duration-200 group-hover:-rotate-6 ${
+          claro
+            ? 'border-[#F7F1E8]/40 bg-[#101820] text-[#F7F1E8] shadow-black/30'
+            : 'border-[#101820]/15 bg-[#101820] text-[#F7F1E8] shadow-[#101820]/20 dark:border-[#F7F1E8]/25 dark:shadow-black/40'
+        }`}
+      >
         <Scissors className="size-5" aria-hidden="true" />
       </span>
       <span className="leading-none">
         <span
           className={`block font-[Barlow_Condensed] text-xl font-bold tracking-wider uppercase ${
-            claro ? 'text-white' : 'text-[#0B1B3A] dark:text-[#f4f1e9]'
+            claro ? 'text-[#F7F1E8]' : 'text-[#101820] dark:text-[#F7F1E8]'
           }`}
         >
-          Barber<span className="text-[#E5283C] dark:text-[#d7b36a]">Flow</span>
+          Barber<span className="text-[#B3263B] dark:text-[#E5283C]">Flow</span>
         </span>
         <span
           className={`block text-[10px] font-semibold tracking-[0.2em] uppercase ${
-            claro
-              ? 'text-slate-400 dark:text-white/40'
-              : 'text-slate-500 dark:text-white/55'
+            claro ? 'text-[#F7F1E8]/55' : 'text-[#101820]/55 dark:text-[#F7F1E8]/55'
           }`}
         >
           Operating System

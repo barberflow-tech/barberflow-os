@@ -55,25 +55,25 @@ export function PasoFechaHora() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,320px)_1fr]">
-      <div className="rounded-2xl border border-slate-200 dark:border-white/10 p-4">
+      <div className="rounded-2xl border border-[#101820]/12 bg-[#F7F1E8] p-4 dark:border-[#F7F1E8]/12 dark:bg-[#101820]/40">
         <div className="mb-3 flex items-center justify-between">
           <button
             type="button"
             aria-label="Mes anterior"
             disabled={mesActual}
             onClick={() => mover(-1)}
-            className="flex size-8 items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/55 disabled:opacity-30"
+            className="flex size-8 items-center justify-center rounded-lg border border-[#101820]/15 text-[#101820]/60 transition-colors hover:border-[#B3263B] hover:text-[#B3263B] disabled:opacity-30 dark:border-[#F7F1E8]/15 dark:text-[#F7F1E8]/60 dark:hover:border-[#E5283C] dark:hover:text-[#E5283C]"
           >
             <ChevronLeft className="size-4" />
           </button>
-          <span className="text-sm font-bold text-[#0B1B3A] dark:text-[#f4f1e9]">
+          <span className="font-[Barlow_Condensed] text-base font-bold tracking-wide text-[#101820] uppercase dark:text-[#F7F1E8]">
             {tituloMes}
           </span>
           <button
             type="button"
             aria-label="Mes siguiente"
             onClick={() => mover(1)}
-            className="flex size-8 items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/55"
+            className="flex size-8 items-center justify-center rounded-lg border border-[#101820]/15 text-[#101820]/60 transition-colors hover:border-[#B3263B] hover:text-[#B3263B] dark:border-[#F7F1E8]/15 dark:text-[#F7F1E8]/60 dark:hover:border-[#E5283C] dark:hover:text-[#E5283C]"
           >
             <ChevronRight className="size-4" />
           </button>
@@ -82,7 +82,7 @@ export function PasoFechaHora() {
           {DIAS.map((d, i) => (
             <span
               key={i}
-              className="py-1 text-[10px] font-semibold text-slate-400 dark:text-white/40"
+              className="py-1 text-[10px] font-semibold text-[#101820]/45 dark:text-[#F7F1E8]/45"
             >
               {d}
             </span>
@@ -106,11 +106,12 @@ export function PasoFechaHora() {
                 disabled={pasado || !delMes || cerrado}
                 onClick={() => seleccionarFecha(iso)}
                 className={cn(
-                  'aspect-square rounded-lg text-xs font-medium text-[#0B1B3A] dark:text-[#f4f1e9] transition-colors hover:bg-slate-100 dark:hover:bg-white/10 disabled:hover:bg-transparent',
-                  (pasado || !delMes || cerrado) && 'text-slate-300 dark:text-white/30',
+                  'aspect-square rounded-lg text-xs font-medium text-[#101820] transition-colors hover:bg-[#101820]/8 disabled:hover:bg-transparent dark:text-[#F7F1E8] dark:hover:bg-[#F7F1E8]/10',
+                  (pasado || !delMes || cerrado) &&
+                    'text-[#101820]/25 dark:text-[#F7F1E8]/25',
                   cerrado && delMes && !pasado && 'line-through',
                   activo &&
-                    'bg-[#E5283C] dark:bg-[#d7b36a] font-bold text-white dark:text-[#111411] hover:bg-[#E5283C] dark:hover:bg-[#d7b36a]',
+                    'bg-[#B3263B] font-bold text-[#F7F1E8] hover:bg-[#B3263B] dark:bg-[#E5283C] dark:text-[#101820] dark:hover:bg-[#E5283C]',
                 )}
               >
                 {d.getDate()}
@@ -119,13 +120,13 @@ export function PasoFechaHora() {
           })}
         </div>
         {diasLaborales && diasLaborales.length > 0 && diasLaborales.length < 7 && (
-          <p className="mt-3 text-[11px] text-slate-400 dark:text-white/40">
+          <p className="mt-3 text-[11px] text-[#101820]/50 dark:text-[#F7F1E8]/50">
             Los días tachados {barbero?.nombre} no atiende.
           </p>
         )}
         {fecha && (
-          <p className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-white/55">
-            <span className="size-1.5 rounded-full bg-[#E5283C] dark:bg-[#d7b36a]" />
+          <p className="mt-3 flex items-center gap-1.5 text-[11px] text-[#101820]/65 dark:text-[#F7F1E8]/65">
+            <span className="size-1.5 rounded-full bg-[#B3263B] dark:bg-[#E5283C]" />
             Día seleccionado:{' '}
             {fechaLocal(fecha).toLocaleDateString('es-CO', {
               weekday: 'short',
@@ -137,15 +138,15 @@ export function PasoFechaHora() {
       </div>
 
       <div>
-        <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-white/40">
+        <h3 className="mb-3 text-[11px] font-semibold tracking-wider text-[#174A7E] uppercase dark:text-[#5FA3E0]">
           Horarios para el {fecha ? diaMes(fecha) : '…'}
         </h3>
         {sinHorario ? (
-          <p role="status" className="text-sm text-slate-500 dark:text-white/55">
+          <p role="status" className="text-sm text-[#101820]/60 dark:text-[#F7F1E8]/60">
             {barbero?.nombre} aún no tiene un horario configurado. Elige otro barbero.
           </p>
         ) : diaCerrado ? (
-          <p className="text-sm text-slate-500 dark:text-white/55">
+          <p className="text-sm text-[#101820]/60 dark:text-[#F7F1E8]/60">
             {barbero?.nombre} no atiende este día. Elige otra fecha.
           </p>
         ) : barbero && fecha ? (
@@ -157,7 +158,7 @@ export function PasoFechaHora() {
             onElegir={seleccionarHora}
           />
         ) : null}
-        <p className="mt-4 text-xs text-slate-400 dark:text-white/40">
+        <p className="mt-4 text-xs text-[#101820]/50 dark:text-[#F7F1E8]/50">
           Hora local de Popayán, Colombia
         </p>
       </div>

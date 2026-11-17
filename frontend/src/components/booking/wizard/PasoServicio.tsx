@@ -32,14 +32,16 @@ export function PasoServicio() {
 
   if (error) {
     return (
-      <p role="alert" className="text-sm text-red-600">
+      <p role="alert" className="text-sm text-[#B3263B] dark:text-[#E5283C]">
         {error}
       </p>
     )
   }
   if (!servicios)
     return (
-      <p className="text-sm text-slate-500 dark:text-white/55">Cargando servicios…</p>
+      <p className="text-sm text-[#101820]/60 dark:text-[#F7F1E8]/60">
+        Cargando servicios…
+      </p>
     )
 
   return (
@@ -61,22 +63,22 @@ export function PasoServicio() {
             <span
               aria-hidden="true"
               className={cn(
-                'flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/55',
+                'flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#101820]/8 text-[#101820]/60 transition-colors dark:bg-[#F7F1E8]/10 dark:text-[#F7F1E8]/60',
                 activo &&
-                  'bg-[#E5283C] dark:bg-[#d7b36a] text-white dark:text-[#111411]',
+                  'bg-[#B3263B] text-[#F7F1E8] dark:bg-[#E5283C] dark:text-[#101820]',
               )}
             >
               <Scissors className="size-4" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold text-[#0B1B3A] dark:text-[#f4f1e9]">
+              <span className="block text-sm font-semibold text-[#101820] dark:text-[#F7F1E8]">
                 {s.nombre}
               </span>
-              <span className="block text-xs text-slate-500 dark:text-white/55">
+              <span className="block text-xs text-[#101820]/55 dark:text-[#F7F1E8]/55">
                 {s.duracionMin} min
               </span>
             </span>
-            <span className="text-sm font-bold text-[#0B1B3A] dark:text-[#f4f1e9]">
+            <span className="text-sm font-bold text-[#B3263B] dark:text-[#E5283C]">
               {formatearPrecio(s.precio)}
             </span>
           </button>

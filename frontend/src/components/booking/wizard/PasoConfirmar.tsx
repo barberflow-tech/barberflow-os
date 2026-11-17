@@ -62,9 +62,9 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
     >
       <div className="space-y-4">
         {conSesion ? (
-          <p className="rounded-xl bg-slate-50 dark:bg-white/5 p-4 text-sm text-slate-600 dark:text-white/65">
+          <p className="rounded-xl border border-[#174A7E]/25 bg-[#174A7E]/8 p-4 text-sm text-[#101820]/75 dark:border-[#5FA3E0]/25 dark:bg-[#5FA3E0]/10 dark:text-[#F7F1E8]/75">
             Reservarás con tu cuenta{' '}
-            <strong className="text-[#0B1B3A] dark:text-[#f4f1e9]">
+            <strong className="text-[#101820] dark:text-[#F7F1E8]">
               {correoSesion}
             </strong>
             . No necesitas volver a escribir tus datos.
@@ -74,7 +74,7 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
             <div className="space-y-1.5">
               <label
                 htmlFor="nombre"
-                className="text-xs font-semibold text-slate-600 dark:text-white/65"
+                className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75"
               >
                 Nombre completo
               </label>
@@ -86,7 +86,7 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
                 {...register('nombre')}
               />
               {errors.nombre && (
-                <p className="text-xs text-[#E5283C] dark:text-[#d7b36a]">
+                <p className="text-xs text-[#B3263B] dark:text-[#E5283C]">
                   {errors.nombre.message}
                 </p>
               )}
@@ -94,7 +94,7 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
             <div className="space-y-1.5">
               <label
                 htmlFor="celular"
-                className="text-xs font-semibold text-slate-600 dark:text-white/65"
+                className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75"
               >
                 Celular
               </label>
@@ -108,7 +108,7 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
                 {...register('celular')}
               />
               {errors.celular && (
-                <p className="text-xs text-[#E5283C] dark:text-[#d7b36a]">
+                <p className="text-xs text-[#B3263B] dark:text-[#E5283C]">
                   {errors.celular.message}
                 </p>
               )}
@@ -118,29 +118,36 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
         {error && (
           <p
             role="alert"
-            className="rounded-xl bg-[#FEF2F3] dark:bg-[#d7b36a]/10 p-3 text-sm text-[#E5283C] dark:text-[#d7b36a]"
+            className="rounded-xl border border-[#B3263B]/25 bg-[#FBEEF0] p-3 text-sm text-[#B3263B] dark:border-[#E5283C]/30 dark:bg-[#E5283C]/10 dark:text-[#E5283C]"
           >
             {error}
           </p>
         )}
       </div>
 
-      <section className="rounded-2xl bg-slate-50 dark:bg-white/5 p-5">
-        <h3 className="mb-4 text-sm font-bold text-[#0B1B3A] dark:text-[#f4f1e9]">
-          Resumen
-        </h3>
-        <dl className="space-y-3">
-          <Fila etiqueta="Servicio" valor={servicio?.nombre} />
-          <Fila etiqueta="Profesional" valor={barbero?.nombre} />
-          <Fila etiqueta="Fecha" valor={fecha ? fechaLarga(fecha) : undefined} />
-          <Fila etiqueta="Hora" valor={hora ?? undefined} />
-          <div className="flex items-baseline justify-between border-t border-slate-200 dark:border-white/10 pt-3">
-            <dt className="text-xs text-slate-500 dark:text-white/55">Total</dt>
-            <dd className="text-xl font-bold text-[#0B1B3A] dark:text-[#f4f1e9]">
-              {servicio ? formatearPrecio(servicio.precio) : '—'}
-            </dd>
-          </div>
-        </dl>
+      {/* Resumen estilo ticket de barbería */}
+      <section className="relative overflow-hidden rounded-2xl border border-dashed border-[#101820]/25 bg-[#101820] p-5 text-[#F7F1E8] dark:border-[#F7F1E8]/25 dark:bg-[#0B1117]">
+        <div
+          className="bf-patron-rayas pointer-events-none absolute inset-0 opacity-50"
+          aria-hidden="true"
+        />
+        <div className="relative">
+          <h3 className="mb-4 font-[Barlow_Condensed] text-base font-bold tracking-widest text-[#F7F1E8] uppercase">
+            Resumen
+          </h3>
+          <dl className="space-y-3">
+            <Fila etiqueta="Servicio" valor={servicio?.nombre} />
+            <Fila etiqueta="Profesional" valor={barbero?.nombre} />
+            <Fila etiqueta="Fecha" valor={fecha ? fechaLarga(fecha) : undefined} />
+            <Fila etiqueta="Hora" valor={hora ?? undefined} />
+            <div className="flex items-baseline justify-between border-t border-dashed border-[#F7F1E8]/25 pt-3">
+              <dt className="text-xs text-[#F7F1E8]/65">Total</dt>
+              <dd className="font-[Barlow_Condensed] text-2xl font-bold text-[#F7F1E8]">
+                {servicio ? formatearPrecio(servicio.precio) : '—'}
+              </dd>
+            </div>
+          </dl>
+        </div>
       </section>
     </form>
   )
@@ -149,8 +156,8 @@ export function PasoConfirmar({ error, onConfirmar }: Props) {
 function Fila({ etiqueta, valor }: { etiqueta: string; valor?: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <dt className="text-xs text-slate-500 dark:text-white/55">{etiqueta}</dt>
-      <dd className="text-right text-xs font-semibold text-[#0B1B3A] dark:text-[#f4f1e9] first-letter:uppercase">
+      <dt className="text-xs text-[#F7F1E8]/65">{etiqueta}</dt>
+      <dd className="text-right text-xs font-semibold text-[#F7F1E8] first-letter:uppercase">
         {valor ?? '—'}
       </dd>
     </div>

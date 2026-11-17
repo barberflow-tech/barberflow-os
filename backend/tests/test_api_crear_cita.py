@@ -271,3 +271,28 @@ def test_fallo_al_guardar_hace_rollback_y_retorna_500(
     hilo.start()
     hilo.join()
     assert errores == []
+
+
+@pytest.mark.django_db
+def test_cliente_con_sesion_guarda_el_contacto_que_indica(api, payload):
+    payload["contact_name"] = "Ana Pérez"
+    payload["contact_phone"] = "3004567890"
+
+    response = api.post(URL, payload, format="json")
+
+    assert response.status_code == 201
+    cita = Cita.objects.get(pk=response.data["id"])
+    assert cita.client is not None
+    assert cita.contact_name == "Ana Pérez"
+    assert cita.contact_phone == "3004567890"
+
+
+@pytest.mark.django_db
+def test_cliente_con_sesion_y_celular_invalido_retorna_400(api, payload):
+    payload["contact_phone"] = "123"
+
+    response = api.post(URL, payload, format="json")
+
+    assert response.status_code == 400
+    assert "contact_phone" in response.data
+    assert Cita.objects.count() == 0

@@ -16,7 +16,7 @@ from apps.barberias.models import Barberia
 from apps.barberos.models import Barbero
 from apps.catalogo.models import Servicio
 from apps.citas import services
-from apps.citas.models import Cita
+from apps.citas.models import BloqueoAgenda, Cita
 
 URL = "/api/v1/appointments"
 
@@ -213,3 +213,25 @@ def test_el_barbero_de_la_cita_trae_los_dias_que_atiende(cliente, barbero, servi
     dato = api_de(cliente).get(URL).data[0]
 
     assert dato["barber"]["working_days"] == [0, 3, 5]
+
+
+@pytest.mark.django_db
+def test_marca_la_cita_afectada_por_un_bloqueo_sin_revelar_el_motivo(
+    cliente, barbero, servicio
+):
+    cita = cita_de(cliente, barbero, servicio, en=timedelta(days=2))
+    libre = cita_de(cliente, barbero, servicio, en=timedelta(days=3))
+    bloqueo = BloqueoAgenda.objects.create(
+        barber=barbero,
+        start_at=cita.start_at - timedelta(hours=1),
+        end_at=cita.end_at + timedelta(hours=1),
+        reason="Motivo interno",
+    )
+    Cita.objects.filter(pk=cita.pk).update(affected_by_block=bloqueo)
+
+    response = api_de(cliente).get(URL)
+
+    por_id = {c["id"]: c for c in response.data}
+    assert por_id[cita.pk]["affected_by_block"] is True
+    assert por_id[libre.pk]["affected_by_block"] is False
+    assert "Motivo interno" not in str(response.data)

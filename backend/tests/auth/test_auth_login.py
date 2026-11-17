@@ -40,6 +40,7 @@ def test_auth01_login_valido_de_cliente_retorna_access_y_cookie_refresh(cliente,
         "id": cliente.pk,
         "email": cliente.email,
         "role": ROLES["cliente"],
+        "fullName": "",
     }
     # Y el refresh viaja solo en una cookie HttpOnly, nunca en el cuerpo
     assert "refresh" not in body

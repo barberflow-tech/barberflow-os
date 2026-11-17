@@ -55,6 +55,19 @@ def _refresh(api, **extra):
 # --- Refresh correcto ----------------------------------------------------
 
 
+def test_refresh_devuelve_el_nombre_vigente_del_usuario(sesion, usuario):
+    # Dado un cliente con sesion y un nombre en su perfil
+    usuario.perfil.full_name = "Ana Pérez"
+    usuario.perfil.save()
+
+    # Cuando la sesion se renueva (por ejemplo al recargar la pagina)
+    respuesta = _refresh(sesion)
+
+    # Entonces el nombre sigue disponible para el saludo
+    assert respuesta.status_code == 200
+    assert respuesta.json()["user"]["fullName"] == "Ana Pérez"
+
+
 def test_refresh_con_cookie_valida_retorna_access_nuevo_y_usuario(sesion, usuario):
     # Dado un cliente con sesion iniciada (cookie HttpOnly en el navegador)
     acceso_original = sesion.post(
@@ -68,7 +81,12 @@ def test_refresh_con_cookie_valida_retorna_access_nuevo_y_usuario(sesion, usuari
     assert respuesta.status_code == 200
     body = respuesta.json()
     assert set(body) == {"access", "user"}
-    assert body["user"] == {"id": usuario.pk, "email": EMAIL, "role": "cliente"}
+    assert body["user"] == {
+        "id": usuario.pk,
+        "email": EMAIL,
+        "role": "cliente",
+        "fullName": "",
+    }
     assert body["access"] != acceso_original
     access = AccessToken(body["access"])
     assert access["user_id"] == usuario.pk

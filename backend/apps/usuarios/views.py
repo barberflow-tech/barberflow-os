@@ -22,7 +22,7 @@ from apps.barberias.models import Membresia, barberia_de
 
 from .cookies import borrar_cookie_refresh, nombre_cookie_refresh, poner_cookie_refresh
 from .correo import enviar_recuperacion_contrasena
-from .models import PerfilUsuario, Rol, rol_de
+from .models import PerfilUsuario, Rol, nombre_de, rol_de
 from .permissions import HasRole, OrigenPermitido, SoloAdministrador
 from .serializers import (
     CambioDeRolSerializer,
@@ -86,6 +86,7 @@ class LoginView(APIView):
                     "id": usuario.pk,
                     "email": usuario.email,
                     "role": rol_de(usuario),
+                    "fullName": nombre_de(usuario),
                 },
             },
             status=status.HTTP_200_OK,
@@ -102,7 +103,7 @@ class RefreshView(APIView):
     El refresh token se lee EXCLUSIVAMENTE de la cookie HttpOnly: el cuerpo, la
     query string y las cabeceras ni se consultan. Si la cookie falta, esta
     alterada, es invalida o expiro, responde 401 y la elimina. Responde
-    {access, user: {id, email, role}} con el rol y el email vigentes; con
+    {access, user: {id, email, role, fullName}} con el rol, el email y el nombre vigentes; con
     ROTATE_REFRESH_TOKENS activo, el refresh nuevo reemplaza la cookie.
 
     Sin clases de autenticacion (un access vencido en la cabecera no debe
@@ -133,6 +134,7 @@ class RefreshView(APIView):
                     "id": usuario.pk,
                     "email": usuario.email,
                     "role": rol_de(usuario),
+                    "fullName": nombre_de(usuario),
                 },
             },
             status=status.HTTP_200_OK,

@@ -42,6 +42,14 @@ class PerfilUsuario(models.Model):
         return f"{self.user} ({self.role})"
 
 
+def nombre_de(usuario) -> str:
+    """Nombre completo con el que el usuario se registro ("" si no tiene)."""
+    try:
+        return usuario.perfil.full_name
+    except PerfilUsuario.DoesNotExist:
+        return ""
+
+
 def rol_de(usuario) -> str | None:
     """Rol del usuario: None si es anonimo; cliente si no tiene perfil.
 

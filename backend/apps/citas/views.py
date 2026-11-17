@@ -1,6 +1,7 @@
 import logging
 
 from django.db import DatabaseError
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
@@ -26,6 +27,7 @@ from .models import BloqueoAgenda, Cita
 from .serializers import (
     BloqueoAgendaSerializer,
     CitaCanceladaSerializer,
+    CitaHistorialSerializer,
     CitaPerfilSerializer,
     CitaSerializer,
     CrearCitaSerializer,
@@ -103,7 +105,7 @@ class CrearCitaView(APIView):
     el perfil muestra para cancelar o reprogramar (HU-03).
 
     POST crea una cita PENDING. Es publica: con sesion la cita queda a nombre del usuario (acotada a su
-    barberia, 403 si no tiene); sin sesion exige nombre y celular de contacto
+    barberia, 403 si no tiene) y guarda el contacto si se envia; sin sesion exige nombre y celular de contacto
     y se limita por IP. Los errores usan el formato estandar de DRF
     ({"detail": ...} o errores por campo).
     """
@@ -144,8 +146,10 @@ class CrearCitaView(APIView):
         try:
             cita = services.crear_cita(
                 cliente=None if es_visitante else request.user,
-                contacto_nombre=datos.get("contact_name", "") if es_visitante else "",
-                contacto_celular=datos.get("contact_phone", "") if es_visitante else "",
+                # Con sesión el contacto es opcional: el nombre y el celular que
+                # el cliente confirma al reservar quedan en la cita.
+                contacto_nombre=datos.get("contact_name", ""),
+                contacto_celular=datos.get("contact_phone", ""),
                 barberia=barberia,
                 barbero_id=datos["barber"].pk,
                 servicio_id=datos["service"].pk,
@@ -162,6 +166,35 @@ class CrearCitaView(APIView):
             raise ErrorAlGuardarCita() from exc
 
         return Response(CitaSerializer(cita).data, status=status.HTTP_201_CREATED)
+
+
+class HistorialCitasView(APIView):
+    """GET /api/v1/appointments/history: citas del cliente que ya no están activas.
+
+    Exige sesión. Devuelve las que el cliente canceló y las que vencieron
+    (PENDING o CONFIRMED con la hora ya pasada, o NO_SHOW), de la más reciente
+    a la más antigua. Las completadas no entran: no se cancelaron ni se perdieron.
+    """
+
+    permission_classes = [IsAuthenticated]
+    # Tope para que un historial largo no pese: el cliente ve lo más reciente.
+    MAXIMO = 50
+
+    def get(self, request):
+        citas = (
+            Cita.objects.filter(client=request.user)
+            .filter(
+                Q(status__in=[Cita.Estado.CANCELLED, Cita.Estado.NO_SHOW])
+                | Q(
+                    status__in=[Cita.Estado.PENDING, Cita.Estado.CONFIRMED],
+                    end_at__lte=timezone.now(),
+                )
+            )
+            .select_related("service", "barber")
+            .prefetch_related("barber__horarios")
+            .order_by("-start_at", "-pk")[: self.MAXIMO]
+        )
+        return Response(CitaHistorialSerializer(citas, many=True).data)
 
 
 class CancelarCitaView(APIView):
@@ -322,6 +355,29 @@ class BloqueosAgendaView(GestionBloqueosView):
 
 
 class BloqueoAgendaDetalleView(GestionBloqueosView):
+    def put(self, request, pk):
+        barberia = self.barberia_administrada(request)
+        bloqueo = get_object_or_404(BloqueoAgenda, pk=pk, barber__barberia=barberia)
+        entrada = BloqueoAgendaSerializer(data=request.data, barberia=barberia)
+        entrada.is_valid(raise_exception=True)
+        datos = entrada.validated_data
+
+        try:
+            services.actualizar_bloqueo(
+                bloqueo=bloqueo,
+                barberia=barberia,
+                barbero_id=datos["barber"].pk,
+                inicio=datos["start_at"],
+                fin=datos["end_at"],
+                motivo=datos["reason"],
+            )
+        except services.RecursoInactivoError as exc:
+            raise ValidationError({"barber": str(exc)}) from exc
+
+        services.notificar_citas_afectadas(bloqueo)
+        bloqueo = BloqueoAgenda.objects.con_citas_afectadas().get(pk=bloqueo.pk)
+        return Response(BloqueoAgendaSerializer(bloqueo).data)
+
     def delete(self, request, pk):
         barberia = self.barberia_administrada(request)
         bloqueo = get_object_or_404(BloqueoAgenda, pk=pk, barber__barberia=barberia)

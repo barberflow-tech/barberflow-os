@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { BarberosManager } from '@/components/admin/BarberosManager'
+import { HorariosManager } from '@/components/admin/HorariosManager'
 import { RolesManager } from '@/components/admin/RolesManager'
 import { ServicesManager } from '@/components/admin/ServicesManager'
 import { RoleGuard } from '@/components/auth/RoleGuard'
@@ -42,6 +43,7 @@ export function App() {
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin/servicios" element={<ServicesManager />} />
           <Route path="/admin/barberos" element={<BarberosManager />} />
+          <Route path="/admin/horarios" element={<HorariosManager />} />
           <Route path="/admin/usuarios" element={<RolesManager />} />
         </Route>
 

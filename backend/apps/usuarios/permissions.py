@@ -84,3 +84,4 @@ def HasRole(*roles):  # noqa: N802 - se usa como una clase de permiso: HasRole("
 
 SoloAdministrador = HasRole(Rol.ADMIN)
 SoloBarbero = HasRole(Rol.BARBERO)
+AdminOBarbero = HasRole(Rol.ADMIN, Rol.BARBERO)

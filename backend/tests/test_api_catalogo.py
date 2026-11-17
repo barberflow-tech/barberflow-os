@@ -34,11 +34,14 @@ def servicio(barberia):
 
 @pytest.fixture
 def administrador(django_user_model):
-    return django_user_model.objects.create_user(
+    # HU-09: el administrador lo define el rol de su perfil, no is_staff.
+    usuario = django_user_model.objects.create_user(
         username="admin_catalogo",
         password="test-password",
-        is_staff=True,
     )
+    usuario.perfil.role = "admin"
+    usuario.perfil.save()
+    return usuario
 
 
 @pytest.fixture

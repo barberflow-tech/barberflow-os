@@ -85,6 +85,37 @@ describe('ReservaWizard', () => {
     expect(await screen.findByRole('button', { name: /hora 10:00/i })).toBeDisabled()
   })
 
+  it('Dado que elige fecha y hora, Cuando pulsa Continuar, Entonces pasa al paso 4 sin agendar y avisa que falta confirmar', async () => {
+    const user = userEvent.setup()
+    renderWizard()
+    await llegarAlPaso4(user)
+
+    expect(screen.getByText(/paso 4 de 4/i)).toBeInTheDocument()
+    expect(crearCita).not.toHaveBeenCalled()
+    expect(useReservaWizardStore.getState().cita).toBeNull()
+    expect(screen.getByText(/tu cita aún no está agendada/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /confirmar reserva/i })).toBeEnabled()
+  })
+
+  it('Dado el paso 3, Cuando hace doble clic en Continuar, Entonces no agenda: Confirmar no ocupa el lugar de Continuar', async () => {
+    const user = userEvent.setup()
+    renderWizard()
+    await user.click(await screen.findByRole('button', { name: /corte clásico/i }))
+    await user.click(screen.getByRole('button', { name: /continuar/i }))
+    await user.click(await screen.findByRole('button', { name: /thiago/i }))
+    await user.click(screen.getByRole('button', { name: /continuar/i }))
+    await user.click(await screen.findByRole('button', { name: /hora 11:30/i }))
+
+    await user.dblClick(screen.getByRole('button', { name: /continuar/i }))
+
+    expect(screen.getByText(/paso 4 de 4/i)).toBeInTheDocument()
+    expect(crearCita).not.toHaveBeenCalled()
+    // El botón de confirmar vive dentro del formulario del paso 4, no en el pie.
+    const confirmar = screen.getByRole('button', { name: /confirmar reserva/i })
+    expect(confirmar.closest('form')).toHaveAttribute('id', 'form-confirmar')
+    expect(confirmar.closest('footer')).toBeNull()
+  })
+
   it('valida el nombre y el celular antes de confirmar', async () => {
     const user = userEvent.setup()
     renderWizard()
@@ -182,24 +213,51 @@ describe('ReservaWizard: datos de contacto según la sesión', () => {
     expect(screen.getByLabelText(/celular/i)).toBeInTheDocument()
   })
 
-  it('Dado un cliente con sesión, Cuando llega a confirmar, Entonces no se le piden los datos que ya dio al registrarse', async () => {
+  it('Dado un cliente con sesión, Cuando llega a confirmar, Entonces su nombre ya está escrito y el celular vacío', async () => {
     useAuthStore.setState({
       accessToken: 'tok',
-      user: { id: 5, email: 'cliente@barberflow.test', role: 'cliente' },
+      user: {
+        id: 5,
+        email: 'cliente@barberflow.test',
+        role: 'cliente',
+        fullName: 'Ana Pérez',
+      },
     })
     const user = userEvent.setup()
     renderWizard()
     await llegarAlPaso4(user)
 
-    expect(screen.queryByLabelText(/nombre completo/i)).not.toBeInTheDocument()
-    expect(screen.queryByLabelText(/celular/i)).not.toBeInTheDocument()
-    expect(screen.getByText(/cliente@barberflow\.test/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/nombre completo/i)).toHaveValue('Ana Pérez')
+    expect(screen.getByLabelText(/celular/i)).toHaveValue('')
   })
 
-  it('Dado un cliente con sesión, Cuando confirma, Entonces reserva sin datos de contacto', async () => {
+  it('Dado un admin que agenda para un cliente, Cuando llega a confirmar, Entonces el nombre queda vacío para escribir el del cliente', async () => {
     useAuthStore.setState({
       accessToken: 'tok',
-      user: { id: 5, email: 'cliente@barberflow.test', role: 'cliente' },
+      user: {
+        id: 2,
+        email: 'admin@barberflow.test',
+        role: 'admin',
+        fullName: 'Ana Admin',
+      },
+    })
+    const user = userEvent.setup()
+    renderWizard()
+    await llegarAlPaso4(user)
+
+    expect(screen.getByLabelText(/nombre completo/i)).toHaveValue('')
+    expect(screen.getByLabelText(/celular/i)).toHaveValue('')
+  })
+
+  it('Dado un cliente con sesión, Cuando no escribe su celular, Entonces no se agenda y se le pide', async () => {
+    useAuthStore.setState({
+      accessToken: 'tok',
+      user: {
+        id: 5,
+        email: 'cliente@barberflow.test',
+        role: 'cliente',
+        fullName: 'Ana Pérez',
+      },
     })
     const user = userEvent.setup()
     renderWizard()
@@ -207,13 +265,48 @@ describe('ReservaWizard: datos de contacto según la sesión', () => {
 
     await user.click(screen.getByRole('button', { name: /confirmar reserva/i }))
 
+    expect(await screen.findByText(/celular/i, { selector: 'p' })).toBeInTheDocument()
+    expect(crearCita).not.toHaveBeenCalled()
+  })
+
+  it('Dado un cliente con sesión, Cuando pulsa Continuar en el paso 3, Entonces no se agenda hasta que confirme', async () => {
+    useAuthStore.setState({
+      accessToken: 'tok',
+      user: { id: 5, email: 'cliente@barberflow.test', role: 'cliente' },
+    })
+    const user = userEvent.setup()
+    renderWizard()
+    await llegarAlPaso4(user)
+
+    expect(crearCita).not.toHaveBeenCalled()
+    expect(useReservaWizardStore.getState().cita).toBeNull()
+    expect(screen.getByText(/paso 4 de 4/i)).toBeInTheDocument()
+  })
+
+  it('Dado un cliente con sesión, Cuando completa su celular y confirma, Entonces reserva con su nombre y ese celular', async () => {
+    useAuthStore.setState({
+      accessToken: 'tok',
+      user: {
+        id: 5,
+        email: 'cliente@barberflow.test',
+        role: 'cliente',
+        fullName: 'Ana Pérez',
+      },
+    })
+    const user = userEvent.setup()
+    renderWizard()
+    await llegarAlPaso4(user)
+
+    await user.type(screen.getByLabelText(/celular/i), '3004567890')
+    await user.click(screen.getByRole('button', { name: /confirmar reserva/i }))
+
     expect(
       await screen.findByRole('heading', { name: /reserva confirmada/i }),
     ).toBeInTheDocument()
     expect(crearCita).toHaveBeenCalledTimes(1)
-    const enviado = vi.mocked(crearCita).mock.calls[0][0]
-    expect(enviado).not.toHaveProperty('contactoNombre')
-    expect(enviado).not.toHaveProperty('contactoCelular')
-    expect(enviado).toMatchObject({ servicioId: 1, barberoId: 1 })
+    expect(vi.mocked(crearCita).mock.calls[0][0]).toMatchObject({
+      contactoNombre: 'Ana Pérez',
+      contactoCelular: '3004567890',
+    })
   })
 })

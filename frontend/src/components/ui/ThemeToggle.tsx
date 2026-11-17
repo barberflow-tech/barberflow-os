@@ -1,17 +1,10 @@
 import { Moon, Sun } from 'lucide-react'
-import { useLocation } from 'react-router-dom'
 import { useThemeStore } from '@/stores/useThemeStore'
-
-// Pantallas que no tienen versión clara: no se muestra el botón.
-const SIN_BOTON = ['/barbero/portafolio']
 
 /** Botón flotante para alternar entre modo claro (blanco y rojo) y oscuro (negro y dorado). */
 export function ThemeToggle() {
   const tema = useThemeStore((s) => s.tema)
   const alternar = useThemeStore((s) => s.alternar)
-  const { pathname } = useLocation()
-
-  if (SIN_BOTON.includes(pathname)) return null
 
   const oscuro = tema === 'dark'
   return (

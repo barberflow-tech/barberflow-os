@@ -1,8 +1,6 @@
-import '@fontsource/dm-sans/400.css'
-import '@fontsource/dm-sans/500.css'
-import '@fontsource/dm-sans/600.css'
-import '@fontsource/playfair-display/400.css'
-import '@fontsource/playfair-display/400-italic.css'
+import '@fontsource-variable/inter'
+import '@fontsource/barlow-condensed/600.css'
+import '@fontsource/barlow-condensed/700.css'
 import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -54,18 +52,25 @@ export function GaleriaPortafolio({
   const mover = (d: number) => setActual((i) => (i + d + fotos.length) % fotos.length)
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#0f1210] font-['DM_Sans',sans-serif] text-[#f4f1e9]">
-      <header className="border-b border-white/10">
+    <main className="min-h-screen overflow-hidden bg-[#FAFAF8] dark:bg-[#101820] font-[Inter_Variable] text-[#101820] dark:text-[#F7F1E8]">
+      <div
+        data-testid="poste-portafolio"
+        aria-hidden="true"
+        className="bf-poste h-[18px]"
+      />
+      <header className="border-b border-[#101820]/10 dark:border-white/10">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-full border border-[#d7b36a]/50 text-[#d7b36a]">
-              <span className="font-['Playfair_Display',serif] text-lg">BF</span>
+            <div className="grid size-10 place-items-center rounded-full border border-[#E5283C]/50 text-[#E5283C]">
+              <span className="font-['Barlow_Condensed'] font-bold uppercase text-lg">
+                BF
+              </span>
             </div>
             <div>
-              <p className="text-sm font-semibold tracking-[0.08em] text-white">
+              <p className="text-sm font-semibold tracking-[0.08em] text-[#101820] dark:text-white">
                 BARBERFLOW
               </p>
-              <p className="text-[0.65rem] tracking-[0.22em] text-white/45 uppercase">
+              <p className="text-[0.65rem] tracking-[0.22em] text-[#101820]/55 dark:text-white/45 uppercase">
                 OS · Cali
               </p>
             </div>
@@ -74,14 +79,14 @@ export function GaleriaPortafolio({
             <button
               type="button"
               onClick={() => void logout()}
-              className="rounded-full border border-white/15 px-3 py-2.5 text-sm font-medium whitespace-nowrap text-white/75 sm:px-4 sm:py-3 transition hover:border-[#d7b36a]/60 hover:text-white"
+              className="rounded-full border border-[#101820]/15 dark:border-white/15 px-3 py-2.5 text-sm font-medium whitespace-nowrap text-[#101820]/75 dark:text-white/75 sm:px-4 sm:py-3 transition hover:border-[#E5283C]/60 hover:text-[#101820] dark:hover:text-white"
             >
               Cerrar sesión
             </button>
             <button
               type="button"
               onClick={() => setAbierto(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-[#d7b36a] px-5 py-3 text-sm font-semibold text-[#111411] transition hover:bg-[#e5c77f]"
+              className="inline-flex items-center gap-2 rounded-full bg-[#E5283C] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#C93A4F]"
             >
               <Plus className="size-4" aria-hidden="true" />
               <span className="hidden sm:inline">Subir fotografía</span>
@@ -94,27 +99,30 @@ export function GaleriaPortafolio({
       <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16 lg:px-12 lg:py-20">
         <div className="mb-10 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
           <div>
-            <p className="mb-4 flex items-center gap-3 text-xs font-semibold tracking-[0.22em] text-[#d7b36a] uppercase">
-              <span className="h-px w-8 bg-[#d7b36a]" />
+            <p className="mb-4 flex items-center gap-3 text-xs font-semibold tracking-[0.22em] text-[#E5283C] uppercase">
+              <span className="h-px w-8 bg-[#E5283C]" />
               Portafolio
             </p>
-            <h1 className="max-w-2xl font-['Playfair_Display',serif] text-5xl leading-[0.95] tracking-[-0.03em] text-[#f7f3ea] sm:text-7xl">
-              El arte está en <span className="text-[#d7b36a] italic">el detalle.</span>
+            <h1 className="max-w-2xl font-['Barlow_Condensed'] font-bold uppercase text-5xl leading-[0.95] tracking-[-0.03em] text-[#101820] dark:text-[#F7F1E8] sm:text-7xl">
+              El arte está en <span className="text-[#E5283C] italic">el detalle.</span>
             </h1>
           </div>
-          <div className="max-w-xs border-l border-white/15 pl-5">
-            <p className="text-sm leading-6 text-white/55">
+          <div className="max-w-xs border-l border-[#101820]/15 dark:border-white/15 pl-5">
+            <p className="text-sm leading-6 text-[#101820]/55 dark:text-white/55">
               Una selección de cortes, texturas y acabados creados por nuestro equipo en
               Cali.
             </p>
-            <p className="mt-3 text-xs font-medium tracking-[0.14em] text-white/40 uppercase">
+            <p className="mt-3 text-xs font-medium tracking-[0.14em] text-[#101820]/55 dark:text-white/40 uppercase">
               {fotos.length} {fotos.length === 1 ? 'fotografía' : 'fotografías'}
             </p>
           </div>
         </div>
 
         {cargando && (
-          <p role="status" className="py-20 text-center text-white/60">
+          <p
+            role="status"
+            className="py-20 text-center text-[#101820]/60 dark:text-white/60"
+          >
             Cargando tu portafolio...
           </p>
         )}
@@ -124,12 +132,12 @@ export function GaleriaPortafolio({
             role="alert"
             className="flex flex-col items-center gap-4 rounded-[2rem] border border-red-500/30 bg-red-500/10 px-6 py-14 text-center"
           >
-            <p className="text-sm text-red-200">{error}</p>
+            <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
             {onReintentar && (
               <button
                 type="button"
                 onClick={onReintentar}
-                className="rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-white transition hover:border-[#d7b36a]"
+                className="rounded-full border border-[#101820]/20 dark:border-white/20 px-5 py-2 text-sm font-semibold text-[#101820] dark:text-white transition hover:border-[#E5283C]"
               >
                 Reintentar
               </button>
@@ -138,17 +146,17 @@ export function GaleriaPortafolio({
         )}
 
         {!cargando && !error && !foto && (
-          <div className="flex flex-col items-center gap-4 rounded-[2rem] border border-dashed border-white/20 px-6 py-20 text-center">
-            <p className="font-['Playfair_Display',serif] text-3xl text-white">
+          <div className="flex flex-col items-center gap-4 rounded-[2rem] border border-dashed border-[#101820]/20 dark:border-white/20 px-6 py-20 text-center">
+            <p className="font-['Barlow_Condensed'] font-bold uppercase text-3xl text-[#101820] dark:text-white">
               Aún no tienes fotografías
             </p>
-            <p className="max-w-sm text-sm text-white/55">
+            <p className="max-w-sm text-sm text-[#101820]/55 dark:text-white/55">
               Sube tus mejores cortes para que tus clientes vean tu trabajo.
             </p>
             <button
               type="button"
               onClick={() => setAbierto(true)}
-              className="rounded-full bg-[#d7b36a] px-6 py-3 text-sm font-semibold text-[#111411] transition hover:bg-[#e5c77f]"
+              className="rounded-full bg-[#E5283C] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#C93A4F]"
             >
               Subir mi primera fotografía
             </button>
@@ -160,7 +168,7 @@ export function GaleriaPortafolio({
             aria-label="Carrusel de fotografías"
             className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]"
           >
-            <div className="group relative w-full self-start overflow-hidden rounded-[2rem] border border-white/10 bg-[#171a18]">
+            <div className="group relative w-full self-start overflow-hidden rounded-[2rem] border border-[#101820]/10 dark:border-white/10 bg-white dark:bg-[#16202B]">
               <div className="relative aspect-[4/3] w-full overflow-hidden sm:aspect-[16/10] lg:aspect-[16/9]">
                 <img
                   src={foto.url}
@@ -170,14 +178,14 @@ export function GaleriaPortafolio({
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/10" />
                 <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-6 p-6 sm:p-9">
                   <div>
-                    <p className="mb-2 text-xs font-semibold tracking-[0.2em] text-[#d7b36a] uppercase">
+                    <p className="mb-2 text-xs font-semibold tracking-[0.2em] text-[#E5283C] uppercase">
                       Trabajo destacado
                     </p>
-                    <h2 className="font-['Playfair_Display',serif] text-3xl text-white sm:text-5xl">
+                    <h2 className="font-['Barlow_Condensed'] font-bold uppercase text-3xl text-white sm:text-5xl">
                       {foto.titulo}
                     </h2>
                     {foto.precio && (
-                      <p className="mt-2 text-lg font-semibold text-[#d7b36a]">
+                      <p className="mt-2 text-lg font-semibold text-[#E5283C]">
                         {foto.precio}
                         {foto.duracion && (
                           <span className="ml-2 text-sm font-normal text-white/60">
@@ -206,7 +214,7 @@ export function GaleriaPortafolio({
                       aria-label={label}
                       onClick={() => mover(i === 0 ? -1 : 1)}
                       className={cn(
-                        'absolute top-1/2 grid size-12 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur-md transition hover:bg-[#d7b36a] hover:text-[#111411]',
+                        'absolute top-1/2 grid size-12 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur-md transition hover:bg-[#E5283C] hover:text-white',
                         i === 0 ? 'left-4' : 'right-4',
                       )}
                     >
@@ -231,24 +239,24 @@ export function GaleriaPortafolio({
                   className={cn(
                     'min-w-0 overflow-hidden rounded-2xl border text-left transition',
                     i === actual
-                      ? 'border-[#d7b36a] ring-1 ring-[#d7b36a]'
-                      : 'border-white/10 hover:border-white/40',
+                      ? 'border-[#E5283C] ring-1 ring-[#E5283C]'
+                      : 'border-[#101820]/10 dark:border-white/10 hover:border-[#101820]/40 dark:hover:border-white/40',
                   )}
                 >
                   <div className="relative aspect-[16/9] w-full overflow-hidden">
                     <img src={f.url} alt="" className="size-full object-cover" />
                     <span className="absolute inset-0 bg-black/10" />
                   </div>
-                  <span className="block bg-[#171a18] p-3">
-                    <span className="block text-xs font-semibold text-white">
+                  <span className="block bg-white dark:bg-[#16202B] p-3">
+                    <span className="block text-xs font-semibold text-[#101820] dark:text-white">
                       {f.titulo}
                       {f.precio && (
-                        <span className="ml-2 font-medium text-[#d7b36a]">
+                        <span className="ml-2 font-medium text-[#E5283C]">
                           {f.precio}
                         </span>
                       )}
                     </span>
-                    <span className="mt-1 block text-[0.68rem] leading-4 text-white/50">
+                    <span className="mt-1 block text-[0.68rem] leading-4 text-[#101820]/55 dark:text-white/50">
                       {f.descripcion}
                     </span>
                   </span>
@@ -292,21 +300,21 @@ function DialogoSubida({
       role="dialog"
       aria-modal="true"
       aria-labelledby="subida-titulo"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[#0a0c0b]/80 backdrop-blur-sm sm:items-center sm:p-6"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[#0B1118]/80 backdrop-blur-sm sm:items-center sm:p-6"
     >
-      <div className="max-h-[94vh] w-full overflow-y-auto rounded-t-[2rem] border border-white/10 bg-[#171a18] shadow-2xl sm:max-w-2xl sm:rounded-[2rem]">
-        <div className="flex items-start justify-between border-b border-white/10 px-6 py-6 sm:px-8">
+      <div className="max-h-[94vh] w-full overflow-y-auto rounded-t-[2rem] border border-[#101820]/10 dark:border-white/10 bg-white dark:bg-[#16202B] shadow-2xl sm:max-w-2xl sm:rounded-[2rem]">
+        <div className="flex items-start justify-between border-b border-[#101820]/10 dark:border-white/10 px-6 py-6 sm:px-8">
           <div>
-            <p className="mb-2 text-xs font-semibold tracking-[0.2em] text-[#d7b36a] uppercase">
+            <p className="mb-2 text-xs font-semibold tracking-[0.2em] text-[#E5283C] uppercase">
               Portafolio
             </p>
             <h2
               id="subida-titulo"
-              className="font-['Playfair_Display',serif] text-3xl text-white"
+              className="font-['Barlow_Condensed'] font-bold uppercase text-3xl text-[#101820] dark:text-white"
             >
               Publica tu trabajo
             </h2>
-            <p className="mt-2 text-sm text-white/55">
+            <p className="mt-2 text-sm text-[#101820]/55 dark:text-white/55">
               Selecciona una o varias fotografías para añadirlas a tu portafolio.
             </p>
           </div>
@@ -314,7 +322,7 @@ function DialogoSubida({
             type="button"
             aria-label="Cerrar"
             onClick={onCerrar}
-            className="grid size-10 shrink-0 place-items-center rounded-full border border-white/15 text-white/70 transition hover:border-white/40 hover:text-white"
+            className="grid size-10 shrink-0 place-items-center rounded-full border border-[#101820]/15 dark:border-white/15 text-[#101820]/70 dark:text-white/70 transition hover:border-[#101820]/40 dark:hover:border-white/40 hover:text-[#101820] dark:hover:text-white"
           >
             <X className="size-4" aria-hidden="true" />
           </button>
@@ -323,7 +331,7 @@ function DialogoSubida({
           {servicios.length === 0 ? (
             <p
               role="status"
-              className="rounded-2xl border border-white/10 bg-[#0f1210] p-5 text-sm text-white/70"
+              className="rounded-2xl border border-[#101820]/10 dark:border-white/10 bg-[#FAFAF8] dark:bg-[#101820] p-5 text-sm text-[#101820]/70 dark:text-white/70"
             >
               El administrador aún no te asignó servicios. Cuando lo haga podrás
               publicar fotos de esos cortes.
@@ -333,7 +341,7 @@ function DialogoSubida({
               <div>
                 <label
                   htmlFor="servicio-foto"
-                  className="mb-2 block text-xs font-semibold tracking-[0.14em] text-white/60 uppercase"
+                  className="mb-2 block text-xs font-semibold tracking-[0.14em] text-[#101820]/60 dark:text-white/60 uppercase"
                 >
                   ¿Qué corte muestra la foto?
                 </label>
@@ -343,7 +351,7 @@ function DialogoSubida({
                   onChange={(e) =>
                     setServicioId(e.target.value ? Number(e.target.value) : undefined)
                   }
-                  className="w-full rounded-xl border border-white/15 bg-[#0f1210] px-4 py-3 text-sm text-white outline-none focus:border-[#d7b36a]"
+                  className="w-full rounded-xl border border-[#101820]/15 dark:border-white/15 bg-[#FAFAF8] dark:bg-[#101820] px-4 py-3 text-sm text-[#101820] dark:text-white outline-none focus:border-[#E5283C]"
                 >
                   <option value="">Elige un corte…</option>
                   {servicios.map((s) => (
@@ -352,7 +360,7 @@ function DialogoSubida({
                     </option>
                   ))}
                 </select>
-                <p className="mt-2 text-xs text-white/40">
+                <p className="mt-2 text-xs text-[#101820]/55 dark:text-white/40">
                   El precio y la descripción los define el administrador en el catálogo.
                 </p>
               </div>
@@ -361,7 +369,7 @@ function DialogoSubida({
                   <div>
                     <label
                       htmlFor="nota-foto"
-                      className="mb-2 block text-xs font-semibold tracking-[0.14em] text-white/60 uppercase"
+                      className="mb-2 block text-xs font-semibold tracking-[0.14em] text-[#101820]/60 dark:text-white/60 uppercase"
                     >
                       Nota (opcional)
                     </label>
@@ -372,7 +380,7 @@ function DialogoSubida({
                       value={nota}
                       onChange={(e) => setNota(e.target.value)}
                       placeholder="Ej.: degradado bajo con textura arriba"
-                      className="w-full rounded-xl border border-white/15 bg-[#0f1210] px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#d7b36a]"
+                      className="w-full rounded-xl border border-[#101820]/15 dark:border-white/15 bg-[#FAFAF8] dark:bg-[#101820] px-4 py-3 text-sm text-[#101820] dark:text-white outline-none placeholder:text-[#101820]/40 dark:placeholder:text-white/30 focus:border-[#E5283C]"
                     />
                   </div>
                   <Dropzone
@@ -385,7 +393,7 @@ function DialogoSubida({
               )}
             </>
           )}
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-[#101820]/55 dark:text-white/40">
             Las fotos se optimizan y se guardan de forma segura en tu portafolio.
           </p>
         </div>

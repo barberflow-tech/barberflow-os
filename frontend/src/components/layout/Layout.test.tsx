@@ -112,10 +112,42 @@ describe('Navbar · según la sesión', () => {
     )
   })
 
-  it('Dado que ya está en /reservar, Cuando ve la barra, Entonces no repite «Reservar cita»', () => {
-    renderEn('/reservar')
+  it('Dado un visitante, Cuando ve la barra, Entonces no tiene «Reservar cita» (cada página ya trae su acceso)', () => {
+    renderEn('/')
+    expect(screen.queryByRole('link', { name: 'Reservar cita' })).toBeNull()
+  })
+
+  it('Dado un cliente con sesión, Cuando ve la barra, Entonces no tiene «Reservar cita»', () => {
+    entrar('cliente')
+    renderEn('/perfil')
 
     expect(screen.queryByRole('link', { name: 'Reservar cita' })).toBeNull()
+  })
+
+  it('Dado un cliente con sesión, Cuando ve la barra, Entonces «Cerrar sesión» queda de último', () => {
+    entrar('cliente')
+    renderEn()
+
+    const acciones = screen
+      .getAllByRole('link')
+      .concat(screen.getAllByRole('button'))
+      .filter((el) => ['Mis citas', 'Cerrar sesión'].includes(el.textContent ?? ''))
+    const [citas, cerrar] = ['Mis citas', 'Cerrar sesión'].map((texto) =>
+      acciones.find((el) => el.textContent === texto),
+    ) as HTMLElement[]
+
+    expect(
+      Boolean(citas.compareDocumentPosition(cerrar) & Node.DOCUMENT_POSITION_FOLLOWING),
+    ).toBe(true)
+  })
+
+  it('Dado un cliente con sesión, Cuando ve la barra, Entonces «Cerrar sesión» es rojo', () => {
+    entrar('cliente')
+    renderEn()
+
+    expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toHaveClass(
+      'bg-[#E5283C]',
+    )
   })
 
   it('Dado un cliente con sesión, Cuando cierra sesión, Entonces la sesión se limpia', async () => {

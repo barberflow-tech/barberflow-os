@@ -1,6 +1,6 @@
 import { Scissors } from 'lucide-react'
 import React, { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
@@ -10,7 +10,9 @@ import {
   restablecerContrasena,
   solicitarRecuperacion,
 } from '@/lib/authApi'
+import { contrasenaCumpleRequisitos } from '@/lib/requisitosContrasena'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { RequisitosContrasena } from './RequisitosContrasena'
 
 // 1. Esquema para Login
 const loginSchema = z.object({
@@ -29,7 +31,12 @@ const registerSchema = z.object({
     .string()
     .min(1, 'El correo electrónico es requerido')
     .email('Ingrese un correo electrónico válido'),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+  password: z
+    .string()
+    .refine(
+      contrasenaCumpleRequisitos,
+      'Completa todos los requisitos de la contraseña',
+    ),
   rememberMe: z.boolean().optional(),
 })
 
@@ -109,6 +116,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     resolver: zodResolver(registerSchema),
     mode: 'onTouched',
   })
+
+  const passwordRegistro = useWatch({ control: registerForm.control, name: 'password' })
 
   const forgotForm = useForm<ForgotFormData>({
     resolver: zodResolver(forgotSchema),
@@ -210,7 +219,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto min-h-[620px] grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden border border-[#101820]/12 shadow-2xl bg-[#F7F1E8] dark:border-[#F7F1E8]/12 dark:bg-[#16202B]">
+    <div className="w-full max-w-5xl mx-auto min-h-[620px] grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden border border-[#101820]/12 shadow-2xl bg-[#FAFAF8] dark:border-[#F7F1E8]/12 dark:bg-[#16202B]">
       {/* Panel decorativo de marca: solo en desktop. En móvil el formulario va limpio. */}
       <div className="hidden lg:col-span-5 lg:flex bg-[#101820] text-[#F7F1E8] p-8 sm:p-12 flex-col justify-between relative overflow-hidden">
         <div
@@ -245,7 +254,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </div>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F7F1E8]/5 border border-[#F7F1E8]/20 text-[#F7F1E8]/80 text-xs font-semibold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FAFAF8]/5 border border-[#F7F1E8]/20 text-[#F7F1E8]/80 text-xs font-semibold uppercase tracking-wider">
             <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
             GESTIÓN INTELIGENTE
           </div>
@@ -285,7 +294,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       </div>
 
       {/* Columna del formulario: composición simple y accesible en cualquier pantalla */}
-      <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-center bg-[#F7F1E8] dark:bg-[#16202B]">
+      <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-center bg-[#FAFAF8] dark:bg-[#16202B]">
         <div className="max-w-md w-full mx-auto space-y-6">
           {/* VISTAS 1 & 2: LOGIN Y REGISTRO */}
           {(currentStep === 'login' || currentStep === 'register') && (
@@ -328,7 +337,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   aria-current={currentStep === 'login' ? 'page' : undefined}
                   className={`py-2.5 text-xs font-bold rounded-xl transition-all ${
                     currentStep === 'login'
-                      ? 'bg-[#F7F1E8] dark:bg-[#101820] text-[#101820] dark:text-[#F7F1E8] shadow-sm'
+                      ? 'bg-[#FAFAF8] dark:bg-[#101820] text-[#101820] dark:text-[#F7F1E8] shadow-sm'
                       : 'text-[#101820]/55 hover:text-[#101820] dark:text-[#F7F1E8]/55 dark:hover:text-[#F7F1E8]'
                   }`}
                 >
@@ -343,7 +352,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   aria-current={currentStep === 'register' ? 'page' : undefined}
                   className={`py-2.5 text-xs font-bold rounded-xl transition-all ${
                     currentStep === 'register'
-                      ? 'bg-[#F7F1E8] dark:bg-[#101820] text-[#101820] dark:text-[#F7F1E8] shadow-sm'
+                      ? 'bg-[#FAFAF8] dark:bg-[#101820] text-[#101820] dark:text-[#F7F1E8] shadow-sm'
                       : 'text-[#101820]/55 hover:text-[#101820] dark:text-[#F7F1E8]/55 dark:hover:text-[#F7F1E8]'
                   }`}
                 >
@@ -375,7 +384,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       className={`w-full px-4 py-3 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                         loginForm.formState.errors.email
                           ? 'border-[#B3263B] bg-[#B3263B]/5'
-                          : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
+                          : 'border-[#101820]/15 bg-[#FAFAF8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                       }`}
                     />
                     {loginForm.formState.errors.email && (
@@ -394,16 +403,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Mínimo 8 caracteres"
                         {...loginForm.register('password')}
-                        className={`w-full px-4 py-3 pr-12 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
+                        className={`bf-sin-ojo-nativo w-full px-4 py-3 pr-12 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                           loginForm.formState.errors.password
                             ? 'border-[#B3263B] bg-[#B3263B]/5'
-                            : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
+                            : 'border-[#101820]/15 bg-[#FAFAF8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                         }`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2 p-2 rounded-xl bg-[#101820]/5 hover:bg-[#101820]/10 dark:bg-[#F7F1E8]/5 dark:hover:bg-[#F7F1E8]/10 text-[#101820]/55 hover:text-[#101820] dark:text-[#F7F1E8]/55 dark:hover:text-[#F7F1E8] transition-all"
+                        className="absolute right-2 p-2 rounded-xl bg-[#101820]/5 hover:bg-[#101820]/10 dark:bg-[#F7F1E8]/5 dark:hover:bg-[#FAFAF8]/10 text-[#101820]/55 hover:text-[#101820] dark:text-[#F7F1E8]/55 dark:hover:text-[#F7F1E8] transition-all"
                       >
                         {showPassword ? (
                           <svg
@@ -498,7 +507,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       className={`w-full px-4 py-3 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                         registerForm.formState.errors.fullName
                           ? 'border-[#B3263B] bg-[#B3263B]/5'
-                          : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
+                          : 'border-[#101820]/15 bg-[#FAFAF8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                       }`}
                     />
                     {registerForm.formState.errors.fullName && (
@@ -519,7 +528,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       className={`w-full px-4 py-3 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                         registerForm.formState.errors.email
                           ? 'border-[#B3263B] bg-[#B3263B]/5'
-                          : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
+                          : 'border-[#101820]/15 bg-[#FAFAF8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                       }`}
                     />
                     {registerForm.formState.errors.email && (
@@ -538,16 +547,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Mínimo 8 caracteres"
                         {...registerForm.register('password')}
-                        className={`w-full px-4 py-3 pr-12 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
+                        className={`bf-sin-ojo-nativo w-full px-4 py-3 pr-12 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                           registerForm.formState.errors.password
                             ? 'border-[#B3263B] bg-[#B3263B]/5'
-                            : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
+                            : 'border-[#101820]/15 bg-[#FAFAF8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                         }`}
                       />
                       <button
                         type="button"
+                        aria-label={
+                          showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'
+                        }
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2 p-2 rounded-xl bg-[#101820]/5 hover:bg-[#101820]/10 dark:bg-[#F7F1E8]/5 dark:hover:bg-[#F7F1E8]/10 text-[#101820]/55 hover:text-[#101820] dark:text-[#F7F1E8]/55 dark:hover:text-[#F7F1E8] transition-all"
+                        className="absolute right-2 p-2 rounded-xl bg-[#101820]/5 hover:bg-[#101820]/10 dark:bg-[#F7F1E8]/5 dark:hover:bg-[#FAFAF8]/10 text-[#101820]/55 hover:text-[#101820] dark:text-[#F7F1E8]/55 dark:hover:text-[#F7F1E8] transition-all"
                       >
                         {showPassword ? (
                           <svg
@@ -589,6 +601,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                         {registerForm.formState.errors.password.message}
                       </span>
                     )}
+                    <RequisitosContrasena contrasena={passwordRegistro ?? ''} />
                   </div>
 
                   <div className="flex items-center text-xs pt-1">
@@ -655,7 +668,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                     className={`w-full px-4 py-3 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                       forgotForm.formState.errors.email
                         ? 'border-[#B3263B] bg-[#B3263B]/5'
-                        : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
+                        : 'border-[#101820]/15 bg-[#FAFAF8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                     }`}
                   />
                   {forgotForm.formState.errors.email && (
@@ -718,7 +731,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                     className={`w-full px-4 py-3 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                       resetForm.formState.errors.password
                         ? 'border-[#B3263B] bg-[#B3263B]/5'
-                        : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
+                        : 'border-[#101820]/15 bg-[#FAFAF8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                     }`}
                   />
                   {resetForm.formState.errors.password && (
@@ -740,7 +753,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                     className={`w-full px-4 py-3 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                       resetForm.formState.errors.confirm
                         ? 'border-[#B3263B] bg-[#B3263B]/5'
-                        : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
+                        : 'border-[#101820]/15 bg-[#FAFAF8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                     }`}
                   />
                   {resetForm.formState.errors.confirm && (

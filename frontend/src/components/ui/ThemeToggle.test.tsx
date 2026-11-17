@@ -41,8 +41,8 @@ describe('ThemeToggle', () => {
     expect(screen.getByRole('button')).toBeInTheDocument()
   })
 
-  it('Dado el portafolio del barbero (solo oscuro), Cuando se renderiza, Entonces no muestra el botón', () => {
+  it('Dado el portafolio del barbero, Cuando se renderiza, Entonces muestra el botón (tiene modo claro y oscuro)', () => {
     renderEn('/barbero/portafolio')
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.getByRole('button')).toBeInTheDocument()
   })
 })

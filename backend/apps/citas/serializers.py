@@ -107,6 +107,8 @@ class CitaPerfilSerializer(serializers.ModelSerializer):
     barber = BarberoDeCitaSerializer(read_only=True)
     reschedule_deadline = serializers.SerializerMethodField()
     min_notice_hours = serializers.SerializerMethodField()
+    # Solo si la afecta un bloqueo: el motivo del bloqueo es interno y no se expone.
+    affected_by_block = serializers.SerializerMethodField()
 
     class Meta:
         model = Cita
@@ -120,6 +122,7 @@ class CitaPerfilSerializer(serializers.ModelSerializer):
             "barber",
             "reschedule_deadline",
             "min_notice_hours",
+            "affected_by_block",
         ]
         read_only_fields = fields
 
@@ -128,6 +131,40 @@ class CitaPerfilSerializer(serializers.ModelSerializer):
 
     def get_min_notice_hours(self, cita) -> int:
         return ANTICIPACION_MINIMA_HORAS
+
+    def get_affected_by_block(self, cita) -> bool:
+        return cita.affected_by_block_id is not None
+
+
+class CitaHistorialSerializer(serializers.ModelSerializer):
+    """Cita que ya no está activa, como la ve el cliente en «Canceladas».
+
+    `outcome` dice por qué: `cancelled` si la canceló el cliente y `expired` si
+    la hora pasó sin atenderse (vencida o marcada como no asistida).
+    """
+
+    service = ServicioDeCitaSerializer(read_only=True)
+    barber = BarberoDeCitaSerializer(read_only=True)
+    outcome = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Cita
+        fields = [
+            "id",
+            "status",
+            "outcome",
+            "start_at",
+            "end_at",
+            "price",
+            "service",
+            "barber",
+            "cancelled_at",
+            "late_cancellation",
+        ]
+        read_only_fields = fields
+
+    def get_outcome(self, cita) -> str:
+        return "cancelled" if cita.status == Cita.Estado.CANCELLED else "expired"
 
 
 class ReprogramarCitaSerializer(serializers.Serializer):

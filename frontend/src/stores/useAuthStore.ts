@@ -6,6 +6,8 @@ export interface AuthUser {
   id: number
   email: string
   role: Role
+  /** Nombre con el que se registró; puede faltar en cuentas antiguas. */
+  fullName?: string
 }
 
 interface Session {
@@ -18,6 +20,9 @@ interface AuthState {
   user: AuthUser | null
   /** true mientras se renueva la sesión al cargar la app; evita el parpadeo de invitado. */
   isHydrating: boolean
+  /** true justo después de que el usuario cierra sesión: la app lo avisa y lo apaga. */
+  sesionCerrada: boolean
+  descartarSesionCerrada: () => void
   setSession: (session: Session) => void
   clearSession: () => void
   /** Cierra la sesión también en el servidor (borra la cookie del refresh token). */
@@ -32,6 +37,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
   accessToken: null,
   user: null,
   isHydrating: true,
+  sesionCerrada: false,
+
+  descartarSesionCerrada: () => set({ sesionCerrada: false }),
 
   setSession: ({ accessToken, user }) => set({ accessToken, user, isHydrating: false }),
 
@@ -48,7 +56,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
     } catch {
       // sin conexión: se continúa con el cierre local
     }
-    set({ accessToken: null, user: null, isHydrating: false })
+    set({ accessToken: null, user: null, isHydrating: false, sesionCerrada: true })
   },
 
   restoreSession: async () => {

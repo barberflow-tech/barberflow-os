@@ -14,7 +14,7 @@ export function ReservarPage() {
   const reservaConfirmada = useReservaWizardStore((s) => !!s.cita)
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F7F1E8] font-[Inter_Variable] text-[#101820] dark:bg-[#101820] dark:text-[#F7F1E8]">
+    <div className="flex min-h-screen flex-col bg-[#FAFAF8] font-[Inter_Variable] text-[#101820] dark:bg-[#101820] dark:text-[#F7F1E8]">
       <Navbar />
       <main className="relative flex flex-1 justify-center overflow-hidden p-4 sm:p-8">
         <div

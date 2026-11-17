@@ -268,6 +268,31 @@ el envío, `failed` registra el tipo de error y `pending` indica un intento
 aún sin resultado registrado. Si el aviso depende de una operación con
 `transaction.atomic()`, programa la llamada con `transaction.on_commit()`.
 
+### Recordatorios de citas (HU-05 / SCRUM-63)
+
+El comando `python manage.py enviar_recordatorios` envía el aviso de 24 h y el de
+2 h de las citas pendientes o confirmadas, usando el correo de arriba. Es
+idempotente: cada cita recibe como máximo un aviso de cada tipo por más veces que
+se ejecute, así que se puede programar con frecuencia. Si no hay `EMAIL_HOST`, los
+correos se imprimen en la consola en vez de enviarse.
+
+El comando no se programa solo: necesita un cron que lo ejecute cada 10 minutos.
+Por ahora el proyecto solo corre en local, así que se usa la opción local de abajo.
+
+- **Staging / producción (Render):** aún no hay despliegue; cuando exista, crea un **Cron Job** con el mismo repositorio,
+  rama y variables de entorno que el servicio del backend (incluida la base de
+  datos y el SMTP), comando de build igual al del backend, comando
+  `python manage.py enviar_recordatorios` y programación `*/10 * * * *`. El job
+  termina con error solo si hubo fallos de base de datos, y Render lo muestra.
+- **Local:** una vez, `docker compose exec backend python manage.py enviar_recordatorios`.
+  Para que se repita cada 10 minutos mientras pruebas:
+  `docker compose --profile recordatorios up -d recordatorios` (y
+  `docker compose --profile recordatorios stop recordatorios` para apagarlo).
+
+La cita debe quedar en la ventana: el aviso de 24 h sale cuando faltan más de
+23 h 30 min y hasta 24 h; el de 2 h, cuando faltan más de 1 h 30 min y hasta 2 h.
+Una cita reservada cuando su ventana ya pasó no recibe ese aviso.
+
 ## Matriz de acceso por rol (HU-09 / SCRUM-67)
 
 | Ruta y acción de API | Sin sesión | Cliente | Barbero | Administrador |

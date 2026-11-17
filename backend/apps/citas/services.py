@@ -387,7 +387,11 @@ def reprogramar_cita(
             validar_reprogramacion(cita, nuevo_inicio, momento)
             reservar_franja_horaria(cita, barbero, nuevo_inicio)
 
-            cita.save(update_fields=["start_at", "end_at", "updated_at"])
+            # Reprogramar resuelve el aviso de bloqueo: la cita ya no está afectada.
+            cita.affected_by_block = None
+            cita.save(
+                update_fields=["start_at", "end_at", "affected_by_block", "updated_at"]
+            )
     except IntegrityError as exc:
         # Se captura fuera del atomic: la transaccion ya hizo ROLLBACK.
         if _restriccion_violada(exc) == RESTRICCION_SOLAPAMIENTO:
@@ -500,6 +504,42 @@ def crear_bloqueo(
     bloqueo = BloqueoAgenda.objects.create(
         barber=barbero, start_at=inicio, end_at=fin, reason=motivo
     )
+    _marcar_citas_afectadas(bloqueo)
+    return bloqueo
+
+
+def actualizar_bloqueo(
+    *,
+    bloqueo: BloqueoAgenda,
+    barberia: Barberia,
+    barbero_id: int,
+    inicio: datetime,
+    fin: datetime,
+    motivo: str,
+) -> BloqueoAgenda:
+    """Cambia barbero, rango o motivo de un bloqueo y recalcula las citas afectadas.
+
+    Las citas que ya no caen dentro dejan de estar marcadas; las que ahora caen
+    dentro se marcan (y se avisan despues, con `notificar_citas_afectadas`). No
+    cancela ni mueve ninguna cita.
+    """
+    try:
+        barbero = Barbero.objects.select_for_update().get(
+            pk=barbero_id, barberia=barberia, is_active=True
+        )
+    except Barbero.DoesNotExist as exc:
+        raise RecursoInactivoError("El barbero no está disponible.") from exc
+
+    bloqueo.barber = barbero
+    bloqueo.start_at = inicio
+    bloqueo.end_at = fin
+    bloqueo.reason = motivo
+    bloqueo.save()
+    # Se sueltan las que ya no caen dentro (otro barbero u otro rango); las que siguen
+    # dentro conservan su marca y su aviso, así no se les avisa dos veces.
+    Cita.objects.filter(affected_by_block=bloqueo).exclude(
+        barber=barbero, start_at__lt=fin, end_at__gt=inicio
+    ).update(affected_by_block=None, block_notice_sent_at=None)
     _marcar_citas_afectadas(bloqueo)
     return bloqueo
 

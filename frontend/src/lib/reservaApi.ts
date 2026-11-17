@@ -1,3 +1,4 @@
+import { MENSAJE_SIN_CONEXION } from './mensajes'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { listarBarberosApi } from './barberosApi'
 import { listarServiciosApi } from './catalogoApi'
@@ -40,6 +41,17 @@ export interface CitaConfirmada {
   reprogramarAntes?: string
   /** Horas de antelación mínima que exige el backend para reprogramar. */
   horasAntelacion?: number
+  /** El barbero no podrá atenderla (bloqueo de agenda): el cliente debe reprogramar o cancelar. */
+  afectadaPorBloqueo?: boolean
+}
+
+/** Cita que ya no está activa: la canceló el cliente o su hora pasó sin atenderse. */
+export interface CitaHistorial extends CitaConfirmada {
+  motivo: 'cancelled' | 'expired'
+  /** Cancelada con la antelación mínima o menos. */
+  tardia: boolean
+  /** Instante (ISO) en que el cliente la canceló; no existe si venció. */
+  canceladaEn?: string
 }
 
 export interface NuevaCita {
@@ -152,7 +164,7 @@ export async function listarFranjas(
       `${API_URL}/api/v1/availability?barber=${barberoId}&date=${fecha}&slot_duration=${slot}`,
     )
   } catch {
-    throw new ReservaError('No se pudo conectar con el servidor.')
+    throw new ReservaError(MENSAJE_SIN_CONEXION)
   }
 
   if (response.status === 404) {
@@ -216,7 +228,7 @@ export async function crearCita(datos: NuevaCita): Promise<CitaConfirmada> {
       }),
     })
   } catch {
-    throw new ReservaError('No se pudo conectar con el servidor.')
+    throw new ReservaError(MENSAJE_SIN_CONEXION)
   }
 
   if (response.status === 429) {
@@ -276,6 +288,8 @@ export interface CitaPerfilApi {
   /** Último instante en que aún se puede reprogramar (calculado por el backend). */
   reschedule_deadline?: string
   min_notice_hours?: number
+  /** Un bloqueo de agenda del barbero cae sobre esta cita. */
+  affected_by_block?: boolean
 }
 
 /** Mensaje del backend (`detail`) si viene en la respuesta; si no, el de respaldo. */
@@ -300,7 +314,7 @@ export async function listarMisCitasApi(): Promise<CitaConfirmada[]> {
   try {
     response = await pedir(`${API_URL}/api/v1/appointments/`)
   } catch {
-    throw new ReservaError('No se pudo conectar con el servidor.')
+    throw new ReservaError(MENSAJE_SIN_CONEXION)
   }
   if (!response.ok) throw new ReservaError('No se pudieron cargar tus citas.')
 
@@ -326,6 +340,51 @@ export async function listarMisCitasApi(): Promise<CitaConfirmada[]> {
     total: Number(cita.price),
     reprogramarAntes: cita.reschedule_deadline,
     horasAntelacion: cita.min_notice_hours,
+    afectadaPorBloqueo: cita.affected_by_block === true,
+  }))
+}
+
+interface CitaHistorialApi extends CitaPerfilApi {
+  outcome: 'cancelled' | 'expired'
+  cancelled_at: string | null
+  late_cancellation: boolean
+}
+
+/** Citas canceladas o vencidas del cliente (GET /api/v1/appointments/history). */
+export async function listarCitasCanceladasApi(): Promise<CitaHistorial[]> {
+  let response: Response
+  try {
+    response = await pedir(`${API_URL}/api/v1/appointments/history`)
+  } catch {
+    throw new ReservaError(MENSAJE_SIN_CONEXION)
+  }
+  if (!response.ok) {
+    throw new ReservaError('No se pudieron cargar tus citas canceladas.')
+  }
+
+  const data = (await response.json()) as CitaHistorialApi[]
+  return data.map((cita) => ({
+    id: cita.id,
+    estado: cita.status,
+    servicio: {
+      id: cita.service.id,
+      nombre: cita.service.name,
+      precio: Number(cita.service.price),
+      duracionMin: cita.service.duration_minutes,
+      descripcion: cita.service.description,
+    },
+    barbero: {
+      id: cita.barber.id,
+      nombre: cita.barber.name,
+      rol: cita.barber.rol ?? 'Barbero',
+      calificacion: cita.barber.calificacion ?? 0,
+      diasLaborales: cita.barber.working_days,
+    },
+    inicio: aIsoColombia(cita.start_at),
+    total: Number(cita.price),
+    motivo: cita.outcome,
+    tardia: cita.late_cancellation,
+    ...(cita.cancelled_at && { canceladaEn: cita.cancelled_at }),
   }))
 }
 
@@ -344,7 +403,7 @@ export async function cancelarCitaApi(
       method: 'POST',
     })
   } catch {
-    throw new ReservaError('No se pudo conectar con el servidor.')
+    throw new ReservaError(MENSAJE_SIN_CONEXION)
   }
   if (response.status === 401) {
     throw new ReservaError('Inicia sesión para cancelar tu cita.')
@@ -377,7 +436,7 @@ export async function reprogramarCitaApi(
       body: JSON.stringify({ start_at: nuevoInicio }),
     })
   } catch {
-    throw new ReservaError('No se pudo conectar con el servidor.')
+    throw new ReservaError(MENSAJE_SIN_CONEXION)
   }
   if (response.status === 401) {
     throw new ReservaError('Inicia sesión para reprogramar tu cita.')
@@ -413,48 +472,157 @@ export async function reprogramarCitaApi(
 // GESTIÓN DE BLOQUEOS (Conectado al Backend)
 // ======================================================
 
+export interface CitasAfectadas {
+  total: number
+  /** Clientes con cuenta a quienes el aviso ya salió. */
+  avisadas: number
+  /** Clientes con correo a quienes el aviso aún no sale (falló el envío). */
+  pendientes: number
+  /** Visitantes sin correo: el admin debe llamarlos. */
+  sinCanal: { id: number; nombre: string; celular: string; inicio: string }[]
+}
+
 export interface Bloqueo {
   id: string | number
   barberoId: string | number
+  /** 'YYYY-MM-DD' en la hora de la barbería. */
   fecha: string
   horaInicio: string
   horaFin: string
   motivo: string
+  /** Citas que el bloqueo afectó; solo llega en lo que devuelve el backend. */
+  citasAfectadas?: CitasAfectadas
 }
 
+interface BloqueoApi {
+  id: number
+  barber: number
+  start_at: string
+  end_at: string
+  reason: string
+  affected_appointments?: {
+    total: number
+    notified: number
+    pending: number
+    without_channel: {
+      id: number
+      contact_name: string
+      contact_phone: string
+      start_at: string
+    }[]
+  }
+}
+
+const aBloqueo = (b: BloqueoApi): Bloqueo => {
+  const inicio = aIsoColombia(b.start_at)
+  const fin = aIsoColombia(b.end_at)
+  const afectadas = b.affected_appointments
+  return {
+    id: b.id,
+    barberoId: b.barber,
+    fecha: inicio.slice(0, 10),
+    horaInicio: inicio.slice(11, 16),
+    horaFin: fin.slice(11, 16),
+    motivo: b.reason,
+    ...(afectadas && {
+      citasAfectadas: {
+        total: afectadas.total,
+        avisadas: afectadas.notified,
+        pendientes: afectadas.pending,
+        sinCanal: afectadas.without_channel.map((c) => ({
+          id: c.id,
+          nombre: c.contact_name,
+          celular: c.contact_phone,
+          inicio: c.start_at,
+        })),
+      },
+    }),
+  }
+}
+
+const cuerpoBloqueo = (b: Omit<Bloqueo, 'id'>) => ({
+  barber: Number(b.barberoId),
+  // La agenda trabaja en hora de Colombia, igual que las franjas.
+  start_at: `${b.fecha}T${b.horaInicio}:00-05:00`,
+  end_at: `${b.fecha}T${b.horaFin}:00-05:00`,
+  reason: b.motivo,
+})
+
+/** Primer mensaje que dejó el backend (`detail` o el de algún campo); si no, el de respaldo. */
+async function mensajeDeBloqueo(response: Response, respaldo: string): Promise<string> {
+  if (response.status === 403) {
+    return 'No tienes permiso para gestionar los bloqueos de agenda.'
+  }
+  try {
+    const cuerpo = (await response.json()) as Record<string, unknown>
+    for (const valor of Object.values(cuerpo)) {
+      const texto = Array.isArray(valor) ? valor[0] : valor
+      if (typeof texto === 'string' && texto) return texto
+    }
+  } catch {
+    // sin cuerpo legible: se usa el mensaje de respaldo
+  }
+  return respaldo
+}
+
+async function pedirBloqueos(url: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await pedir(url, init)
+  } catch {
+    throw new ReservaError(MENSAJE_SIN_CONEXION)
+  }
+}
+
+const JSON_HEADERS = { 'Content-Type': 'application/json' }
+
 export const obtenerBloqueosApi = async (): Promise<Bloqueo[]> => {
-  const response = await pedir(`${API_URL}/api/v1/bloqueos`)
-  if (!response.ok) throw new ReservaError('Error al cargar los bloqueos.')
-  return response.json()
+  const response = await pedirBloqueos(`${API_URL}/api/v1/blocks`)
+  if (!response.ok) {
+    throw new ReservaError(
+      await mensajeDeBloqueo(response, 'No se pudieron cargar los bloqueos.'),
+    )
+  }
+  return ((await response.json()) as BloqueoApi[]).map(aBloqueo)
 }
 
 export const crearBloqueoApi = async (nuevo: Omit<Bloqueo, 'id'>): Promise<Bloqueo> => {
-  const response = await pedir(`${API_URL}/api/v1/bloqueos`, {
+  const response = await pedirBloqueos(`${API_URL}/api/v1/blocks`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(nuevo),
+    headers: JSON_HEADERS,
+    body: JSON.stringify(cuerpoBloqueo(nuevo)),
   })
-  if (!response.ok) throw new ReservaError('Error al crear el bloqueo.')
-  return response.json()
+  if (!response.ok) {
+    throw new ReservaError(
+      await mensajeDeBloqueo(response, 'No se pudo crear el bloqueo.'),
+    )
+  }
+  return aBloqueo((await response.json()) as BloqueoApi)
 }
 
 export const actualizarBloqueoApi = async (
   id: string,
   cambios: Omit<Bloqueo, 'id'>,
 ): Promise<Bloqueo> => {
-  const response = await pedir(`${API_URL}/api/v1/bloqueos/${id}`, {
+  const response = await pedirBloqueos(`${API_URL}/api/v1/blocks/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(cambios),
+    headers: JSON_HEADERS,
+    body: JSON.stringify(cuerpoBloqueo(cambios)),
   })
-  if (!response.ok)
-    throw new ReservaError('No se encontró el bloqueo que deseas editar.')
-  return response.json()
+  if (!response.ok) {
+    throw new ReservaError(
+      await mensajeDeBloqueo(response, 'No se pudo actualizar el bloqueo.'),
+    )
+  }
+  return aBloqueo((await response.json()) as BloqueoApi)
 }
 
 export const eliminarBloqueoApi = async (id: string | number): Promise<void> => {
-  const response = await pedir(`${API_URL}/api/v1/bloqueos/${id}`, {
+  const response = await pedirBloqueos(`${API_URL}/api/v1/blocks/${id}`, {
     method: 'DELETE',
   })
-  if (!response.ok) throw new ReservaError('Error al eliminar el bloqueo.')
+  if (!response.ok) {
+    throw new ReservaError(
+      await mensajeDeBloqueo(response, 'No se pudo eliminar el bloqueo.'),
+    )
+  }
 }

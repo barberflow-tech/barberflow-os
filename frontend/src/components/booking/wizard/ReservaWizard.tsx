@@ -59,7 +59,7 @@ export function ReservaWizard() {
     (paso === 2 && !!barbero) ||
     (paso === 3 && !!fecha && !!hora)
 
-  async function confirmar(cliente: ClienteData | null) {
+  async function confirmar(cliente: ClienteData) {
     if (!servicio || !barbero || !fecha || !hora) return
     setEnviando(true)
     setError(null)
@@ -69,11 +69,8 @@ export function ReservaWizard() {
         barberoId: barbero.id,
         barbero,
         inicio: construirInicio(fecha, hora),
-        // Con sesión no hay contacto: la cita queda a nombre de la cuenta.
-        ...(cliente && {
-          contactoNombre: cliente.nombre,
-          contactoCelular: cliente.celular,
-        }),
+        contactoNombre: cliente.nombre,
+        contactoCelular: cliente.celular,
       })
       registrarCita(nueva)
     } catch (e) {
@@ -92,7 +89,7 @@ export function ReservaWizard() {
         : enc.subtitulo
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-[#101820]/12 bg-[#F7F1E8] shadow-[0_18px_40px_-22px_rgb(16_24_32_/_45%)] dark:border-[#F7F1E8]/12 dark:bg-[#16202B]">
+    <section className="overflow-hidden rounded-2xl border border-[#101820]/12 bg-[#FAFAF8] shadow-[0_18px_40px_-22px_rgb(16_24_32_/_45%)] dark:border-[#F7F1E8]/12 dark:bg-[#16202B]">
       {/* Barra de progreso del puesto: de rojo a azul barbero */}
       <div
         aria-hidden="true"
@@ -170,7 +167,9 @@ export function ReservaWizard() {
         {paso === 1 && <PasoServicio />}
         {paso === 2 && <PasoBarbero />}
         {paso === 3 && <PasoFechaHora />}
-        {paso === 4 && <PasoConfirmar error={error} onConfirmar={confirmar} />}
+        {paso === 4 && (
+          <PasoConfirmar error={error} enviando={enviando} onConfirmar={confirmar} />
+        )}
       </div>
 
       <footer className="relative flex items-center justify-between gap-3 border-t border-dashed border-[#101820]/15 px-4 py-4 sm:px-6 dark:border-[#F7F1E8]/15">
@@ -195,21 +194,9 @@ export function ReservaWizard() {
             Continuar <ArrowRight className="size-4" />
           </button>
         ) : (
-          <button
-            type="submit"
-            form="form-confirmar"
-            className={botonPrimario}
-            disabled={enviando}
-          >
-            {enviando ? (
-              'Confirmando…'
-            ) : (
-              <span className="whitespace-nowrap">
-                Confirmar <span className="hidden min-[380px]:inline">reserva</span>
-              </span>
-            )}
-            {!enviando && <ArrowRight className="size-4" />}
-          </button>
+          // Confirmar vive en el cuerpo del paso 4, lejos de «Continuar»: un doble
+          // clic en «Continuar» no puede caer sobre él y agendar sin querer.
+          <span aria-hidden="true" />
         )}
       </footer>
     </section>

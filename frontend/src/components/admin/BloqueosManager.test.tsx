@@ -1,13 +1,14 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { BloqueosManager } from './BloqueosManager'
-import { obtenerBloqueosApi } from '@/lib/reservaApi'
+import { crearBloqueoApi, listarBarberos, obtenerBloqueosApi } from '@/lib/reservaApi'
 
 vi.mock('@/lib/reservaApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/reservaApi')>()
   return {
     ...actual,
     obtenerBloqueosApi: vi.fn(),
+    listarBarberos: vi.fn(),
     crearBloqueoApi: vi.fn(),
     actualizarBloqueoApi: vi.fn(),
     eliminarBloqueoApi: vi.fn(),
@@ -17,6 +18,10 @@ vi.mock('@/lib/reservaApi', async (importOriginal) => {
 describe('BloqueosManager', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(listarBarberos).mockResolvedValue([
+      { id: 3, nombre: 'Thiago', rol: 'Barbero', calificacion: 0 },
+      { id: 4, nombre: 'Andrés', rol: 'Barbero', calificacion: 0 },
+    ])
   })
 
   it('Dado un bloqueo existente en el store, Cuando carga el componente, Entonces lo renderiza en la lista con formato 12h', async () => {
@@ -81,6 +86,114 @@ describe('BloqueosManager', () => {
 
     expect(await screen.findByTestId('error-bloqueo')).toHaveTextContent(
       'Selecciona las horas de inicio y finalización.',
+    )
+  })
+
+  it('Dado un bloqueo de un barbero, Cuando carga la lista, Entonces muestra el nombre del barbero', async () => {
+    vi.mocked(obtenerBloqueosApi).mockResolvedValue([
+      {
+        id: 1,
+        barberoId: 4,
+        fecha: '2026-12-01',
+        horaInicio: '08:00',
+        horaFin: '13:00',
+        motivo: 'Cita médica',
+      },
+    ])
+
+    render(<BloqueosManager />)
+
+    expect(await screen.findByText('Andrés')).toBeInTheDocument()
+  })
+
+  it('Dado un bloqueo que afectó citas, Cuando carga la lista, Entonces resume cuántas se avisaron y a quién hay que llamar', async () => {
+    vi.mocked(obtenerBloqueosApi).mockResolvedValue([
+      {
+        id: 1,
+        barberoId: 3,
+        fecha: '2026-12-01',
+        horaInicio: '08:00',
+        horaFin: '13:00',
+        motivo: 'Incapacidad',
+        citasAfectadas: {
+          total: 3,
+          avisadas: 1,
+          pendientes: 1,
+          sinCanal: [
+            {
+              id: 40,
+              nombre: 'Luis Visitante',
+              celular: '3001234567',
+              inicio: '2026-12-01T09:30:00-05:00',
+            },
+          ],
+        },
+      },
+    ])
+
+    render(<BloqueosManager />)
+
+    const resumen = await screen.findByTestId('citas-afectadas-1')
+    expect(resumen).toHaveTextContent('3 citas afectadas')
+    expect(resumen).toHaveTextContent('1 avisada')
+    expect(resumen).toHaveTextContent('1 pendiente')
+    expect(resumen).toHaveTextContent('Luis Visitante')
+    expect(resumen).toHaveTextContent('3001234567')
+  })
+
+  it('Dado el formulario sin barbero, Cuando completa lo demás, Entonces no se puede confirmar hasta elegirlo', async () => {
+    vi.mocked(obtenerBloqueosApi).mockResolvedValue([])
+    render(<BloqueosManager />)
+
+    fireEvent.click(await screen.findByText('Crear bloqueo'))
+    fireEvent.click(await screen.findByText('Seleccionar fecha'))
+    fireEvent.click(screen.getByRole('button', { name: 'Ir a hoy' }))
+    fireEvent.change(screen.getByTestId('input-motivo'), {
+      target: { value: 'Mantenimiento' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /día completo/i }))
+    expect(screen.getByTestId('btn-registrar-bloqueo')).toBeDisabled()
+
+    fireEvent.change(await screen.findByLabelText('Barbero'), {
+      target: { value: '4' },
+    })
+
+    expect(screen.getByTestId('btn-registrar-bloqueo')).toBeEnabled()
+  })
+
+  it('Dado un bloqueo completo, Cuando confirma, Entonces se crea para el barbero elegido', async () => {
+    vi.mocked(obtenerBloqueosApi).mockResolvedValue([])
+    vi.mocked(crearBloqueoApi).mockResolvedValue({
+      id: 9,
+      barberoId: 4,
+      fecha: '2026-12-01',
+      horaInicio: '08:00',
+      horaFin: '20:00',
+      motivo: 'Mantenimiento',
+    })
+    render(<BloqueosManager />)
+
+    fireEvent.click(await screen.findByText('Crear bloqueo'))
+    fireEvent.change(await screen.findByLabelText('Barbero'), {
+      target: { value: '4' },
+    })
+    fireEvent.click(await screen.findByText('Seleccionar fecha'))
+    fireEvent.click(screen.getByRole('button', { name: 'Ir a hoy' }))
+    fireEvent.change(screen.getByTestId('input-motivo'), {
+      target: { value: 'Mantenimiento' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /día completo/i }))
+    fireEvent.submit(screen.getByTestId('btn-registrar-bloqueo').closest('form')!)
+
+    await vi.waitFor(() =>
+      expect(crearBloqueoApi).toHaveBeenCalledWith(
+        expect.objectContaining({
+          barberoId: 4,
+          horaInicio: '08:00',
+          horaFin: '20:00',
+          motivo: 'Mantenimiento',
+        }),
+      ),
     )
   })
 })

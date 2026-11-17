@@ -1,5 +1,6 @@
 // Horario semanal de un barbero contra el backend real (HU-08).
 // GET/PUT /api/v1/barbers/{id}/schedule exigen un administrador autenticado.
+import { MENSAJE_SIN_CONEXION } from './mensajes'
 import { useAuthStore } from '@/stores/useAuthStore'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
@@ -56,7 +57,7 @@ async function pedir(url: string, init: RequestInit = {}): Promise<Response> {
       },
     })
   } catch {
-    throw new HorariosError('No se pudo conectar con el servidor.')
+    throw new HorariosError(MENSAJE_SIN_CONEXION)
   }
 }
 

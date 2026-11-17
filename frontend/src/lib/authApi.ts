@@ -1,6 +1,7 @@
 // Llamadas de autenticación al backend (SCRUM-30).
 // Mismo contrato que `restoreSession` en useAuthStore: el access token viaja en el
 // cuerpo ({ access, user }) y el refresh token en una cookie HTTP-Only.
+import { MENSAJE_SIN_CONEXION } from './mensajes'
 import type { AuthUser } from '@/stores/useAuthStore'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
@@ -26,7 +27,7 @@ export async function iniciarSesion(
       body: JSON.stringify({ email, password }),
     })
   } catch {
-    throw new AuthError('No se pudo conectar con el servidor. Inténtalo de nuevo.')
+    throw new AuthError(MENSAJE_SIN_CONEXION)
   }
 
   if (response.status === 400 || response.status === 401) {
@@ -64,7 +65,7 @@ export async function solicitarRecuperacion(email: string): Promise<void> {
       body: JSON.stringify({ email }),
     })
   } catch {
-    throw new AuthError('No se pudo conectar con el servidor. Inténtalo de nuevo.')
+    throw new AuthError(MENSAJE_SIN_CONEXION)
   }
 
   if (response.status === 429) {
@@ -94,7 +95,7 @@ export async function restablecerContrasena(
       body: JSON.stringify({ uid, token, password }),
     })
   } catch {
-    throw new AuthError('No se pudo conectar con el servidor. Inténtalo de nuevo.')
+    throw new AuthError(MENSAJE_SIN_CONEXION)
   }
 
   if (response.status === 400) {
@@ -125,7 +126,7 @@ export async function registrarCuenta(
       body: JSON.stringify({ fullName, email, password }),
     })
   } catch {
-    throw new AuthError('No se pudo conectar con el servidor. Inténtalo de nuevo.')
+    throw new AuthError(MENSAJE_SIN_CONEXION)
   }
 
   if (response.status === 400) {

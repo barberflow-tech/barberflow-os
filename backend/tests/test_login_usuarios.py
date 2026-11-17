@@ -42,16 +42,29 @@ def test_login_correcto_retorna_200_con_access_y_usuario(api, usuario):
     # Cuando inicia sesion con credenciales validas
     respuesta = _login(api)
 
-    # Entonces recibe exactamente access y user {id, email, role}
+    # Entonces recibe exactamente access y user {id, email, role, fullName}
     assert respuesta.status_code == 200
     assert respuesta.json() == {
         "access": respuesta.json()["access"],
-        "user": {"id": usuario.pk, "email": EMAIL, "role": "cliente"},
+        "user": {"id": usuario.pk, "email": EMAIL, "role": "cliente", "fullName": ""},
     }
     access = AccessToken(respuesta.json()["access"])
     assert access["user_id"] == usuario.pk
     assert access["email"] == EMAIL
     assert access["role"] == "cliente"
+
+
+def test_login_devuelve_el_nombre_con_el_que_se_registro_el_usuario(api, usuario):
+    # Dado un cliente que se registro con su nombre completo
+    usuario.perfil.full_name = "Ana Pérez"
+    usuario.perfil.save()
+
+    # Cuando inicia sesion
+    respuesta = _login(api)
+
+    # Entonces el frontend recibe su nombre para saludarlo
+    assert respuesta.status_code == 200
+    assert respuesta.json()["user"]["fullName"] == "Ana Pérez"
 
 
 @pytest.mark.parametrize("rol", [Rol.BARBERO, Rol.ADMIN])

@@ -37,6 +37,21 @@ describe('PortafolioPage', () => {
     expect(screen.getByText('1 fotografía')).toBeInTheDocument()
   })
 
+  it('Dado un barbero, Cuando abre su portafolio, Entonces usa la estética de barbería (poste, rojo) y no el dorado anterior', async () => {
+    vi.stubGlobal(
+      'fetch',
+      simular(() => respuesta([])),
+    )
+    const { container } = render(<PortafolioPage />)
+    await screen.findByText('Aún no tienes fotografías')
+
+    expect(screen.getByTestId('poste-portafolio')).toBeInTheDocument()
+    expect(container.querySelector('main')?.className).toContain('bg-[#FAFAF8]')
+    expect(container.querySelector('main')?.className).toContain('dark:bg-[#101820]')
+    expect(container.innerHTML).not.toContain('#d7b36a')
+    expect(container.innerHTML).not.toContain('Playfair')
+  })
+
   it('Dado un barbero sin fotos, Cuando carga, Entonces ofrece subir la primera', async () => {
     vi.stubGlobal(
       'fetch',

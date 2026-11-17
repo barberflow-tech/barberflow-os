@@ -8,6 +8,9 @@ export const REALTIME_CITAS_REALES = {
   table: 'citas_cita',
 } as const
 
+/** Cada cuánto se refrescan las franjas aunque no llegue ningún aviso. */
+const REFRESCO_MS = 30_000
+
 interface AvisoCita {
   new?: { barber_id?: number }
 }
@@ -25,6 +28,11 @@ interface Resultado {
  * alguien reserva) y entonces se vuelven a pedir a la API. El aviso es solo una
  * señal: las franjas siempre salen del backend, que es quien conoce horarios,
  * bloqueos y duración del servicio. Los avisos de otro barbero se ignoran.
+ *
+ * Realtime es una mejora y puede no estar (sin llave, o sin publicación de la
+ * tabla): por eso, además, se vuelven a pedir al volver a la pestaña o ventana
+ * y cada `REFRESCO_MS`. Así una cita cancelada en otra pestaña libera su franja
+ * aquí sin tener que recargar.
  */
 export function useFranjas(
   barberoId: number | undefined,
@@ -55,10 +63,26 @@ export function useFranjas(
     }
 
     pedir()
-    // Sin Supabase configurado no hay avisos: solo se consulta al cambiar de día.
+
+    const alVolver = () => {
+      if (document.visibilityState !== 'hidden') pedir()
+    }
+    document.addEventListener('visibilitychange', alVolver)
+    window.addEventListener('focus', alVolver)
+    const intervalo = setInterval(() => {
+      if (document.visibilityState !== 'hidden') pedir()
+    }, REFRESCO_MS)
+    const dejarDeRefrescar = () => {
+      document.removeEventListener('visibilitychange', alVolver)
+      window.removeEventListener('focus', alVolver)
+      clearInterval(intervalo)
+    }
+
+    // Sin Supabase configurado no hay avisos en vivo: queda el refresco periódico.
     if (!supabase) {
       return () => {
         activo = false
+        dejarDeRefrescar()
       }
     }
     const cliente = supabase
@@ -77,6 +101,7 @@ export function useFranjas(
 
     return () => {
       activo = false
+      dejarDeRefrescar()
       void cliente.removeChannel(canal)
     }
   }, [clave, barberoId, fecha, duracionMin])

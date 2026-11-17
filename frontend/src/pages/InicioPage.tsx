@@ -18,6 +18,7 @@ import {
   botonSecundario,
   titulo,
 } from '@/components/booking/wizard/estilos'
+import { IlustracionBarberia } from '@/components/inicio/IlustracionBarberia'
 import { ListaServicios } from '@/components/inicio/ListaServicios'
 import { Footer } from '@/components/layout/Footer'
 import { Navbar, type EnlaceNavbar } from '@/components/layout/Navbar'
@@ -59,16 +60,15 @@ const beneficios = [
   },
 ]
 
-const horasEjemplo = [
-  { hora: '09:00', estado: 'libre' },
-  { hora: '09:30', estado: 'ocupada' },
-  { hora: '10:00', estado: 'libre' },
-  { hora: '10:30', estado: 'elegida' },
+const confianza = [
+  'Reserva en menos de un minuto',
+  'Solo ves horarios libres',
+  'Sin crear cuenta',
 ]
 
 export function InicioPage() {
   return (
-    <div className="min-h-screen bg-[#F7F1E8] font-[Inter_Variable] text-[#101820] dark:bg-[#101820] dark:text-[#F7F1E8]">
+    <div className="min-h-screen bg-[#FAFAF8] font-[Inter_Variable] text-[#101820] dark:bg-[#101820] dark:text-[#F7F1E8]">
       <Navbar enlaces={enlaces} />
 
       <main>
@@ -94,7 +94,7 @@ export function InicioPage() {
 
           <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:py-24">
             <div className="space-y-6">
-              <p className="inline-flex items-center gap-2 rounded-full border border-[#F7F1E8]/20 bg-[#F7F1E8]/5 px-3 py-1 text-xs font-semibold tracking-wider text-[#F7F1E8]/80 uppercase">
+              <p className="inline-flex items-center gap-2 rounded-full border border-[#F7F1E8]/20 bg-[#FAFAF8]/5 px-3 py-1 text-xs font-semibold tracking-wider text-[#F7F1E8]/80 uppercase">
                 <span className="size-2 rounded-full bg-[#10B981]" aria-hidden="true" />
                 Reservas en línea 24/7
               </p>
@@ -122,51 +122,26 @@ export function InicioPage() {
                 </Link>
                 <Link
                   to="/login"
-                  className={`${botonSecundario} h-12 border-[#F7F1E8]/25 bg-transparent! px-6 text-[#F7F1E8]! hover:bg-[#F7F1E8]/10 dark:border-[#F7F1E8]/25 dark:bg-transparent! dark:hover:bg-[#F7F1E8]/10`}
+                  className={`${botonSecundario} h-12 border-[#F7F1E8]/25 bg-transparent! px-6 text-[#F7F1E8]! hover:bg-[#FAFAF8]/10 dark:border-[#F7F1E8]/25 dark:bg-transparent! dark:hover:bg-[#FAFAF8]/10`}
                 >
                   Ingresar
                 </Link>
               </div>
+              <ul className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#F7F1E8]/65">
+                {confianza.map((texto) => (
+                  <li key={texto} className="flex items-center gap-1.5">
+                    <Check className="size-4 text-[#10B981]" aria-hidden="true" />
+                    {texto}
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            {/* Tarjeta decorativa que imita el asistente de reserva (estilo ticket) */}
-            <div aria-hidden="true" className="relative mx-auto w-full max-w-md">
-              <div className="absolute -inset-4 rounded-[2rem] bg-[#B3263B]/20 blur-2xl" />
-              <div className="bf-marco relative space-y-5 rounded-2xl bg-[#F7F1E8] p-6 text-[#101820] shadow-2xl dark:bg-[#16202B] dark:text-[#F7F1E8]">
-                <div className="flex items-center gap-3 border-b border-dashed border-[#101820]/20 pb-4 dark:border-[#F7F1E8]/20">
-                  <span className="grid size-11 place-items-center rounded-full bg-[#101820] text-sm font-bold text-[#F7F1E8] dark:bg-[#F7F1E8] dark:text-[#101820]">
-                    TH
-                  </span>
-                  <div>
-                    <p className="font-semibold">Thiago</p>
-                    <p className="text-xs text-[#101820]/60 dark:text-[#F7F1E8]/60">
-                      Master barber · 4.9 ★
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {horasEjemplo.map(({ hora, estado }) => (
-                    <span
-                      key={hora}
-                      className={`rounded-xl border px-4 py-3 text-center text-sm font-semibold ${
-                        estado === 'elegida'
-                          ? 'border-[#B3263B] bg-[#FBEEF0] text-[#B3263B] dark:border-[#E5283C] dark:bg-[#E5283C]/10 dark:text-[#E5283C]'
-                          : estado === 'ocupada'
-                            ? 'border-[#101820]/5 bg-[#101820]/5 text-[#101820]/30 line-through dark:border-white/5 dark:bg-white/5 dark:text-white/30'
-                            : 'border-[#101820]/15 text-[#101820] dark:border-[#F7F1E8]/15 dark:text-[#F7F1E8]'
-                      }`}
-                    >
-                      {hora}
-                    </span>
-                  ))}
-                </div>
-                <p className="flex items-center gap-2 rounded-xl bg-[#10B981]/10 px-4 py-3 text-sm font-semibold text-[#0b7a57] dark:text-[#34d399]">
-                  <Check className="size-4" /> Cita confirmada
-                </p>
-              </div>
-            </div>
+            <IlustracionBarberia className="mx-auto h-auto w-full max-w-md lg:max-w-lg" />
           </div>
         </section>
+
+        <div className="bf-cinta" aria-hidden="true" />
 
         {/* Servicios */}
         <section id="servicios" className="scroll-mt-16 py-16 sm:py-20">
@@ -188,7 +163,7 @@ export function InicioPage() {
         {/* Cómo funciona */}
         <section
           id="como-funciona"
-          className="scroll-mt-16 border-y border-[#101820]/10 bg-[#F7F1E8] py-16 sm:py-20 dark:border-[#F7F1E8]/10 dark:bg-[#16202B]"
+          className="scroll-mt-16 border-y border-[#101820]/10 bg-[#FAFAF8] py-16 sm:py-20 dark:border-[#F7F1E8]/10 dark:bg-[#16202B]"
         >
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest text-[#174A7E] uppercase dark:text-[#5FA3E0]">
@@ -257,11 +232,15 @@ export function InicioPage() {
         </section>
 
         {/* Llamado final */}
-        <section className="bg-[#F7F1E8] pb-16 sm:pb-20 dark:bg-[#101820]">
+        <section className="bg-[#FAFAF8] py-16 sm:py-20 dark:bg-[#101820]">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="bf-marco relative flex flex-col items-start justify-between gap-6 overflow-hidden rounded-2xl bg-[#174A7E] p-8 text-[#F7F1E8] sm:p-12 md:flex-row md:items-center">
               <div
                 className="bf-patron-rayas pointer-events-none absolute inset-0 opacity-60"
+                aria-hidden="true"
+              />
+              <Scissors
+                className="pointer-events-none absolute -right-6 -bottom-8 size-44 -rotate-12 text-[#F7F1E8]/[0.07]"
                 aria-hidden="true"
               />
               <div className="relative">

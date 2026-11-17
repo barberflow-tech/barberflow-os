@@ -1,4 +1,4 @@
-import { CalendarClock, Clock, Trash2 } from 'lucide-react'
+import { AlertTriangle, CalendarClock, Clock, Trash2 } from 'lucide-react'
 import type { CitaConfirmada } from '@/lib/reservaApi'
 import { cn } from '@/lib/utils'
 import { botonSecundario, titulo } from '@/components/booking/wizard/estilos'
@@ -112,6 +112,19 @@ export function TarjetaCita({ cita, ahora, onReprogramar, onCancelar }: Props) {
           </div>
         </div>
       </div>
+
+      {cita.afectadaPorBloqueo && (
+        <p
+          data-testid="cita-afectada"
+          className="mx-4 mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-800 sm:mx-5 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200"
+        >
+          <AlertTriangle className="mt-px size-4 shrink-0" aria-hidden="true" />
+          <span>
+            {cita.barbero.nombre} no podrá atenderte a esta hora por una ausencia
+            imprevista. Reprograma tu cita para otro horario o cancélala.
+          </span>
+        </p>
+      )}
 
       <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/60 px-4 py-3 dark:border-white/5 dark:bg-white/[0.02] sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <p

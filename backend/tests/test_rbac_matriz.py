@@ -91,8 +91,11 @@ CASOS = [
         {ANONIMO: 401, BARBERO: 403, ADMIN: 403},
     ),
     # Bloqueos de agenda: solo el administrador (no se editan: se borran y crean).
+    # Historial (canceladas y vencidas): cada usuario autenticado ve solo las suyas.
+    ("get", "/api/v1/appointments/history", None, por_rol(401, 200, 200, 200)),
     ("get", "/api/v1/blocks", None, por_rol(401, 403, 403, 200)),
     ("post", "/api/v1/blocks", {}, por_rol(401, 403, 403, 400)),
+    ("put", "/api/v1/blocks/999999", {}, por_rol(401, 403, 403, 404)),
     ("delete", "/api/v1/blocks/999999", None, por_rol(401, 403, 403, 404)),
     # Disponibilidad (consulta de slots): publica.
     (
@@ -170,6 +173,7 @@ RUTAS_REVISADAS = {
     "citas:crear",
     "citas:cancelar",
     "citas:reprogramar",
+    "citas:historial",
     "citas:disponibilidad",
     "citas:bloqueos",
     "citas:bloqueo-detalle",

@@ -28,16 +28,23 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F1F5F9] font-[Inter_Variable] text-[#0B1B3A] dark:bg-[#0f1210] dark:text-[#f4f1e9]">
+    <div className="flex min-h-screen flex-col bg-[#F7F1E8] font-[Inter_Variable] text-[#101820] dark:bg-[#101820] dark:text-[#F7F1E8]">
       <Navbar />
-      <main className="flex flex-1 items-center justify-center p-4 sm:p-8">
-        <LoginForm
-          restablecer={restablecer}
-          pasoInicial={pathname === '/registro' ? 'register' : 'login'}
-          onPasoChange={(paso) =>
-            navigate(paso === 'register' ? '/registro' : '/login', { replace: true })
-          }
+      <main className="relative flex flex-1 items-center justify-center overflow-hidden p-4 sm:p-8">
+        {/* Textura de fondo sutil: rayas de barbería muy tenues */}
+        <div
+          className="bf-patron-rayas pointer-events-none absolute inset-0 opacity-50"
+          aria-hidden="true"
         />
+        <div className="relative w-full">
+          <LoginForm
+            restablecer={restablecer}
+            pasoInicial={pathname === '/registro' ? 'register' : 'login'}
+            onPasoChange={(paso) =>
+              navigate(paso === 'register' ? '/registro' : '/login', { replace: true })
+            }
+          />
+        </div>
       </main>
       <Footer />
     </div>

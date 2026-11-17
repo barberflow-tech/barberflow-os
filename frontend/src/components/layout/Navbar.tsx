@@ -66,7 +66,7 @@ export function Navbar({ enlaces = [] }: NavbarProps) {
   const [abierto, setAbierto] = useState(false)
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 dark:border-white/10 bg-white/90 dark:bg-[#0f1210]/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-[#101820]/10 bg-[#F7F1E8]/92 backdrop-blur dark:border-[#F7F1E8]/10 dark:bg-[#101820]/92">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Logo />
 
@@ -75,7 +75,7 @@ export function Navbar({ enlaces = [] }: NavbarProps) {
             <a
               key={enlace.href}
               href={enlace.href}
-              className="text-sm font-medium text-slate-600 dark:text-white/65 transition-colors hover:text-[#0B1B3A] dark:hover:text-[#f4f1e9]"
+              className="relative py-1 text-sm font-medium text-[#101820]/70 transition-colors after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:bg-[#B3263B] after:transition-transform hover:text-[#101820] hover:after:scale-x-100 dark:text-[#F7F1E8]/70 dark:after:bg-[#E5283C] dark:hover:text-[#F7F1E8]"
             >
               {enlace.etiqueta}
             </a>
@@ -92,7 +92,7 @@ export function Navbar({ enlaces = [] }: NavbarProps) {
           aria-expanded={abierto}
           aria-controls="menu-movil"
           aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
-          className="grid size-10 place-items-center rounded-xl border border-slate-200 dark:border-white/10 text-[#0B1B3A] dark:text-[#f4f1e9] md:hidden"
+          className="grid size-10 place-items-center rounded-xl border border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#16202B] dark:text-[#F7F1E8] md:hidden"
         >
           {abierto ? (
             <X className="size-5" aria-hidden="true" />
@@ -105,7 +105,7 @@ export function Navbar({ enlaces = [] }: NavbarProps) {
       {abierto && (
         <div
           id="menu-movil"
-          className="border-t border-slate-200 dark:border-white/10 bg-white dark:bg-[#151915] md:hidden"
+          className="border-t border-[#101820]/10 bg-[#F7F1E8] dark:border-[#F7F1E8]/10 dark:bg-[#16202B] md:hidden"
         >
           <nav aria-label="Principal móvil" className="flex flex-col gap-1 p-4">
             {enlaces.map((enlace) => (
@@ -113,7 +113,7 @@ export function Navbar({ enlaces = [] }: NavbarProps) {
                 key={enlace.href}
                 href={enlace.href}
                 onClick={() => setAbierto(false)}
-                className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 dark:text-white/80 hover:bg-slate-50 dark:hover:bg-white/5"
+                className="rounded-lg px-3 py-3 text-sm font-medium text-[#101820] transition-colors hover:bg-[#101820]/5 dark:text-[#F7F1E8]/85 dark:hover:bg-[#F7F1E8]/5"
               >
                 {enlace.etiqueta}
               </a>

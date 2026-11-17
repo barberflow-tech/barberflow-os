@@ -210,71 +210,91 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto min-h-[620px] grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl bg-white dark:bg-[#151915]">
-      {/* 🔴 COLUMNA IZQUIERDA: BRANDING BARBERFLOW OS */}
-      <div className="lg:col-span-6 bg-slate-950 dark:bg-[#0a0c0b] text-white p-8 sm:p-12 flex flex-col justify-between relative overflow-hidden">
-        <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-red-600/20 dark:bg-[#d7b36a]/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -left-20 -top-20 w-80 h-80 bg-blue-600/10 dark:bg-[#d7b36a]/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="w-full max-w-5xl mx-auto min-h-[620px] grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden border border-[#101820]/12 shadow-2xl bg-[#F7F1E8] dark:border-[#F7F1E8]/12 dark:bg-[#16202B]">
+      {/* Panel decorativo de marca: solo en desktop. En móvil el formulario va limpio. */}
+      <div className="hidden lg:col-span-5 lg:flex bg-[#101820] text-[#F7F1E8] p-8 sm:p-12 flex-col justify-between relative overflow-hidden">
+        <div
+          className="bf-grano pointer-events-none absolute inset-0"
+          aria-hidden="true"
+        />
+        <div
+          className="bf-patron-rayas pointer-events-none absolute inset-0 opacity-70"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute -right-20 -bottom-20 w-80 h-80 bg-[#B3263B]/25 rounded-full blur-3xl pointer-events-none"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute -left-20 -top-20 w-80 h-80 bg-[#174A7E]/30 rounded-full blur-3xl pointer-events-none"
+          aria-hidden="true"
+        />
 
         <div className="relative z-10 space-y-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-600 dark:bg-[#d7b36a] rounded-xl flex items-center justify-center font-black text-white dark:text-[#111411] text-lg">
+            <div className="w-11 h-11 border border-[#F7F1E8]/40 bg-[#101820] rounded-lg flex items-center justify-center text-[#F7F1E8]">
               <Scissors className="size-5" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="font-black tracking-wider text-lg leading-none uppercase">
-                BARBER<span className="text-red-500 dark:text-[#d7b36a]">FLOW</span>
+              <h1 className="font-[Barlow_Condensed] font-bold tracking-wider text-xl leading-none uppercase">
+                BARBER<span className="text-[#E5283C]">FLOW</span>
               </h1>
-              <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">
+              <p className="text-[10px] text-[#F7F1E8]/55 font-bold tracking-widest uppercase">
                 OPERATING SYSTEM
               </p>
             </div>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 dark:bg-white/5 border border-slate-800 dark:border-white/10 text-slate-300 text-xs font-semibold uppercase tracking-wider">
-            <span className="w-2 h-2 rounded-full bg-blue-500 dark:bg-[#d7b36a] animate-pulse"></span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F7F1E8]/5 border border-[#F7F1E8]/20 text-[#F7F1E8]/80 text-xs font-semibold uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
             GESTIÓN INTELIGENTE
           </div>
         </div>
 
         <div className="relative z-10 space-y-4 my-8">
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight uppercase">
+          {/* Poste de barbería */}
+          <div className="bf-poste h-[18px] w-32 rounded-sm" aria-hidden="true" />
+          <h2 className="font-[Barlow_Condensed] text-4xl font-bold tracking-wide leading-tight uppercase">
             TU BARBERÍA, <br />
-            <span className="text-red-500 dark:text-[#d7b36a]">BAJO CONTROL.</span>
+            <span className="text-[#E5283C]">BAJO CONTROL.</span>
           </h2>
-          <p className="text-sm text-slate-400 max-w-md leading-relaxed">
-            Agenda, clientes, servicios y crecimiento. Todo lo que Thiago Barber
-            necesita en un solo lugar.
+          <p className="text-sm text-[#F7F1E8]/70 max-w-md leading-relaxed">
+            Agenda, clientes, servicios y crecimiento. Todo lo que tu barbería necesita
+            en un solo lugar.
           </p>
         </div>
 
-        <div className="relative z-10 grid grid-cols-2 gap-4 pt-6 border-t border-slate-800/80">
+        <div className="relative z-10 grid grid-cols-2 gap-4 pt-6 border-t border-[#F7F1E8]/15">
           <div>
-            <span className="text-2xl font-black text-white block">+1.2K</span>
-            <span className="text-xs text-slate-400">Citas gestionadas</span>
+            <span className="text-2xl font-[Barlow_Condensed] font-bold text-[#F7F1E8] block">
+              +1.2K
+            </span>
+            <span className="text-xs text-[#F7F1E8]/60">Citas gestionadas</span>
           </div>
           <div>
-            <span className="text-2xl font-black text-white block">98%</span>
-            <span className="text-xs text-slate-400">Clientes satisfechos</span>
+            <span className="text-2xl font-[Barlow_Condensed] font-bold text-[#F7F1E8] block">
+              98%
+            </span>
+            <span className="text-xs text-[#F7F1E8]/60">Clientes satisfechos</span>
           </div>
         </div>
 
-        <div className="relative z-10 mt-8 text-[11px] text-slate-500">
+        <div className="relative z-10 mt-8 text-[11px] text-[#F7F1E8]/45">
           © 2026 BarberFlow OS · Popayán, Colombia
         </div>
       </div>
 
-      {/* ⚪ COLUMNA DERECHA: PANELES DINÁMICOS */}
-      <div className="lg:col-span-6 p-8 sm:p-12 flex flex-col justify-center bg-white dark:bg-[#151915]">
+      {/* Columna del formulario: composición simple y accesible en cualquier pantalla */}
+      <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-center bg-[#F7F1E8] dark:bg-[#16202B]">
         <div className="max-w-md w-full mx-auto space-y-6">
           {/* VISTAS 1 & 2: LOGIN Y REGISTRO */}
           {(currentStep === 'login' || currentStep === 'register') && (
             <>
               <div className="space-y-1">
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                <h2 className="font-[Barlow_Condensed] text-3xl font-bold text-[#101820] dark:text-[#F7F1E8] uppercase tracking-wide">
                   {currentStep === 'login' ? 'BIENVENIDO DE NUEVO' : 'CREA TU CUENTA'}
                 </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
+                <p className="text-sm text-[#101820]/65 dark:text-[#F7F1E8]/65">
                   {currentStep === 'login'
                     ? 'Ingresa tus credenciales para continuar.'
                     : 'Comienza a organizar tu barbería hoy.'}
@@ -301,14 +321,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               )}
 
               {/* Tabs Conmutadores */}
-              <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-white/5 rounded-2xl">
+              <div className="grid grid-cols-2 p-1 bg-[#101820]/5 dark:bg-[#F7F1E8]/5 rounded-2xl">
                 <button
                   type="button"
                   onClick={() => irA('login')}
+                  aria-current={currentStep === 'login' ? 'page' : undefined}
                   className={`py-2.5 text-xs font-bold rounded-xl transition-all ${
                     currentStep === 'login'
-                      ? 'bg-white dark:bg-[#151915] text-slate-900 dark:text-white shadow-sm'
-                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-[#F7F1E8] dark:bg-[#101820] text-[#101820] dark:text-[#F7F1E8] shadow-sm'
+                      : 'text-[#101820]/55 hover:text-[#101820] dark:text-[#F7F1E8]/55 dark:hover:text-[#F7F1E8]'
                   }`}
                 >
                   Iniciar sesión
@@ -319,10 +340,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                     setSuccessMessage(null)
                     irA('register')
                   }}
+                  aria-current={currentStep === 'register' ? 'page' : undefined}
                   className={`py-2.5 text-xs font-bold rounded-xl transition-all ${
                     currentStep === 'register'
-                      ? 'bg-white dark:bg-[#151915] text-slate-900 dark:text-white shadow-sm'
-                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-[#F7F1E8] dark:bg-[#101820] text-[#101820] dark:text-[#F7F1E8] shadow-sm'
+                      : 'text-[#101820]/55 hover:text-[#101820] dark:text-[#F7F1E8]/55 dark:hover:text-[#F7F1E8]'
                   }`}
                 >
                   Registrarme
@@ -330,7 +352,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               </div>
 
               {authError && (
-                <div className="p-3 bg-red-50 dark:bg-[#d7b36a]/10 border border-red-200 dark:border-[#d7b36a]/30 rounded-2xl text-xs text-red-600 dark:text-[#d7b36a] font-medium text-center">
+                <div className="p-3 bg-[#FBEEF0] dark:bg-[#E5283C]/10 border border-[#B3263B]/25 dark:border-[#E5283C]/30 rounded-xl text-xs text-[#B3263B] dark:text-[#E5283C] font-medium text-center">
                   {authError}
                 </div>
               )}
@@ -343,28 +365,28 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   noValidate
                 >
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <label className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75">
                       Correo electrónico
                     </label>
                     <input
                       type="email"
                       placeholder="hola@thiagobarber.co"
                       {...loginForm.register('email')}
-                      className={`w-full px-4 py-3 rounded-2xl border text-sm transition-all outline-none ${
+                      className={`w-full px-4 py-3 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                         loginForm.formState.errors.email
-                          ? 'border-red-500 bg-red-50/10'
-                          : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
+                          ? 'border-[#B3263B] bg-[#B3263B]/5'
+                          : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                       }`}
                     />
                     {loginForm.formState.errors.email && (
-                      <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
+                      <span className="text-xs text-[#B3263B] dark:text-[#E5283C] font-medium block">
                         {loginForm.formState.errors.email.message}
                       </span>
                     )}
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <label className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75">
                       Contraseña
                     </label>
                     <div className="relative flex items-center">
@@ -372,16 +394,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Mínimo 8 caracteres"
                         {...loginForm.register('password')}
-                        className={`w-full px-4 py-3 pr-12 rounded-2xl border text-sm transition-all outline-none ${
+                        className={`w-full px-4 py-3 pr-12 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                           loginForm.formState.errors.password
-                            ? 'border-red-500 bg-red-50/10'
-                            : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
+                            ? 'border-[#B3263B] bg-[#B3263B]/5'
+                            : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                         }`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2 p-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-all"
+                        className="absolute right-2 p-2 rounded-xl bg-[#101820]/5 hover:bg-[#101820]/10 dark:bg-[#F7F1E8]/5 dark:hover:bg-[#F7F1E8]/10 text-[#101820]/55 hover:text-[#101820] dark:text-[#F7F1E8]/55 dark:hover:text-[#F7F1E8] transition-all"
                       >
                         {showPassword ? (
                           <svg
@@ -419,18 +441,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       </button>
                     </div>
                     {loginForm.formState.errors.password && (
-                      <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
+                      <span className="text-xs text-[#B3263B] dark:text-[#E5283C] font-medium block">
                         {loginForm.formState.errors.password.message}
                       </span>
                     )}
                   </div>
 
                   <div className="flex items-center justify-between text-xs pt-1">
-                    <label className="flex items-center gap-2 text-slate-600 dark:text-slate-400 cursor-pointer">
+                    <label className="flex items-center gap-2 text-[#101820]/70 dark:text-[#F7F1E8]/70 cursor-pointer">
                       <input
                         type="checkbox"
                         {...loginForm.register('rememberMe')}
-                        className="rounded border-slate-300 text-red-600 dark:text-[#d7b36a] focus:ring-red-500 dark:focus:ring-[#d7b36a]"
+                        className="rounded border-[#101820]/25 text-[#B3263B] dark:border-[#F7F1E8]/25 dark:text-[#E5283C] focus:ring-[#B3263B] dark:focus:ring-[#E5283C]"
                       />
                       Recordarme
                     </label>
@@ -441,7 +463,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                         setAuthError(null)
                         setCurrentStep('forgot')
                       }}
-                      className="text-red-600 hover:text-red-700 dark:hover:text-[#e5c77f] dark:text-[#d7b36a] font-medium"
+                      className="text-[#B3263B] hover:text-[#8f1e2f] dark:text-[#E5283C] dark:hover:text-[#f0a0ad] font-medium"
                     >
                       ¿Olvidaste tu contraseña?
                     </button>
@@ -450,7 +472,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-3.5 px-4 bg-red-600 dark:bg-[#d7b36a] hover:bg-red-700 dark:hover:bg-[#e5c77f] active:scale-95 text-white dark:text-[#111411] font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 dark:shadow-[#d7b36a]/20 transition-all flex items-center justify-center gap-2 mt-4"
+                    className="w-full py-3.5 px-4 bg-[#B3263B] hover:bg-[#C93A4F] active:scale-95 text-[#F7F1E8] font-bold text-sm rounded-xl shadow-lg shadow-[#B3263B]/25 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-60"
                   >
                     <span>{isLoading ? 'Cargando...' : 'Ingresar a BarberFlow'}</span>
                     <span>→</span>
@@ -466,49 +488,49 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   noValidate
                 >
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <label className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75">
                       Nombre completo
                     </label>
                     <input
                       type="text"
                       placeholder="Ej. Thiago Angulo"
                       {...registerForm.register('fullName')}
-                      className={`w-full px-4 py-3 rounded-2xl border text-sm transition-all outline-none ${
+                      className={`w-full px-4 py-3 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                         registerForm.formState.errors.fullName
-                          ? 'border-red-500 bg-red-50/10'
-                          : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
+                          ? 'border-[#B3263B] bg-[#B3263B]/5'
+                          : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                       }`}
                     />
                     {registerForm.formState.errors.fullName && (
-                      <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
+                      <span className="text-xs text-[#B3263B] dark:text-[#E5283C] font-medium block">
                         {registerForm.formState.errors.fullName.message}
                       </span>
                     )}
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <label className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75">
                       Correo electrónico
                     </label>
                     <input
                       type="email"
                       placeholder="hola@thiagobarber.co"
                       {...registerForm.register('email')}
-                      className={`w-full px-4 py-3 rounded-2xl border text-sm transition-all outline-none ${
+                      className={`w-full px-4 py-3 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                         registerForm.formState.errors.email
-                          ? 'border-red-500 bg-red-50/10'
-                          : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
+                          ? 'border-[#B3263B] bg-[#B3263B]/5'
+                          : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                       }`}
                     />
                     {registerForm.formState.errors.email && (
-                      <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
+                      <span className="text-xs text-[#B3263B] dark:text-[#E5283C] font-medium block">
                         {registerForm.formState.errors.email.message}
                       </span>
                     )}
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <label className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75">
                       Contraseña
                     </label>
                     <div className="relative flex items-center">
@@ -516,16 +538,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Mínimo 8 caracteres"
                         {...registerForm.register('password')}
-                        className={`w-full px-4 py-3 pr-12 rounded-2xl border text-sm transition-all outline-none ${
+                        className={`w-full px-4 py-3 pr-12 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                           registerForm.formState.errors.password
-                            ? 'border-red-500 bg-red-50/10'
-                            : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
+                            ? 'border-[#B3263B] bg-[#B3263B]/5'
+                            : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                         }`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2 p-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-all"
+                        className="absolute right-2 p-2 rounded-xl bg-[#101820]/5 hover:bg-[#101820]/10 dark:bg-[#F7F1E8]/5 dark:hover:bg-[#F7F1E8]/10 text-[#101820]/55 hover:text-[#101820] dark:text-[#F7F1E8]/55 dark:hover:text-[#F7F1E8] transition-all"
                       >
                         {showPassword ? (
                           <svg
@@ -563,18 +585,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       </button>
                     </div>
                     {registerForm.formState.errors.password && (
-                      <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
+                      <span className="text-xs text-[#B3263B] dark:text-[#E5283C] font-medium block">
                         {registerForm.formState.errors.password.message}
                       </span>
                     )}
                   </div>
 
                   <div className="flex items-center text-xs pt-1">
-                    <label className="flex items-center gap-2 text-slate-600 dark:text-slate-400 cursor-pointer">
+                    <label className="flex items-center gap-2 text-[#101820]/70 dark:text-[#F7F1E8]/70 cursor-pointer">
                       <input
                         type="checkbox"
                         {...registerForm.register('rememberMe')}
-                        className="rounded border-slate-300 text-red-600 dark:text-[#d7b36a] focus:ring-red-500 dark:focus:ring-[#d7b36a]"
+                        className="rounded border-[#101820]/25 text-[#B3263B] dark:border-[#F7F1E8]/25 dark:text-[#E5283C] focus:ring-[#B3263B] dark:focus:ring-[#E5283C]"
                       />
                       Recordarme
                     </label>
@@ -583,7 +605,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-3.5 px-4 bg-red-600 dark:bg-[#d7b36a] hover:bg-red-700 dark:hover:bg-[#e5c77f] active:scale-95 text-white dark:text-[#111411] font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 dark:shadow-[#d7b36a]/20 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-60"
+                    className="w-full py-3.5 px-4 bg-[#B3263B] hover:bg-[#C93A4F] active:scale-95 text-[#F7F1E8] font-bold text-sm rounded-xl shadow-lg shadow-[#B3263B]/25 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-60"
                   >
                     <span>{isLoading ? 'Creando cuenta...' : 'Crear mi cuenta'}</span>
                     <span>→</span>
@@ -602,16 +624,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   setAuthError(null)
                   irA('login')
                 }}
-                className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center gap-1 transition-all"
+                className="text-xs font-semibold text-[#101820]/70 hover:text-[#101820] dark:text-[#F7F1E8]/70 dark:hover:text-[#F7F1E8] flex items-center gap-1 transition-all"
               >
                 <span>‹</span> Volver a iniciar sesión
               </button>
 
               <div className="space-y-1">
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                <h2 className="font-[Barlow_Condensed] text-3xl font-bold text-[#101820] dark:text-[#F7F1E8] uppercase tracking-wide">
                   RECUPERA TU CONTRASEÑA
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-[#101820]/65 dark:text-[#F7F1E8]/65">
                   Ingresa el correo asociado a tu cuenta y te enviaremos instrucciones
                   para restablecerla.
                 </p>
@@ -623,28 +645,28 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 noValidate
               >
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75">
                     Correo electrónico
                   </label>
                   <input
                     type="email"
                     placeholder="hola@thiagobarber.co"
                     {...forgotForm.register('email')}
-                    className={`w-full px-4 py-3 rounded-2xl border text-sm transition-all outline-none ${
+                    className={`w-full px-4 py-3 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                       forgotForm.formState.errors.email
-                        ? 'border-red-500 bg-red-50/10'
-                        : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
+                        ? 'border-[#B3263B] bg-[#B3263B]/5'
+                        : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                     }`}
                   />
                   {forgotForm.formState.errors.email && (
-                    <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
+                    <span className="text-xs text-[#B3263B] dark:text-[#E5283C] font-medium block">
                       {forgotForm.formState.errors.email.message}
                     </span>
                   )}
                 </div>
 
                 {authError && (
-                  <div className="p-3 bg-red-50 dark:bg-[#d7b36a]/10 border border-red-200 dark:border-[#d7b36a]/30 rounded-2xl text-xs text-red-600 dark:text-[#d7b36a] font-medium text-center">
+                  <div className="p-3 bg-[#FBEEF0] dark:bg-[#E5283C]/10 border border-[#B3263B]/25 dark:border-[#E5283C]/30 rounded-xl text-xs text-[#B3263B] dark:text-[#E5283C] font-medium text-center">
                     {authError}
                   </div>
                 )}
@@ -652,7 +674,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3.5 px-4 bg-red-600 dark:bg-[#d7b36a] hover:bg-red-700 dark:hover:bg-[#e5c77f] active:scale-95 text-white dark:text-[#111411] font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 dark:shadow-[#d7b36a]/20 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-60"
+                  className="w-full py-3.5 px-4 bg-[#B3263B] hover:bg-[#C93A4F] active:scale-95 text-[#F7F1E8] font-bold text-sm rounded-xl shadow-lg shadow-[#B3263B]/25 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-60"
                 >
                   <span>
                     {isLoading ? 'Enviando...' : 'Enviar enlace de recuperación'}
@@ -661,7 +683,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 </button>
               </form>
 
-              <div className="p-3 bg-slate-50 dark:bg-white/5 rounded-2xl text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 justify-center">
+              <div className="p-3 bg-[#101820]/5 dark:bg-[#F7F1E8]/5 rounded-xl text-[11px] text-[#101820]/65 dark:text-[#F7F1E8]/65 flex items-center gap-2 justify-center">
                 <span>🛡️</span> Por seguridad, el enlace será válido durante 30 minutos.
               </div>
             </div>
@@ -671,10 +693,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           {currentStep === 'reset' && (
             <div className="space-y-6">
               <div className="space-y-1">
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                <h2 className="font-[Barlow_Condensed] text-3xl font-bold text-[#101820] dark:text-[#F7F1E8] uppercase tracking-wide">
                   NUEVA CONTRASEÑA
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-[#101820]/65 dark:text-[#F7F1E8]/65">
                   Elige una contraseña nueva para tu cuenta.
                 </p>
               </div>
@@ -685,7 +707,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 noValidate
               >
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75">
                     Nueva contraseña
                   </label>
                   <input
@@ -693,21 +715,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                     autoComplete="new-password"
                     placeholder="Mínimo 8 caracteres"
                     {...resetForm.register('password')}
-                    className={`w-full px-4 py-3 rounded-2xl border text-sm transition-all outline-none ${
+                    className={`w-full px-4 py-3 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                       resetForm.formState.errors.password
-                        ? 'border-red-500 bg-red-50/10'
-                        : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
+                        ? 'border-[#B3263B] bg-[#B3263B]/5'
+                        : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                     }`}
                   />
                   {resetForm.formState.errors.password && (
-                    <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
+                    <span className="text-xs text-[#B3263B] dark:text-[#E5283C] font-medium block">
                       {resetForm.formState.errors.password.message}
                     </span>
                   )}
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="text-xs font-semibold text-[#101820]/75 dark:text-[#F7F1E8]/75">
                     Confirmar contraseña
                   </label>
                   <input
@@ -715,21 +737,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                     autoComplete="new-password"
                     placeholder="Repite la contraseña"
                     {...resetForm.register('confirm')}
-                    className={`w-full px-4 py-3 rounded-2xl border text-sm transition-all outline-none ${
+                    className={`w-full px-4 py-3 rounded-xl border text-sm transition-all outline-none focus:border-[#B3263B] focus:ring-2 focus:ring-[#B3263B]/25 dark:focus:border-[#E5283C] dark:focus:ring-[#E5283C]/25 ${
                       resetForm.formState.errors.confirm
-                        ? 'border-red-500 bg-red-50/10'
-                        : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white'
+                        ? 'border-[#B3263B] bg-[#B3263B]/5'
+                        : 'border-[#101820]/15 bg-[#F7F1E8] text-[#101820] dark:border-[#F7F1E8]/15 dark:bg-[#101820]/40 dark:text-[#F7F1E8]'
                     }`}
                   />
                   {resetForm.formState.errors.confirm && (
-                    <span className="text-xs text-red-500 dark:text-[#d7b36a] font-medium block">
+                    <span className="text-xs text-[#B3263B] dark:text-[#E5283C] font-medium block">
                       {resetForm.formState.errors.confirm.message}
                     </span>
                   )}
                 </div>
 
                 {authError && (
-                  <div className="p-3 bg-red-50 dark:bg-[#d7b36a]/10 border border-red-200 dark:border-[#d7b36a]/30 rounded-2xl text-xs text-red-600 dark:text-[#d7b36a] font-medium text-center">
+                  <div className="p-3 bg-[#FBEEF0] dark:bg-[#E5283C]/10 border border-[#B3263B]/25 dark:border-[#E5283C]/30 rounded-xl text-xs text-[#B3263B] dark:text-[#E5283C] font-medium text-center">
                     {authError}
                   </div>
                 )}
@@ -737,7 +759,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3.5 px-4 bg-red-600 dark:bg-[#d7b36a] hover:bg-red-700 dark:hover:bg-[#e5c77f] active:scale-95 text-white dark:text-[#111411] font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 dark:shadow-[#d7b36a]/20 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-60"
+                  className="w-full py-3.5 px-4 bg-[#B3263B] hover:bg-[#C93A4F] active:scale-95 text-[#F7F1E8] font-bold text-sm rounded-xl shadow-lg shadow-[#B3263B]/25 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-60"
                 >
                   <span>{isLoading ? 'Guardando...' : 'Cambiar contraseña'}</span>
                   <span>→</span>
@@ -749,7 +771,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                     setAuthError(null)
                     setCurrentStep('forgot')
                   }}
-                  className="text-xs text-red-600 hover:text-red-700 dark:hover:text-[#e5c77f] dark:text-[#d7b36a] font-semibold block mx-auto transition-all"
+                  className="text-xs text-[#B3263B] hover:text-[#8f1e2f] dark:text-[#E5283C] dark:hover:text-[#f0a0ad] font-semibold block mx-auto transition-all"
                 >
                   ¿El enlace venció? Pide uno nuevo
                 </button>
@@ -765,12 +787,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               </div>
 
               <div className="space-y-2">
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                <h2 className="font-[Barlow_Condensed] text-3xl font-bold text-[#101820] dark:text-[#F7F1E8] uppercase tracking-wide">
                   REVISA TU CORREO
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+                <p className="text-xs text-[#101820]/65 dark:text-[#F7F1E8]/65 max-w-xs mx-auto">
                   Enviamos las instrucciones para restablecer tu contraseña a{' '}
-                  <strong className="text-slate-700 dark:text-slate-200">
+                  <strong className="text-[#101820] dark:text-[#F7F1E8]">
                     {sentEmail || 'tu correo'}
                   </strong>
                   .
@@ -794,14 +816,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               <button
                 type="button"
                 onClick={() => irA('login')}
-                className="w-full py-3.5 px-4 bg-red-600 dark:bg-[#d7b36a] hover:bg-red-700 dark:hover:bg-[#e5c77f] active:scale-95 text-white dark:text-[#111411] font-bold text-sm rounded-2xl shadow-lg shadow-red-600/20 dark:shadow-[#d7b36a]/20 transition-all mt-4"
+                className="w-full py-3.5 px-4 bg-[#B3263B] hover:bg-[#C93A4F] active:scale-95 text-[#F7F1E8] font-bold text-sm rounded-xl shadow-lg shadow-[#B3263B]/25 transition-all mt-4"
               >
                 Volver a iniciar sesión
               </button>
 
               {/* Enlace de Reenviar Código Estilizado */}
               {authError && (
-                <div className="p-3 bg-red-50 dark:bg-[#d7b36a]/10 border border-red-200 dark:border-[#d7b36a]/30 rounded-2xl text-xs text-red-600 dark:text-[#d7b36a] font-medium">
+                <div className="p-3 bg-[#FBEEF0] dark:bg-[#E5283C]/10 border border-[#B3263B]/25 dark:border-[#E5283C]/30 rounded-xl text-xs text-[#B3263B] dark:text-[#E5283C] font-medium">
                   {authError}
                 </div>
               )}
@@ -810,16 +832,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 type="button"
                 disabled={isResending}
                 onClick={() => void handleResendCode()}
-                className="text-xs text-red-600 hover:text-red-700 dark:hover:text-[#e5c77f] dark:text-[#d7b36a] font-semibold block mx-auto transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-xs text-[#B3263B] hover:text-[#8f1e2f] dark:text-[#E5283C] dark:hover:text-[#f0a0ad] font-semibold block mx-auto transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isResending ? 'Reenviando enlace...' : 'No recibí el correo, reenviar'}
               </button>
             </div>
           )}
 
-          <p className="text-[11px] text-center text-slate-400 pt-2">
+          <p className="text-[11px] text-center text-[#101820]/50 dark:text-[#F7F1E8]/50 pt-2">
             Al continuar aceptas los{' '}
-            <a href="#terms" className="underline hover:text-slate-600">
+            <a
+              href="#terms"
+              className="underline hover:text-[#B3263B] dark:hover:text-[#E5283C]"
+            >
               Términos y condiciones
             </a>
           </p>

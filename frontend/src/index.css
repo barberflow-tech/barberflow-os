@@ -55,6 +55,132 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Sistema visual BarberFlow OS (pantallas públicas).
+   Inspirado en la barbería clásica: grafito, marfil y los
+   colores del poste. Solo se usa desde las clases `bf-*`.
+   ───────────────────────────────────────────────────────────── */
+:root {
+  --bf-navy: #101820;
+  --bf-navy-2: #16202b;
+  --bf-navy-3: #1d2a37;
+  --bf-marfil: #f7f1e8;
+  --bf-marfil-2: #efe6d8;
+  --bf-rojo: #b3263b;
+  --bf-rojo-hi: #c93a4f;
+  --bf-azul: #174a7e;
+  --bf-azul-hi: #1f5f9e;
+  --bf-oro: #c9a227;
+  --bf-radio: 14px;
+  --bf-sombra: 0 18px 40px -22px rgb(16 24 32 / 55%);
+  --bf-sombra-suave: 0 10px 26px -20px rgb(16 24 32 / 45%);
+}
+
+.dark {
+  --bf-marfil: #f2ece1;
+  --bf-marfil-2: #e6dccb;
+}
+
+@layer components {
+  /* Textura de rayas diagonales rojo/azul/marfil (poste de barbería). */
+  .bf-patron-rayas {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      rgb(179 38 59 / 8%) 0 10px,
+      rgb(179 38 59 / 8%) 10px,
+      transparent 10px 20px,
+      rgb(23 74 126 / 8%) 20px 30px,
+      rgb(23 74 126 / 8%) 30px,
+      transparent 30px 40px,
+      rgb(247 241 232 / 6%) 40px 50px,
+      rgb(247 241 232 / 6%) 50px,
+      transparent 50px 60px
+    );
+  }
+
+  /* Franja de poste: bandas horizontales rojo/marfil/azul. */
+  .bf-poste {
+    background-image: linear-gradient(
+      to bottom,
+      var(--bf-rojo) 0 6px,
+      var(--bf-marfil) 6px 12px,
+      var(--bf-azul) 12px 18px,
+      transparent 18px 100%
+    );
+  }
+
+  /* Grano sutil tipo papel/letrero envejecido. */
+  .bf-grano {
+    background-image:
+      radial-gradient(rgb(247 241 232 / 4%) 1px, transparent 1px),
+      radial-gradient(rgb(0 0 0 / 6%) 1px, transparent 1px);
+    background-size:
+      24px 24px,
+      16px 16px;
+    background-position:
+      0 0,
+      8px 8px;
+  }
+
+  /* Marco marfil tipo espejo de barbería. */
+  .bf-marco {
+    border: 1px solid rgb(247 241 232 / 55%);
+    box-shadow:
+      inset 0 0 0 1px rgb(16 24 32 / 6%),
+      var(--bf-sombra-suave);
+  }
+
+  /* Superficie de tarjeta premium sobre fondo claro. */
+  .bf-tarjeta {
+    background-color: var(--bf-marfil);
+    border: 1px solid rgb(16 24 32 / 10%);
+    border-radius: var(--bf-radio);
+    box-shadow: var(--bf-sombra-suave);
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease,
+      border-color 0.18s ease;
+  }
+  .bf-tarjeta:hover {
+    transform: translateY(-2px);
+    border-color: rgb(179 38 59 / 35%);
+    box-shadow: var(--bf-sombra);
+  }
+
+  /* Detalle de "etiqueta": línea roja corta bajo un título. */
+  .bf-etiqueta::after {
+    content: '';
+    display: block;
+    width: 44px;
+    height: 3px;
+    margin-top: 0.55rem;
+    background: linear-gradient(to right, var(--bf-rojo), var(--bf-azul));
+    border-radius: 2px;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+
+  /* Foco visible y consistente (WCAG 2.4.7) en todo el sitio. */
+  :focus-visible {
+    outline: 2px solid var(--bf-rojo);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .dark :focus-visible {
+    outline-color: var(--bf-oro);
+  }
+}
+
 :root {
   --app-bg: #f1f5f9;
   --app-fg: #0b1b3a;
@@ -134,16 +260,4 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
-  }
 }

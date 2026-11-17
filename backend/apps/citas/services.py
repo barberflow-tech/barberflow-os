@@ -20,6 +20,8 @@ from apps.barberos.jornada import (
 )
 from apps.barberos.models import Barbero
 from apps.catalogo.models import Servicio
+from apps.notificaciones.models import EmailDelivery
+from apps.notificaciones.services import send_notification_email
 
 from .models import BloqueoAgenda, Cita
 
@@ -495,6 +497,105 @@ def crear_bloqueo(
     except Barbero.DoesNotExist as exc:
         raise RecursoInactivoError("El barbero no está disponible.") from exc
 
-    return BloqueoAgenda.objects.create(
+    bloqueo = BloqueoAgenda.objects.create(
         barber=barbero, start_at=inicio, end_at=fin, reason=motivo
     )
+    _marcar_citas_afectadas(bloqueo)
+    return bloqueo
+
+
+# Citas que un bloqueo puede afectar: las que aun estan por atenderse.
+_ESTADOS_AFECTABLES = (Cita.Estado.PENDING, Cita.Estado.CONFIRMED)
+
+
+def _marcar_citas_afectadas(bloqueo: BloqueoAgenda) -> None:
+    """Marca las citas vigentes y futuras del barbero que caen dentro del bloqueo.
+
+    No las cancela ni las mueve: siguen activas y el cliente decide (HU-04). Una
+    cita ya marcada por otro bloqueo conserva esa marca, asi no se le avisa dos
+    veces. Las que ya empezaron o pasaron no se tocan.
+    """
+    Cita.objects.filter(
+        barber=bloqueo.barber,
+        status__in=_ESTADOS_AFECTABLES,
+        start_at__lt=bloqueo.end_at,
+        end_at__gt=bloqueo.start_at,
+        start_at__gt=timezone.now(),
+        affected_by_block__isnull=True,
+    ).update(affected_by_block=bloqueo)
+
+
+def _correo_de(cita: Cita) -> str:
+    """Correo del cliente con cuenta; vacio para visitantes, que solo dejan celular."""
+    return cita.client.email if cita.client_id and cita.client.email else ""
+
+
+def resumen_citas_afectadas(citas) -> dict:
+    """Estado de aviso de las citas afectadas por un bloqueo.
+
+    - notified: el aviso salio bien.
+    - without_channel: sin correo (visitantes); el admin debe llamarlos. No son
+      "pendientes": el sistema no tiene como avisarles.
+    - pending: tienen correo y el aviso aun no sale (fallo del envio).
+    """
+    citas = list(citas)
+    avisadas = [c for c in citas if c.block_notice_sent_at is not None]
+    sin_canal = [
+        c for c in citas if c.block_notice_sent_at is None and not _correo_de(c)
+    ]
+    return {
+        "total": len(citas),
+        "notified": len(avisadas),
+        "pending": len(citas) - len(avisadas) - len(sin_canal),
+        "without_channel": [
+            {
+                "id": c.pk,
+                "contact_name": c.contact_name,
+                "contact_phone": c.contact_phone,
+                "start_at": c.start_at.astimezone(ZONA_HORARIA_BARBERIA).isoformat(),
+            }
+            for c in sin_canal
+        ],
+    }
+
+
+def _aviso_de_cita_afectada(cita: Cita) -> tuple[str, str]:
+    """Asunto y cuerpo del aviso. No incluye el motivo del bloqueo: es interno."""
+    inicio = cita.start_at.astimezone(ZONA_HORARIA_BARBERIA)
+    cuando = f"{inicio:%d/%m/%Y} a las {inicio:%H:%M}"
+    enlace = f"{settings.FRONTEND_URL}/perfil"
+    asunto = f"Tu cita del {inicio:%d/%m/%Y} fue afectada por una ausencia"
+    cuerpo = (
+        "Hola,\n\n"
+        f"Tu cita de {cita.service.name} con {cita.barber.name} el {cuando} se vio "
+        "afectada por una ausencia imprevista del barbero.\n\n"
+        "Tu cita sigue registrada. Entra a Mis citas para reprogramarla (puedes "
+        f"hacerlo hasta {_TEXTO_ANTICIPACION} antes de la hora) o cancelarla: {enlace}\n\n"
+        "Lamentamos el inconveniente."
+    )
+    return asunto, cuerpo
+
+
+def notificar_citas_afectadas(bloqueo: BloqueoAgenda) -> dict:
+    """Avisa por correo a los clientes con cuenta cuyas citas afecto el bloqueo.
+
+    Usa el servicio de HU-05 y debe llamarse DESPUES de confirmar la transaccion
+    que creo el bloqueo. Solo guarda `block_notice_sent_at` si el envio salio
+    bien; si falla, la cita queda pendiente. Es idempotente: volver a llamarla
+    reintenta solo las pendientes y no duplica avisos ya enviados.
+    """
+    citas = list(
+        bloqueo.citas_afectadas.select_related("client", "service", "barber").order_by(
+            "start_at"
+        )
+    )
+    for cita in citas:
+        correo = _correo_de(cita)
+        if cita.block_notice_sent_at is not None or not correo:
+            continue
+        asunto, cuerpo = _aviso_de_cita_afectada(cita)
+        entrega = send_notification_email(recipient=correo, subject=asunto, body=cuerpo)
+        if entrega.status == EmailDelivery.Status.SENT:
+            cita.block_notice_sent_at = timezone.now()
+            cita.save(update_fields=["block_notice_sent_at"])
+    return resumen_citas_afectadas(citas)

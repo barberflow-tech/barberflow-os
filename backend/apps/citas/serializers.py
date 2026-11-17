@@ -9,6 +9,7 @@ from .services import (
     ANTICIPACION_MINIMA,
     ANTICIPACION_MINIMA_HORAS,
     ZONA_HORARIA_BARBERIA,
+    resumen_citas_afectadas,
 )
 
 
@@ -175,11 +176,23 @@ class BloqueoAgendaSerializer(serializers.ModelSerializer):
     barber = serializers.PrimaryKeyRelatedField(queryset=Barbero.objects.none())
     start_at = serializers.DateTimeField(default_timezone=ZONA_HORARIA_BARBERIA)
     end_at = serializers.DateTimeField(default_timezone=ZONA_HORARIA_BARBERIA)
+    affected_appointments = serializers.SerializerMethodField()
 
     class Meta:
         model = BloqueoAgenda
-        fields = ["id", "barber", "start_at", "end_at", "reason"]
+        fields = [
+            "id",
+            "barber",
+            "start_at",
+            "end_at",
+            "reason",
+            "affected_appointments",
+        ]
         read_only_fields = ["id"]
+
+    def get_affected_appointments(self, bloqueo) -> dict:
+        """Citas afectadas y estado de su aviso (HU-04). Usa el prefetch si lo hay."""
+        return resumen_citas_afectadas(bloqueo.citas_afectadas.all())
 
     def __init__(self, *args, barberia=None, **kwargs):
         super().__init__(*args, **kwargs)

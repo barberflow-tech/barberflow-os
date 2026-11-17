@@ -76,6 +76,19 @@ class Cita(models.Model):
     # antes de existir estos campos quedan con cancelled_at nulo.
     cancelled_at = models.DateTimeField(null=True, blank=True)
     late_cancellation = models.BooleanField(default=False)
+    # Bloqueo de agenda que afecto a la cita (HU-04): sigue activa, solo marcada,
+    # y el cliente decide si la reprograma o la cancela. HU-19 puede usar la marca
+    # para no contarle al cliente una cancelacion que no provoco.
+    # `block_notice_sent_at` queda nulo hasta que el aviso sale bien: afectada con
+    # cliente y sin fecha = aviso pendiente.
+    affected_by_block = models.ForeignKey(
+        "citas.BloqueoAgenda",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="citas_afectadas",
+    )
+    block_notice_sent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -128,6 +141,15 @@ class BloqueoAgendaQuerySet(models.QuerySet):
     def solapados(self, barbero, inicio: datetime, fin: datetime):
         """Bloqueos del barbero que se cruzan con [inicio, fin)."""
         return self.filter(barber=barbero, start_at__lt=fin, end_at__gt=inicio)
+
+    def con_citas_afectadas(self):
+        """Trae las citas afectadas y su cliente en 2 consultas, no una por bloqueo."""
+        return self.prefetch_related(
+            models.Prefetch(
+                "citas_afectadas",
+                queryset=Cita.objects.select_related("client").order_by("start_at"),
+            )
+        )
 
 
 class BloqueoAgenda(models.Model):

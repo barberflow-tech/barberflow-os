@@ -290,7 +290,9 @@ class GestionBloqueosView(APIView):
 class BloqueosAgendaView(GestionBloqueosView):
     def get(self, request):
         barberia = self.barberia_administrada(request)
-        bloqueos = BloqueoAgenda.objects.filter(barber__barberia=barberia)
+        bloqueos = BloqueoAgenda.objects.filter(
+            barber__barberia=barberia
+        ).con_citas_afectadas()
         return Response(BloqueoAgendaSerializer(bloqueos, many=True).data)
 
     def post(self, request):
@@ -310,6 +312,10 @@ class BloqueosAgendaView(GestionBloqueosView):
         except services.RecursoInactivoError as exc:
             raise ValidationError({"barber": str(exc)}) from exc
 
+        # Fuera de la transaccion de crear_bloqueo: el aviso sale solo si el
+        # bloqueo ya quedo confirmado, y un fallo de envio no lo deshace.
+        services.notificar_citas_afectadas(bloqueo)
+        bloqueo = BloqueoAgenda.objects.con_citas_afectadas().get(pk=bloqueo.pk)
         return Response(
             BloqueoAgendaSerializer(bloqueo).data, status=status.HTTP_201_CREATED
         )

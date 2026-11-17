@@ -175,3 +175,50 @@ class BloqueoAgenda(models.Model):
                 name="bloqueo_fin_posterior_inicio",
             ),
         ]
+
+
+class RecordatorioCita(models.Model):
+    """Aviso de recordatorio de una cita (HU-05): evidencia y control de duplicados.
+
+    Hay una fila por (cita, tipo, hora de la cita). `sent_at` queda nulo hasta que
+    el correo sale bien: con la fila pero sin fecha, el aviso esta pendiente de
+    reintento. Guardar la hora de la cita en la clave hace que una cita
+    reprogramada vuelva a recibir sus avisos para la hora nueva, sin tocar
+    `reprogramar_cita`. El detalle de cada intento (destinatario, estado, codigo
+    de error) vive en el `EmailDelivery` vinculado.
+    """
+
+    class Tipo(models.TextChoices):
+        REMINDER_24H = "REMINDER_24H", "Recordatorio de 24 horas"
+        REMINDER_2H = "REMINDER_2H", "Recordatorio de 2 horas"
+
+    appointment = models.ForeignKey(
+        Cita, on_delete=models.PROTECT, related_name="recordatorios"
+    )
+    reminder_type = models.CharField(max_length=16, choices=Tipo.choices)
+    # La `start_at` de la cita al momento de avisar.
+    appointment_start_at = models.DateTimeField()
+    # Ultimo intento de envio; su estado dice si salio o fallo.
+    delivery = models.ForeignKey(
+        "notificaciones.EmailDelivery",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="recordatorios_cita",
+    )
+    attempts = models.PositiveSmallIntegerField(default=0)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["appointment", "reminder_type", "appointment_start_at"],
+                name="recordatorio_unico_por_cita_tipo_inicio",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        estado = "enviado" if self.sent_at else "pendiente"
+        return f"{self.reminder_type} cita {self.appointment_id} ({estado})"
